@@ -140,7 +140,7 @@ export default function LoginPage() {
         }} />
 
         <div style={{ width: "100%", maxWidth: "400px" }}>
-          {/* Mobile Header (visible only on small screens) */}
+          {/* Mobile Header */}
           <div className="login-mobile-header" style={{
             display: "none",
             alignItems: "center",
@@ -208,13 +208,14 @@ export default function LoginPage() {
                 required
                 style={{
                   width: "100%", padding: "0.7rem 0.875rem",
-                  border: "1.5px solid #e2e8f0", borderRadius: "0.625rem",
-                  fontSize: "0.9rem", color: "#0f172a", background: "white",
+                  border: "none", borderRadius: "0.625rem",
+                  fontSize: "0.9rem", color: "#0f172a", background: "#f8fafc",
                   outline: "none", boxSizing: "border-box",
-                  transition: "border-color 0.15s, box-shadow 0.15s",
+                  boxShadow: "inset 4px 4px 8px #e2e8f0, inset -4px -4px 8px #ffffff",
+                  transition: "all 0.2s ease-in-out",
                 }}
-                onFocus={(e) => { e.target.style.borderColor = "#2563eb"; e.target.style.boxShadow = "0 0 0 3px rgba(37,99,235,0.1)"; }}
-                onBlur={(e) => { e.target.style.borderColor = "#e2e8f0"; e.target.style.boxShadow = "none"; }}
+                onFocus={(e) => { e.target.style.boxShadow = "inset 6px 6px 12px #cbd5e1, inset -6px -6px 12px #ffffff"; }}
+                onBlur={(e) => { e.target.style.boxShadow = "inset 4px 4px 8px #e2e8f0, inset -4px -4px 8px #ffffff"; }}
               />
             </div>
 
@@ -235,13 +236,14 @@ export default function LoginPage() {
                   required
                   style={{
                     width: "100%", padding: "0.7rem 2.75rem 0.7rem 0.875rem",
-                    border: "1.5px solid #e2e8f0", borderRadius: "0.625rem",
-                    fontSize: "0.9rem", color: "#0f172a", background: "white",
+                    border: "none", borderRadius: "0.625rem",
+                    fontSize: "0.9rem", color: "#0f172a", background: "#f8fafc",
                     outline: "none", boxSizing: "border-box",
-                    transition: "border-color 0.15s, box-shadow 0.15s",
+                    boxShadow: "inset 4px 4px 8px #e2e8f0, inset -4px -4px 8px #ffffff",
+                    transition: "all 0.2s ease-in-out",
                   }}
-                  onFocus={(e) => { e.target.style.borderColor = "#2563eb"; e.target.style.boxShadow = "0 0 0 3px rgba(37,99,235,0.1)"; }}
-                  onBlur={(e) => { e.target.style.borderColor = "#e2e8f0"; e.target.style.boxShadow = "none"; }}
+                  onFocus={(e) => { e.target.style.boxShadow = "inset 6px 6px 12px #cbd5e1, inset -6px -6px 12px #ffffff"; }}
+                  onBlur={(e) => { e.target.style.boxShadow = "inset 4px 4px 8px #e2e8f0, inset -4px -4px 8px #ffffff"; }}
                 />
                 <button
                   type="button"
@@ -264,14 +266,18 @@ export default function LoginPage() {
               disabled={isPending}
               style={{
                 width: "100%", padding: "0.8rem",
-                background: isPending ? "#93c5fd" : "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
-                color: "white", border: "none", borderRadius: "0.625rem",
+                background: "#f8fafc",
+                color: "#2563eb", border: "none", borderRadius: "0.625rem",
                 fontSize: "0.9375rem", fontWeight: 700,
                 cursor: isPending ? "not-allowed" : "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem",
-                boxShadow: isPending ? "none" : "0 4px 16px rgba(37,99,235,0.35)",
-                transition: "all 0.15s", marginTop: "0.25rem",
+                boxShadow: isPending ? "inset 4px 4px 8px #e2e8f0, inset -4px -4px 8px #ffffff" : "6px 6px 12px #e2e8f0, -6px -6px 12px #ffffff",
+                transition: "all 0.2s ease-in-out", marginTop: "0.25rem",
               }}
+              onMouseEnter={(e) => { if (!isPending) e.currentTarget.style.boxShadow = "4px 4px 8px #e2e8f0, -4px -4px 8px #ffffff"; }}
+              onMouseLeave={(e) => { if (!isPending) e.currentTarget.style.boxShadow = "6px 6px 12px #e2e8f0, -6px -6px 12px #ffffff"; }}
+              onMouseDown={(e) => { if (!isPending) e.currentTarget.style.boxShadow = "inset 4px 4px 8px #e2e8f0, inset -4px -4px 8px #ffffff"; }}
+              onMouseUp={(e) => { if (!isPending) e.currentTarget.style.boxShadow = "4px 4px 8px #e2e8f0, -4px -4px 8px #ffffff"; }}
             >
               {isPending ? <><Loader2 size={18} className="animate-spin" /> Signing in...</> : "Sign In"}
             </button>
@@ -292,13 +298,16 @@ export default function LoginPage() {
                   onClick={() => { setEmail(acc.email); setPassword(acc.password); }}
                   style={{
                     padding: "0.3rem 0.75rem", borderRadius: "9999px",
-                    border: `1.5px solid ${acc.color}55`,
-                    background: `${acc.color}18`, color: acc.color,
+                    border: "none",
+                    background: "#f8fafc", color: acc.color,
                     fontSize: "0.775rem", fontWeight: 600, cursor: "pointer",
-                    transition: "background 0.15s",
+                    boxShadow: "4px 4px 8px #e2e8f0, -4px -4px 8px #ffffff",
+                    transition: "all 0.2s ease-in-out",
                   }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = `${acc.color}30`; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = `${acc.color}18`; }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = "2px 2px 4px #e2e8f0, -2px -2px 4px #ffffff"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = "4px 4px 8px #e2e8f0, -4px -4px 8px #ffffff"; }}
+                  onMouseDown={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = "inset 2px 2px 4px #e2e8f0, inset -2px -2px 4px #ffffff"; }}
+                  onMouseUp={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = "2px 2px 4px #e2e8f0, -2px -2px 4px #ffffff"; }}
                 >
                   {acc.label}
                 </button>
