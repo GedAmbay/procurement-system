@@ -1,0 +1,350 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Auth & Users ────────────────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("END_USER") // ADMIN | BAC_SECRETARIAT | END_USER | BUDGET_OFFICER | SUPPLY_OFFICER | APPROVING_OFFICIAL | VIEWER
+  officeId  String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  office         Office?          @relation(fields: [officeId], references: [id])
+  auditLogs      DocumentAuditLog[]
+  purchaseRequests PurchaseRequest[]
+
+  @@map("users")
+}
+
+model Office {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  code        String   @unique
+  head        String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users            User[]
+  purchaseRequests PurchaseRequest[]
+  signatories      Signatory[]
+
+  @@map("offices")
+}
+
+// ─── Signatories ─────────────────────────────────────────────────────────────
+
+model Signatory {
+  id        String   @id @default(cuid())
+  name      String
+  position  String
+  officeId  String?
+  role      String   // END_USER | BUDGET_OFFICER | BAC_CHAIRMAN | HOPE | SUPPLY_OFFICER | APPROVING_OFFICIAL
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  office Office? @relation(fields: [officeId], references: [id])
+
+  @@map("signatories")
+}
+
+// ─── Suppliers ────────────────────────────────────────────────────────────────
+
+model Supplier {
+  id              String   @id @default(cuid())
+  name            String
+  philgepsNo      String?
+  tin             String?
+  address         String?
+  contactPerson   String?
+  contactNumber   String?
+  email           String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  rfqSuppliers    RfqSupplier[]
+  purchaseOrders  PurchaseOrder[]
+
+  @@map("suppliers")
+}
+
+// ─── Items / Catalog ─────────────────────────────────────────────────────────
+
+model Item {
+  id            String   @id @default(cuid())
+  code          String?  @unique
+  description   String
+  unit          String
+  standardCost  Float    @default(0)
+  category      String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  prLineItems   PrLineItem[]
+
+  @@map("items")
+}
+
+// ─── Fund Sources & Budget ────────────────────────────────────────────────────
+
+model FundSource {
+  id            String   @id @default(cuid())
+  name          String
+  code          String   @unique
+  description   String?
+  fiscalYear    Int
+  totalBudget   Float    @default(0)
+  usedBudget    Float    @default(0)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  purchaseRequests PurchaseRequest[]
+
+  @@map("fund_sources")
+}
+
+// ─── Purchase Requests ────────────────────────────────────────────────────────
+
+model PurchaseRequest {
+  id              String   @id @default(cuid())
+  prNumber        String   @unique
+  officeId        String
+  requestedById   String
+  purpose         String
+  fundSourceId    String?
+  chargeToAccount String?
+  totalAmount     Float    @default(0)
+  status          String   @default("DRAFT") // DRAFT | SUBMITTED | APPROVED | FOR_RFQ | CLOSED | REJECTED
+  remarks         String?
+  printCount      Int      @default(0)
+  lastPrintedAt   DateTime?
+  lastPrintedBy   String?
+  fiscalYear      Int
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  office       Office       @relation(fields: [officeId], references: [id])
+  requestedBy  User         @relation(fields: [requestedById], references: [id])
+  fundSource   FundSource?  @relation(fields: [fundSourceId], references: [id])
+  lineItems    PrLineItem[]
+  rfqs         Rfq[]
+
+  @@map("purchase_requests")
+}
+
+model PrLineItem {
+  id            String  @id @default(cuid())
+  prId          String
+  itemId        String?
+  description   String
+  unit          String
+  quantity      Float
+  unitCost      Float
+  totalCost     Float
+  sortOrder     Int     @default(0)
+
+  pr   PurchaseRequest @relation(fields: [prId], references: [id], onDelete: Cascade)
+  item Item?           @relation(fields: [itemId], references: [id])
+
+  @@map("pr_line_items")
+}
+
+// ─── Request for Quotation ────────────────────────────────────────────────────
+
+model Rfq {
+  id            String   @id @default(cuid())
+  rfqNumber     String   @unique
+  prId          String
+  deadline      DateTime?
+  remarks       String?
+  status        String   @default("DRAFT") // DRAFT | ISSUED | CLOSED
+  printCount    Int      @default(0)
+  lastPrintedAt DateTime?
+  fiscalYear    Int
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  pr           PurchaseRequest  @relation(fields: [prId], references: [id])
+  suppliers    RfqSupplier[]
+  lineItems    RfqLineItem[]
+  quotations   Quotation[]
+  aoq          AbstractOfQuotation?
+
+  @@map("rfqs")
+}
+
+model RfqSupplier {
+  id          String @id @default(cuid())
+  rfqId       String
+  supplierId  String
+
+  rfq      Rfq      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  supplier Supplier @relation(fields: [supplierId], references: [id])
+
+  @@unique([rfqId, supplierId])
+  @@map("rfq_suppliers")
+}
+
+model RfqLineItem {
+  id          String @id @default(cuid())
+  rfqId       String
+  description String
+  unit        String
+  quantity    Float
+  unitCost    Float
+  totalCost   Float
+  sortOrder   Int    @default(0)
+
+  rfq Rfq @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+
+  quotationLineItems QuotationLineItem[]
+
+  @@map("rfq_line_items")
+}
+
+// ─── Quotations ───────────────────────────────────────────────────────────────
+
+model Quotation {
+  id          String   @id @default(cuid())
+  rfqId       String
+  supplierId  String
+  submittedAt DateTime?
+  totalAmount Float    @default(0)
+  remarks     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  rfq       Rfq                 @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  lineItems QuotationLineItem[]
+
+  @@map("quotations")
+}
+
+model QuotationLineItem {
+  id            String  @id @default(cuid())
+  quotationId   String
+  rfqLineItemId String
+  unitPrice     Float
+  totalPrice    Float
+  isLowest      Boolean @default(false)
+  remarks       String?
+
+  quotation   Quotation   @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  rfqLineItem RfqLineItem @relation(fields: [rfqLineItemId], references: [id])
+
+  @@map("quotation_line_items")
+}
+
+// ─── Abstract of Quotation ────────────────────────────────────────────────────
+
+model AbstractOfQuotation {
+  id            String   @id @default(cuid())
+  aoqNumber     String   @unique
+  rfqId         String   @unique
+  recommendation String?
+  totalAmount   Float    @default(0)
+  status        String   @default("DRAFT") // DRAFT | RECOMMENDED | APPROVED
+  printCount    Int      @default(0)
+  lastPrintedAt DateTime?
+  fiscalYear    Int
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  rfq          Rfq           @relation(fields: [rfqId], references: [id])
+  lineItems    AoqLineItem[]
+  purchaseOrders PurchaseOrder[]
+
+  @@map("abstracts_of_quotation")
+}
+
+model AoqLineItem {
+  id             String  @id @default(cuid())
+  aoqId          String
+  description    String
+  unit           String
+  quantity       Float
+  lowestUnitPrice Float
+  totalPrice     Float
+  winnerSupplierId String?
+  sortOrder      Int     @default(0)
+
+  aoq AbstractOfQuotation @relation(fields: [aoqId], references: [id], onDelete: Cascade)
+
+  @@map("aoq_line_items")
+}
+
+// ─── Purchase Orders ──────────────────────────────────────────────────────────
+
+model PurchaseOrder {
+  id              String   @id @default(cuid())
+  poNumber        String   @unique
+  aoqId           String?
+  supplierId      String
+  deliveryTerms   String?
+  paymentTerms    String?
+  placeOfDelivery String?
+  deliveryDate    DateTime?
+  totalAmount     Float    @default(0)
+  status          String   @default("DRAFT") // DRAFT | FOR_SIGNATURE | RELEASED | DELIVERED | CLOSED
+  remarks         String?
+  printCount      Int      @default(0)
+  lastPrintedAt   DateTime?
+  fiscalYear      Int
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  aoq        AbstractOfQuotation? @relation(fields: [aoqId], references: [id])
+  supplier   Supplier              @relation(fields: [supplierId], references: [id])
+  lineItems  PoLineItem[]
+
+  @@map("purchase_orders")
+}
+
+model PoLineItem {
+  id          String  @id @default(cuid())
+  poId        String
+  description String
+  unit        String
+  quantity    Float
+  unitPrice   Float
+  totalPrice  Float
+  sortOrder   Int     @default(0)
+
+  po PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
+
+  @@map("po_line_items")
+}
+
+// ─── Audit Trail ─────────────────────────────────────────────────────────────
+
+model DocumentAuditLog {
+  id           String   @id @default(cuid())
+  documentType String   // PR | RFQ | AOQ | PO
+  documentId   String
+  action       String   // CREATED | UPDATED | SUBMITTED | APPROVED | REJECTED | PRINTED | REPRINTED | SIGNED | DELETED
+  userId       String
+  notes        String?
+  metadata     String?  // JSON stringified additional data
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([documentType, documentId])
+  @@index([userId])
+  @@map("document_audit_log")
+}
