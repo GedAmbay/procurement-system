@@ -133,11 +133,6 @@ export default function LoginPage() {
         padding: "3rem 2.5rem",
         position: "relative",
       }}>
-        <div style={{
-          position: "absolute", top: 0, left: 0, right: 0,
-          height: "4px",
-          background: "linear-gradient(90deg, #2563eb, #6366f1, #3b82f6)",
-        }} />
 
         <div style={{ width: "100%", maxWidth: "400px" }}>
           {/* Mobile Header */}
@@ -267,7 +262,7 @@ export default function LoginPage() {
               style={{
                 width: "100%", padding: "0.8rem",
                 background: "#ECF0F3",
-                color: "#2563eb", border: "none", borderRadius: "0.625rem",
+                color: "#60a5fa", border: "none", borderRadius: "0.625rem",
                 fontSize: "0.9375rem", fontWeight: 700,
                 cursor: isPending ? "not-allowed" : "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem",
@@ -297,7 +292,7 @@ export default function LoginPage() {
                   type="button"
                   onClick={() => { setEmail(acc.email); setPassword(acc.password); }}
                   style={{
-                    padding: "0.3rem 0.75rem", borderRadius: "9999px",
+                    padding: "0.3rem 0.75rem", borderRadius: "9px",
                     border: "none",
                     background: "#ECF0F3", color: acc.color,
                     fontSize: "0.775rem", fontWeight: 600, cursor: "pointer",
