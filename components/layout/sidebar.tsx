@@ -28,28 +28,28 @@ const navItems = [
   {
     section: "Procurement",
     items: [
-      { label: "Purchase Requests", href: "/dashboard/purchase-requests", icon: ShoppingCart, roles: [] },
-      { label: "Requests for Quotation", href: "/dashboard/rfqs", icon: FileText, roles: [] },
-      { label: "Abstract of Quotation", href: "/dashboard/aoq", icon: ClipboardList, roles: [] },
-      { label: "Purchase Orders", href: "/dashboard/purchase-orders", icon: Package, roles: [] },
+      { label: "Purchase Requests", href: "/purchase-requests", icon: ShoppingCart, roles: [] },
+      { label: "Requests for Quotation", href: "/rfqs", icon: FileText, roles: [] },
+      { label: "Abstract of Quotation", href: "/aoq", icon: ClipboardList, roles: [] },
+      { label: "Purchase Orders", href: "/purchase-orders", icon: Package, roles: [] },
     ],
   },
   {
     section: "Master Data",
     items: [
-      { label: "Suppliers", href: "/dashboard/suppliers", icon: Building2, roles: [] },
-      { label: "Items & Catalog", href: "/dashboard/items", icon: Tag, roles: [] },
-      { label: "Signatories", href: "/dashboard/signatories", icon: Users, roles: [] },
-      { label: "Fund Sources", href: "/dashboard/fund-sources", icon: Wallet, roles: [] },
-      { label: "Offices", href: "/dashboard/offices", icon: Building2, roles: [] },
+      { label: "Suppliers", href: "/suppliers", icon: Building2, roles: [] },
+      { label: "Items & Catalog", href: "/items", icon: Tag, roles: [] },
+      { label: "Signatories", href: "/signatories", icon: Users, roles: [] },
+      { label: "Fund Sources", href: "/fund-sources", icon: Wallet, roles: [] },
+      { label: "Offices", href: "/offices", icon: Building2, roles: [] },
     ],
   },
   {
     section: "Administration",
     items: [
-      { label: "User Management", href: "/dashboard/users", icon: Users, roles: ["ADMIN"] },
-      { label: "Audit Trail", href: "/dashboard/audit-log", icon: History, roles: ["ADMIN", "BAC_SECRETARIAT"] },
-      { label: "Reports", href: "/dashboard/reports", icon: BarChart3, roles: [] },
+      { label: "User Management", href: "/users", icon: Users, roles: ["ADMIN"] },
+      { label: "Audit Trail", href: "/audit-log", icon: History, roles: ["ADMIN", "BAC_SECRETARIAT"] },
+      { label: "Reports", href: "/reports", icon: BarChart3, roles: [] },
     ],
   },
 ];

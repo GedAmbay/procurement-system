@@ -45,7 +45,7 @@ const statCards = (stats: DashboardClientProps["data"]["stats"]) => [
     color: "#2563eb",
     bg: "#eff6ff",
     subtext: `${stats.prDraft} draft • ${stats.prPending} submitted/approved`,
-    href: "/dashboard/purchase-requests",
+    href: "/purchase-requests",
   },
   {
     label: "Active RFQs",
@@ -72,7 +72,7 @@ const statCards = (stats: DashboardClientProps["data"]["stats"]) => [
     color: "#059669",
     bg: "#f0fdf4",
     subtext: "Approved, awaiting canvass",
-    href: "/dashboard/purchase-requests",
+    href: "/purchase-requests",
   },
 ];
 
@@ -102,10 +102,10 @@ export default function DashboardClient({ data, user }: DashboardClientProps) {
 
       {/* Quick Actions */}
       <div style={{ display: "flex", gap: "0.625rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
-        <Link href="/dashboard/purchase-requests/new" className="btn btn-primary">
+        <Link href="/purchase-requests/new" className="btn btn-primary">
           <Plus size={16} /> New Purchase Request
         </Link>
-        <Link href="/dashboard/purchase-requests" className="btn btn-secondary">
+        <Link href="/purchase-requests" className="btn btn-secondary">
           <Clock size={16} /> View All PRs
         </Link>
         <Link href="/dashboard/suppliers" className="btn btn-secondary">
@@ -173,7 +173,7 @@ export default function DashboardClient({ data, user }: DashboardClientProps) {
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
               <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={(v) => `₱${(v/1000).toFixed(0)}k`} />
+              <YAxis tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={(v) => `₱${(v / 1000).toFixed(0)}k`} />
               <Tooltip
                 contentStyle={{ background: "white", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "0.8125rem" }}
                 formatter={(value: any) => [formatCurrency(value), "Amount"]}
@@ -234,7 +234,7 @@ export default function DashboardClient({ data, user }: DashboardClientProps) {
           <h3 style={{ fontSize: "0.9375rem", fontWeight: "700", color: "#0f172a", margin: 0 }}>
             Recent Purchase Requests
           </h3>
-          <Link href="/dashboard/purchase-requests" style={{
+          <Link href="/purchase-requests" style={{
             fontSize: "0.8125rem", color: "#2563eb", fontWeight: "500",
             display: "flex", alignItems: "center", gap: "0.25rem", textDecoration: "none",
           }}>
@@ -246,7 +246,7 @@ export default function DashboardClient({ data, user }: DashboardClientProps) {
           <div className="empty-state">
             <ShoppingCart className="empty-state-icon" />
             <p style={{ fontWeight: "600" }}>No purchase requests yet</p>
-            <Link href="/dashboard/purchase-requests/new" className="btn btn-primary btn-sm" style={{ marginTop: "0.75rem" }}>
+            <Link href="/purchase-requests/new" className="btn btn-primary btn-sm" style={{ marginTop: "0.75rem" }}>
               <Plus size={14} /> Create First PR
             </Link>
           </div>
@@ -267,7 +267,7 @@ export default function DashboardClient({ data, user }: DashboardClientProps) {
                 {data.recentPRs.map((pr) => (
                   <tr key={pr.id}>
                     <td>
-                      <Link href={`/dashboard/purchase-requests/${pr.id}`} style={{ color: "#2563eb", fontWeight: "600", textDecoration: "none", fontSize: "0.875rem" }}>
+                      <Link href={`/purchase-requests/${pr.id}`} style={{ color: "#2563eb", fontWeight: "600", textDecoration: "none", fontSize: "0.875rem" }}>
                         {pr.prNumber}
                       </Link>
                     </td>

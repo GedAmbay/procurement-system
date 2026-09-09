@@ -17,7 +17,7 @@ interface TopbarProps {
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
-  "/dashboard/purchase-requests": "Purchase Requests",
+  "/purchase-requests": "Purchase Requests",
   "/dashboard/rfqs": "Requests for Quotation",
   "/dashboard/aoq": "Abstract of Quotation",
   "/dashboard/purchase-orders": "Purchase Orders",

@@ -91,4 +91,5 @@ export const LGU_INFO = {
   contact: "(044) 123-4567",
   email: "pandan.lgu@example.gov.ph",
   logoUrl: "/lgu-seal.png",
+  mayorRole: "Municipal Mayor",
 } as const;

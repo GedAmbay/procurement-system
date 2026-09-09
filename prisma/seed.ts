@@ -188,11 +188,11 @@ async function main() {
   const healthFund = await prisma.fundSource.findUnique({ where: { code: "HF-MOOE-2026" } });
 
   if (adminUser && healthFund) {
-    const existingPR = await prisma.purchaseRequest.findUnique({ where: { prNumber: "PR-2026-09-0001" } });
+    const existingPR = await prisma.purchaseRequest.findUnique({ where: { prNumber: "26-09-0001" } });
     if (!existingPR) {
       await prisma.purchaseRequest.create({
         data: {
-          prNumber: "PR-2026-09-0001",
+          prNumber: "26-09-0001",
           officeId: officeHealth.id,
           requestedById: adminUser.id,
           purpose: "Procurement of medical supplies for the Municipal Health Office for Q4 2026 operations",
