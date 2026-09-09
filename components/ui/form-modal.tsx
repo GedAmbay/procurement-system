@@ -19,7 +19,7 @@ interface FormModalProps {
   fields: FormField[];
   onClose: () => void;
   onSubmit: (data: Record<string, string>) => Promise<void>;
-  initialValues?: Record<string, string | number | boolean | null | undefined>;
+  initialValues?: any;
   submitLabel?: string;
 }
 

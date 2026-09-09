@@ -8,9 +8,9 @@ import { auth } from "@/auth";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "ProcureEase — LGU Procurement System",
+  title: "BAC PANDAN",
   description:
-    "Digital procurement management for the Municipality of San Isidro, Nueva Ecija. Manage PR, RFQ, AOQ, and PO documents with full audit trail.",
+    "Digital procurement management for the Municipality of Pandan, Antique. Manage PR, RFQ, AOQ, and PO documents with full audit trail.",
   keywords: ["LGU", "procurement", "purchase request", "government", "Philippines"],
 };
 
