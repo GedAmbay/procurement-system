@@ -18,17 +18,17 @@ interface TopbarProps {
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
   "/purchase-requests": "Purchase Requests",
-  "/dashboard/rfqs": "Requests for Quotation",
-  "/dashboard/aoq": "Abstract of Quotation",
-  "/dashboard/purchase-orders": "Purchase Orders",
-  "/dashboard/suppliers": "Suppliers",
-  "/dashboard/items": "Items & Catalog",
-  "/dashboard/signatories": "Signatories",
-  "/dashboard/fund-sources": "Fund Sources",
-  "/dashboard/offices": "Offices",
-  "/dashboard/users": "User Management",
-  "/dashboard/audit-log": "Audit Trail",
-  "/dashboard/reports": "Reports",
+  "/rfqs": "Requests for Quotation",
+  "/aoq": "Abstract of Quotation",
+  "/purchase-orders": "Purchase Orders",
+  "/suppliers": "Suppliers",
+  "/items": "Items & Catalog",
+  "/signatories": "Signatories",
+  "/fund-sources": "Fund Sources",
+  "/offices": "Offices",
+  "/users": "User Management",
+  "/audit-log": "Audit Trail",
+  "/reports": "Reports",
 };
 
 export default function Topbar({ user }: TopbarProps) {
@@ -51,7 +51,7 @@ export default function Topbar({ user }: TopbarProps) {
           {getTitle()}
         </h1>
         <p style={{ fontSize: "0.75rem", color: "#94a3b8", margin: 0, marginTop: "1px" }}>
-          {user.officeName ?? "Municipality of San Isidro"}
+          {user.officeName ?? "Municipality of Pandan"}
         </p>
       </div>
 

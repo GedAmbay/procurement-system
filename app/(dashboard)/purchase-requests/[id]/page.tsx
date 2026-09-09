@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
 import { formatCurrency, LGU_INFO } from "@/lib/utils";
-import { Printer, Save, Send, CheckCircle2, XCircle, Plus, Trash2, ArrowLeft, Loader2 } from "lucide-react";
+import { Printer, Save, Send, CheckCircle2, XCircle, Plus, Trash2, ArrowLeft, Loader2, ZoomIn, ZoomOut } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -35,6 +35,7 @@ export default function PurchaseRequestEditor() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [prData, setPrData] = useState<any>(null);
+  const [zoom, setZoom] = useState(1);
 
   // Options
   const [offices, setOffices] = useState<any[]>([]);
@@ -178,7 +179,7 @@ export default function PurchaseRequestEditor() {
   if (loading) return <div className="p-8 flex justify-center"><Loader2 className="animate-spin text-blue-500" /></div>;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden">
+    <div className="flex flex-col overflow-hidden" style={{ height: 'calc(var(--full-vh) - 128px)' }}>
       {/* Header (No Print) */}
       <div className="no-print flex items-center justify-between p-4 border-b border-slate-300 shadow-sm z-10" style={{ background: 'var(--color-page-bg)' }}>
         <div className="flex items-center gap-3">
@@ -226,102 +227,144 @@ export default function PurchaseRequestEditor() {
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Zoom Controls */}
+        <div className="no-print absolute bottom-6 left-6 flex items-center gap-1 bg-white p-1 rounded-full shadow-md border border-slate-200 z-10 text-slate-600">
+          <button type="button" onClick={() => setZoom(z => Math.max(z - 0.1, 0.5))} className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Zoom Out"><ZoomOut size={18} /></button>
+          <button type="button" onClick={() => setZoom(1)} className="px-3 hover:bg-slate-100 rounded-full font-bold text-xs h-full transition-colors" title="Reset Zoom">{Math.round(zoom * 100)}%</button>
+          <button type="button" onClick={() => setZoom(z => Math.min(z + 0.1, 2))} className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Zoom In"><ZoomIn size={18} /></button>
+        </div>
+
         {/* Left Side: Live Print Preview */}
-        <div className="flex-1 overflow-y-auto bg-slate-200 p-8 print:p-0 print:bg-white print:overflow-visible">
-          <div className="print-area max-w-[800px] mx-auto bg-white shadow-xl min-h-[1056px] p-10 print:shadow-none print:max-w-none print:m-0">
-            {/* PR Standard Form Layout */}
-            <div className="text-center mb-6">
-              <h2 className="font-bold text-xl uppercase">Purchase Request</h2>
-              <div className="text-sm font-semibold mt-1">
-                {LGU_INFO.name}, {LGU_INFO.province}
+        <div className="flex-1 overflow-auto bg-slate-200 print:p-0 print:bg-white print:overflow-visible">
+
+          <div className="p-8 print:p-0 w-max mx-auto min-w-full flex justify-center origin-top print:block print:w-full print:min-w-0 print:!transform-none print:!mb-0" style={{ transform: `scale(${zoom})`, marginBottom: `${(zoom - 1) * 1056}px` }}>
+            <div className="print-area w-[816px] bg-white shadow-xl min-h-[1056px] p-10 print:shadow-none print:w-full print:max-w-none print:p-8 print:m-0 print:min-h-0">
+              {/* PR Standard Form Layout */}
+              <div className="text-right font-bold text-lg mb-2">Annex 30</div>
+
+              <div className="border-2 border-black">
+                {/* Title Block */}
+                <div className="text-center p-4 border-b-2 border-black">
+                  <h2 className="font-extrabold text-3xl uppercase tracking-wide mb-1">Purchase Request</h2>
+                  <div className="text-sm font-semibold underline decoration-black">
+                    Municipality of Pandan, Antique
+                  </div>
+                  <div className="text-sm italic font-medium">
+                    LGU
+                  </div>
+                </div>
+
+                {/* Grid Block */}
+                <div className="grid grid-cols-2 text-sm border-b-2 border-black">
+                  <div className="border-r-2 border-black p-2 flex flex-col justify-center">
+                    <div className="flex mb-2"><span className="w-24 whitespace-nowrap">Department :</span> <span className="border-b border-black flex-1 text-center">{offices.find(o => o.id === watchAllFields.officeId)?.name || "Office of the Mayor"}</span></div>
+                    <div className="flex"><span className="w-24 whitespace-nowrap">Section :</span> <span className="border-b border-black flex-1 text-center">{"\u00A0"}</span></div>
+                  </div>
+                  <div className="p-2 flex flex-col justify-between">
+                    <div className="flex mb-2"><span className="w-20">PR No.:</span> <span className="border-b border-black flex-1 text-center font-bold"></span> <span className="w-12 ml-2">Date:</span> <span className="border-b border-black flex-1 text-center"></span></div>
+                    <div className="flex mb-2"><span className="w-20">SAI No.:</span> <span className="border-b border-black flex-1 text-center">{"\u00A0"}</span> <span className="w-12 ml-2">Date:</span> <span className="border-b border-black flex-1 text-center">{"\u00A0"}</span></div>
+                    <div className="flex"><span className="w-20">ALOBS No.:</span> <span className="border-b border-black flex-1 text-center">{"\u00A0"}</span> <span className="w-12 ml-2">Date:</span> <span className="border-b border-black flex-1 text-center">{"\u00A0"}</span></div>
+                  </div>
+                </div>
+
+                {/* Table Block */}
+                <table className="w-full table-fixed border-collapse text-sm border-b-2 border-black">
+                  <thead>
+                    <tr className="bg-white">
+                      <th className="border border-black border-t-0 border-l-0 p-1 font-bold text-center w-[7%]">ITEM<br />NO.</th>
+                      <th className="border border-black border-t-0 p-1 font-bold text-center w-[11%]">QUANTITY</th>
+                      <th className="border border-black border-t-0 p-1 font-bold text-center w-[12%]">UNIT OF<br />ISSUE</th>
+                      <th className="border border-black border-t-0 p-1 font-bold text-center w-[40%]">ITEM DESCRIPTION</th>
+                      <th className="border border-black border-t-0 p-1 font-bold text-center w-[15%]">ESTIMATED<br />UNIT COST</th>
+                      <th className="border border-black border-t-0 border-r-0 p-1 font-bold text-center w-[15%]">ESTIMATED<br />COST</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {watchLineItems.length > 0 ? watchLineItems.map((item, idx) => (
+                      <tr key={idx}>
+                        <td className="border border-black border-l-0 px-1 py-1 leading-tight text-center align-top">{idx + 1}</td>
+                        <td className="border border-black py-1 leading-tight text-center align-top">{item.quantity}</td>
+                        <td className="border border-black px-1 py-1 leading-tight text-center align-top">{item.unit}</td>
+                        <td className="border border-black px-1 pl-2 py-1 leading-tight whitespace-normal break-words align-top">{item.description}</td>
+                        <td className="border border-black px-1 py-1 leading-tight text-right align-top">{item.unitCost ? formatCurrency(item.unitCost).replace('₱', '') : '0.00'}</td>
+                        <td className="border border-black border-r-0 px-1 py-1 leading-tight text-right align-top">{(item.quantity && item.unitCost) ? formatCurrency(item.quantity * item.unitCost).replace('₱', '') : '0.00'}</td>
+                      </tr>
+                    )) : null}
+                    {Array.from({ length: Math.max(0, 15 - watchLineItems.length) }).map((_, i) => (
+                      <tr key={`empty-${i}`}>
+                        <td className="border border-black border-l-0 px-1 py-1"></td>
+                        <td className="border border-black px-1 py-1"></td>
+                        <td className="border border-black px-1 py-1"></td>
+                        <td className="border border-black px-1 py-1"></td>
+                        <td className="border border-black px-1 py-1"></td>
+                        <td className="border border-black border-r-0 px-1 py-1"></td>
+                      </tr>
+                    ))}
+                    <tr>
+                      <td colSpan={5} className="border border-black border-l-0 border-b-0 p-1"></td>
+                      <td className="border border-black border-r-0 border-b-0 p-1 text-right pr-4">-</td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                {/* Purpose Block */}
+                <div className="p-3 text-sm flex gap-2 border-b-2 border-black">
+                  <span className="shrink-0">Purpose: </span>
+                  <div className="flex-1 flex flex-col gap-1 mt-1">
+                    <div className="border-b border-black text-left min-h-[1.5rem] relative">
+                      <span className="absolute left-0 right-0 -top-1 whitespace-nowrap overflow-hidden text-ellipsis px-2">{watchAllFields.purpose || "\u00A0"}</span>
+                    </div>
+                    <div className="border-b border-black text-center min-h-[1.5rem]"></div>
+                    <div className="border-b border-black text-center min-h-[1.5rem]"></div>
+                  </div>
+                </div>
+
+                {/* Signatures Block */}
+                <table className="w-full border-collapse text-xs text-center border-t-0 table-fixed">
+                  <colgroup>
+                    <col className="w-[16%]" />
+                    <col className="w-[27.33%]" />
+                    <col className="w-[24%]" />
+                    <col className="w-[27.33%]" />
+                  </colgroup>
+                  <tbody>
+                    <tr>
+                      <td className="border border-black border-l-0 border-t-0 py-0 px-1"></td>
+                      <td className="border border-black border-t-0 py-0 px-1 leading-tight font-bold">Requested by:</td>
+                      <td className="border border-black border-t-0 py-0 px-1 leading-tight font-bold">Cash availability:</td>
+                      <td className="border border-black border-t-0 border-r-0 py-0 px-1 leading-tight font-bold">Approved by:</td>
+                    </tr>
+                    <tr>
+                      <td className="border border-black border-l-0 py-0 px-1 pl-2 italic text-left align-top h-[50px] text-[13px]">Signature:</td>
+                      <td className="border border-black py-0 px-1"></td>
+                      <td className="border border-black py-0 px-1"></td>
+                      <td className="border border-black border-r-0 py-0 px-1"></td>
+                    </tr>
+                    <tr>
+                      <td className="border border-black border-l-0 py-0 px-1 pl-2 italic text-left text-[13px] leading-tight">Printed Name:</td>
+                      <td className="border border-black py-0 px-1 font-bold uppercase text-[12px] leading-tight">{prData?.requestedBy?.name || user?.name || "JEZREEL BON T. JUANITEZ, MD"}</td>
+                      <td className="border border-black py-0 px-1 font-bold uppercase text-[13px] leading-tight">EDSEL J. AMBUBUYOG</td>
+                      <td className="border border-black border-r-0 py-0 px-1 font-bold uppercase text-[12px] leading-tight">HON. TOMAS U. ESTOPEREZ JR.</td>
+                    </tr>
+                    <tr>
+                      <td className="border border-black border-l-0 py-0 px-1 pl-2 italic text-left text-[13px] leading-tight">Designation:</td>
+                      <td className="border border-black py-0 px-1 text-[13px] leading-tight">MHO</td>
+                      <td className="border border-black py-0 px-1 text-[13px] leading-tight">Acting Municipal Treasurer</td>
+                      <td className="border border-black border-r-0 py-0 px-1 text-[13px] leading-tight">Municipal Mayor</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
+
+
             </div>
-
-            <div className="grid grid-cols-2 border-2 border-black mb-4 text-sm">
-              <div className="border-r-2 border-black p-2">
-                <div className="flex mb-1"><span className="w-24 font-bold">Department:</span> <span className="border-b border-black flex-1 text-center">{offices.find(o => o.id === watchAllFields.officeId)?.name || "\u00A0"}</span></div>
-                <div className="flex mb-1"><span className="w-24 font-bold">Section:</span> <span className="border-b border-black flex-1 text-center">{"\u00A0"}</span></div>
-              </div>
-              <div className="p-2">
-                <div className="flex mb-1"><span className="w-16 font-bold">PR No.:</span> <span className="border-b border-black flex-1 text-center font-mono font-bold text-red-600">{prData?.prNumber || "PENDING"}</span></div>
-                <div className="flex mb-1"><span className="w-16 font-bold">Date:</span> <span className="border-b border-black flex-1 text-center">{new Date().toLocaleDateString("en-PH")}</span></div>
-                <div className="flex mb-1"><span className="w-16 font-bold">SAI No.:</span> <span className="border-b border-black flex-1 text-center">{"\u00A0"}</span></div>
-              </div>
-            </div>
-
-            <table className="w-full border-collapse border-2 border-black text-sm mb-4">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="border border-black p-1">Item No.</th>
-                  <th className="border border-black p-1">Unit</th>
-                  <th className="border border-black p-1 w-1/3">Item Description</th>
-                  <th className="border border-black p-1">Qty</th>
-                  <th className="border border-black p-1">Unit Cost</th>
-                  <th className="border border-black p-1">Total Cost</th>
-                </tr>
-              </thead>
-              <tbody>
-                {watchLineItems.length > 0 ? watchLineItems.map((item, idx) => (
-                  <tr key={idx}>
-                    <td className="border border-black p-1 text-center">{idx + 1}</td>
-                    <td className="border border-black p-1 text-center">{item.unit}</td>
-                    <td className="border border-black p-1">{item.description}</td>
-                    <td className="border border-black p-1 text-center">{item.quantity}</td>
-                    <td className="border border-black p-1 text-right">{formatCurrency(item.unitCost || 0).replace('₱', '')}</td>
-                    <td className="border border-black p-1 text-right font-semibold">{formatCurrency((item.quantity || 0) * (item.unitCost || 0)).replace('₱', '')}</td>
-                  </tr>
-                )) : (
-                  <tr><td colSpan={6} className="border border-black p-4 text-center text-gray-400 italic">No items added yet.</td></tr>
-                )}
-                {/* Empty rows to fill space */}
-                {Array.from({ length: Math.max(0, 10 - watchLineItems.length) }).map((_, i) => (
-                  <tr key={`empty-${i}`}>
-                    <td className="border border-black p-3"></td>
-                    <td className="border border-black p-3"></td>
-                    <td className="border border-black p-3"></td>
-                    <td className="border border-black p-3"></td>
-                    <td className="border border-black p-3"></td>
-                    <td className="border border-black p-3"></td>
-                  </tr>
-                ))}
-                <tr>
-                  <td colSpan={5} className="border border-black p-1 font-bold text-right pr-4">GRAND TOTAL</td>
-                  <td className="border border-black p-1 font-bold text-right">{formatCurrency(totalAmount)}</td>
-                </tr>
-              </tbody>
-            </table>
-
-            <div className="border-2 border-black p-2 mb-6 text-sm">
-              <span className="font-bold">Purpose: </span>
-              <span className="border-b border-black inline-block min-w-[80%] px-2">
-                {watchAllFields.purpose || "\u00A0"}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-3 border-2 border-black text-sm text-center">
-              <div className="p-2 border-r border-black">
-                <div className="text-left font-bold mb-8">Requested by:</div>
-                <div className="border-b border-black mx-4 mb-1 font-bold uppercase">{prData?.requestedBy?.name || user?.name || "____________________"}</div>
-                <div className="text-xs">End User</div>
-              </div>
-              <div className="p-2 border-r border-black">
-                <div className="text-left font-bold mb-8">Funds Available:</div>
-                <div className="border-b border-black mx-4 mb-1 font-bold uppercase">____________________</div>
-                <div className="text-xs">Municipal Budget Officer</div>
-              </div>
-              <div className="p-2">
-                <div className="text-left font-bold mb-8">Approved by:</div>
-                <div className="border-b border-black mx-4 mb-1 font-bold uppercase">____________________</div>
-                <div className="text-xs">{LGU_INFO.mayorRole}</div>
-              </div>
-            </div>
-
           </div>
         </div>
 
         {/* Right Side: Data Entry Form (No Print) */}
-        <div className="no-print w-[500px] border-l border-slate-200 bg-white overflow-y-auto flex flex-col">
+        <div className="no-print w-[400px] xl:w-[500px] shrink-0 border-l border-slate-200 bg-white overflow-y-auto flex flex-col">
           <div className="p-6 flex-1">
             <h3 className="font-bold text-slate-800 mb-6 text-lg">PR Details</h3>
 

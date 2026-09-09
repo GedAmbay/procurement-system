@@ -32,6 +32,9 @@
   --shadow-neu-drop-sm: 8px 8px 16px #D1D9E6, -8px -8px 16px #ffffff;
   --shadow-neu-inner-sm: inset 8px 8px 16px #D1D9E6, inset -8px -8px 16px #ffffff;
   --shadow-neu-drop-hover: 12px 12px 24px #D1D9E6, -12px -12px 24px #ffffff;
+
+  --system-zoom: 0.9;
+  --full-vh: calc(100vh / var(--system-zoom));
 }
 
 @layer base {
@@ -43,6 +46,7 @@
     background-color: var(--color-page-bg);
     color: #0f172a;
     font-family: var(--font-sans);
+    zoom: var(--system-zoom);
   }
 
   h1,
@@ -136,7 +140,7 @@
 /* ─── Main Content ─────────────────────────────────────────────────────────── */
 .main-content {
   margin-left: 260px;
-  min-height: 100vh;
+  min-height: var(--full-vh);
   display: flex;
   flex-direction: column;
 }
@@ -509,5 +513,9 @@ tbody td {
 
   body {
     background: white;
+  }
+
+  @page {
+    margin: 0;
   }
 }

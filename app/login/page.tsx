@@ -44,7 +44,7 @@ export default function LoginPage() {
     <>
       {showSplash && <SplashScreen />}
       <div style={{
-        minHeight: "100vh",
+        minHeight: "var(--full-vh)",
         display: "flex",
         fontFamily: "'Inter', -apple-system, sans-serif",
         overflow: "hidden",

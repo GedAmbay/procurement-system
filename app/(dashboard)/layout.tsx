@@ -12,7 +12,7 @@ export default async function DashboardLayout({
   if (!session) redirect("/login");
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#f8fafc" }}>
+    <div style={{ display: "flex", minHeight: "var(--full-vh)", background: "#f8fafc" }}>
       <Sidebar user={session.user as any} />
       <div className="main-content" style={{ flex: 1 }}>
         <Topbar user={session.user as any} />

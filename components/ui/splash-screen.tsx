@@ -31,8 +31,8 @@ export default function SplashScreen() {
 
       {/* Logo Container */}
       <div style={{
-        width: "200px",
-        height: "200px",
+        width: "300px",
+        height: "300px",
         borderRadius: "50%",
         display: "flex",
         alignItems: "center",

@@ -42,7 +42,7 @@ const statCards = (stats: DashboardClientProps["data"]["stats"]) => [
     label: "PRs Awaiting Action",
     value: stats.prPending,
     icon: ShoppingCart,
-    color: "#2563eb",
+    color: "#64748b",
     bg: "#eff6ff",
     subtext: `${stats.prDraft} draft • ${stats.prPending} submitted/approved`,
     href: "/purchase-requests",
@@ -51,7 +51,7 @@ const statCards = (stats: DashboardClientProps["data"]["stats"]) => [
     label: "Active RFQs",
     value: stats.rfqActive,
     icon: FileText,
-    color: "#0891b2",
+    color: "#64748b",
     bg: "#ecfeff",
     subtext: "Awaiting supplier quotations",
     href: "/dashboard/rfqs",
@@ -60,7 +60,7 @@ const statCards = (stats: DashboardClientProps["data"]["stats"]) => [
     label: "POs for Signature",
     value: stats.poForSig,
     icon: Package,
-    color: "#d97706",
+    color: "#64748b",
     bg: "#fffbeb",
     subtext: "Pending release to suppliers",
     href: "/dashboard/purchase-orders",
@@ -69,7 +69,7 @@ const statCards = (stats: DashboardClientProps["data"]["stats"]) => [
     label: "PRs Ready for RFQ",
     value: stats.prForRfq,
     icon: ClipboardList,
-    color: "#059669",
+    color: "#64748b",
     bg: "#f0fdf4",
     subtext: "Approved, awaiting canvass",
     href: "/purchase-requests",
@@ -108,29 +108,20 @@ export default function DashboardClient({ data, user }: DashboardClientProps) {
         <Link href="/purchase-requests" className="btn btn-secondary">
           <Clock size={16} /> View All PRs
         </Link>
-        <Link href="/dashboard/suppliers" className="btn btn-secondary">
+        <Link href="/suppliers" className="btn btn-secondary">
           <BarChart2 size={16} /> Manage Suppliers
         </Link>
       </div>
 
       {/* Stat Cards */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-        gap: "1rem",
-        marginBottom: "1.5rem",
-      }}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {cards.map((card) => {
           const Icon = card.icon;
           return (
             <Link key={card.label} href={card.href} style={{ textDecoration: "none" }}>
               <div className="stat-card" style={{ cursor: "pointer" }}>
                 <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "0.875rem" }}>
-                  <div style={{
-                    width: "40px", height: "40px", borderRadius: "10px",
-                    background: card.bg,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                  }}>
+                  <div>
                     <Icon size={20} color={card.color} />
                   </div>
                   <ArrowRight size={14} color="#cbd5e1" />
