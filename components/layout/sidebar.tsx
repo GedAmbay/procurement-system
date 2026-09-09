@@ -77,53 +77,11 @@ export default function Sidebar({ user }: SidebarProps) {
           <img src="/pandan_logo.png" alt="Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
         </div>
         <div style={{ minWidth: 0 }}>
-          <div style={{ color: "white", fontWeight: "700", fontSize: "0.9375rem", lineHeight: "1.2", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          <div style={{ color: "#64748b", fontWeight: "700", fontSize: "0.9375rem", lineHeight: "1.2", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             ProcureEase
           </div>
-          <div style={{ color: "#475569", fontSize: "0.6875rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          <div style={{ color: "#64748b", fontSize: "0.6875rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             {LGU_INFO.name}
-          </div>
-        </div>
-      </div>
-
-      {/* User info */}
-      <div style={{
-        margin: "0.75rem",
-        padding: "0.75rem",
-        background: "rgba(255,255,255,0.03)",
-        borderRadius: "0.625rem",
-        border: "1px solid #1e2d4a",
-      }}>
-        <div style={{
-          display: "flex", alignItems: "center", gap: "0.625rem",
-        }}>
-          <div style={{
-            width: "32px", height: "32px", borderRadius: "50%",
-            background: "linear-gradient(135deg, #1d4ed8, #7c3aed)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            color: "white", fontWeight: "700", fontSize: "0.8125rem",
-            flexShrink: 0,
-          }}>
-            {user.name?.charAt(0) ?? "U"}
-          </div>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ color: "#f1f5f9", fontSize: "0.8125rem", fontWeight: "600", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {user.name}
-            </div>
-            <div style={{
-              display: "inline-block",
-              background: "rgba(37,99,235,0.2)",
-              color: "#93c5fd",
-              fontSize: "0.625rem",
-              fontWeight: "700",
-              letterSpacing: "0.04em",
-              padding: "0.1rem 0.375rem",
-              borderRadius: "4px",
-              textTransform: "uppercase",
-              marginTop: "0.125rem",
-            }}>
-              {user.role?.replace(/_/g, " ")}
-            </div>
           </div>
         </div>
       </div>
@@ -162,8 +120,8 @@ export default function Sidebar({ user }: SidebarProps) {
       {/* Footer */}
       <div style={{
         padding: "1rem 0.75rem",
-        borderTop: "1px solid #1e2d4a",
-        color: "#334155",
+        borderTop: "1px solid rgba(209, 217, 230, 0.5)",
+        color: "#64748b",
         fontSize: "0.6875rem",
         textAlign: "center",
       }}>

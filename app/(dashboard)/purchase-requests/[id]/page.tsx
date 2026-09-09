@@ -180,7 +180,7 @@ export default function PurchaseRequestEditor() {
   return (
     <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden">
       {/* Header (No Print) */}
-      <div className="no-print flex items-center justify-between p-4 bg-white border-b border-slate-200 shadow-sm z-10">
+      <div className="no-print flex items-center justify-between p-4 border-b border-slate-300 shadow-sm z-10" style={{ background: 'var(--color-page-bg)' }}>
         <div className="flex items-center gap-3">
           <Link href="/purchase-requests" className="p-2 rounded-md hover:bg-slate-100 text-slate-500 transition-colors">
             <ArrowLeft size={18} />
@@ -194,32 +194,32 @@ export default function PurchaseRequestEditor() {
         </div>
         <div className="flex gap-2">
           {!isNew && (
-            <button onClick={handlePrint} className="btn-secondary" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <button onClick={handlePrint} className="btn btn-secondary">
               <Printer size={16} /> Print
             </button>
           )}
           {!isReadOnly && (
-            <button onClick={handleSubmit(onSubmit)} disabled={submitting} className="btn-primary" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <button onClick={handleSubmit(onSubmit)} disabled={submitting} className="btn btn-primary">
               <Save size={16} /> Save
             </button>
           )}
           {!isNew && prData?.status === "DRAFT" && (
-            <button onClick={() => updateStatus("SUBMITTED")} className="btn-primary bg-blue-600 hover:bg-blue-700 text-white" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', padding: '0.5rem 1rem', borderRadius: '0.375rem' }}>
+            <button onClick={() => updateStatus("SUBMITTED")} className="btn btn-primary">
               <Send size={16} /> Submit
             </button>
           )}
           {!isNew && prData?.status === "SUBMITTED" && user?.role === "APPROVING_OFFICIAL" && (
             <>
-              <button onClick={() => updateStatus("REJECTED")} className="btn-danger bg-red-600 hover:bg-red-700 text-white" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', padding: '0.5rem 1rem', borderRadius: '0.375rem' }}>
+              <button onClick={() => updateStatus("REJECTED")} className="btn btn-danger">
                 <XCircle size={16} /> Reject
               </button>
-              <button onClick={() => updateStatus("APPROVED")} className="btn-success bg-green-600 hover:bg-green-700 text-white" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', padding: '0.5rem 1rem', borderRadius: '0.375rem' }}>
+              <button onClick={() => updateStatus("APPROVED")} className="btn" style={{ color: "#16a34a" }}>
                 <CheckCircle2 size={16} /> Approve
               </button>
             </>
           )}
           {!isNew && prData?.status === "APPROVED" && (user?.role === "BAC_SECRETARIAT" || user?.role === "ADMIN") && (
-            <button onClick={() => updateStatus("FOR_RFQ")} className="btn-primary bg-orange-600 hover:bg-orange-700 text-white" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', padding: '0.5rem 1rem', borderRadius: '0.375rem' }}>
+            <button onClick={() => updateStatus("FOR_RFQ")} className="btn" style={{ color: "#ea580c" }}>
               Create RFQ
             </button>
           )}

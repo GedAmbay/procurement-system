@@ -59,12 +59,16 @@ export default function Topbar({ user }: TopbarProps) {
         {/* Notification Bell */}
         <button
           style={{
-            width: "38px", height: "38px", borderRadius: "50%",
-            border: "1px solid #e2e8f0", background: "white",
+            width: "42px", height: "42px", borderRadius: "50%",
+            border: "none", background: "var(--color-page-bg)",
+            boxShadow: "var(--shadow-neu-drop-sm)",
             display: "flex", alignItems: "center", justifyContent: "center",
             cursor: "pointer", color: "#64748b", position: "relative",
-            transition: "all 0.15s",
+            transition: "all 0.2s ease-in-out",
           }}
+          onMouseDown={(e) => e.currentTarget.style.boxShadow = "var(--shadow-neu-inner-sm)"}
+          onMouseUp={(e) => e.currentTarget.style.boxShadow = "var(--shadow-neu-drop-sm)"}
+          onMouseLeave={(e) => e.currentTarget.style.boxShadow = "var(--shadow-neu-drop-sm)"}
           title="Notifications"
         >
           <Bell size={16} />
@@ -81,11 +85,15 @@ export default function Topbar({ user }: TopbarProps) {
             onClick={() => setShowMenu(!showMenu)}
             style={{
               display: "flex", alignItems: "center", gap: "0.5rem",
-              padding: "0.375rem 0.75rem 0.375rem 0.375rem",
-              border: "1px solid #e2e8f0", borderRadius: "9999px",
-              background: "white", cursor: "pointer",
-              transition: "all 0.15s",
+              padding: "0.5rem 1rem 0.5rem 0.5rem",
+              border: "none", borderRadius: "9999px",
+              background: "var(--color-page-bg)",
+              boxShadow: "var(--shadow-neu-drop-sm)",
+              cursor: "pointer",
+              transition: "all 0.2s ease-in-out",
             }}
+            onMouseDown={(e) => e.currentTarget.style.boxShadow = "var(--shadow-neu-inner-sm)"}
+            onMouseUp={(e) => e.currentTarget.style.boxShadow = "var(--shadow-neu-drop-sm)"}
           >
             <div style={{
               width: "28px", height: "28px", borderRadius: "50%",
@@ -113,14 +121,14 @@ export default function Topbar({ user }: TopbarProps) {
                 onClick={() => setShowMenu(false)}
               />
               <div style={{
-                position: "absolute", right: 0, top: "calc(100% + 0.5rem)",
-                background: "white", border: "1px solid #e2e8f0",
-                borderRadius: "0.75rem", minWidth: "200px",
-                boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+                position: "absolute", right: 0, top: "calc(100% + 1rem)",
+                background: "var(--color-page-bg)", border: "none",
+                borderRadius: "1rem", minWidth: "220px",
+                boxShadow: "var(--shadow-neu-drop)",
                 zIndex: 50, overflow: "hidden",
-                animation: "slideUp 0.15s ease",
+                animation: "slideUp 0.2s ease",
               }}>
-                <div style={{ padding: "0.875rem 1rem", borderBottom: "1px solid #f1f5f9" }}>
+                <div style={{ padding: "1rem", borderBottom: "1px solid rgba(209, 217, 230, 0.5)" }}>
                   <div style={{ fontSize: "0.875rem", fontWeight: "600", color: "#0f172a" }}>{user.name}</div>
                   <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>{user.email}</div>
                   <div style={{
