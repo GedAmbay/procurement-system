@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import bcrypt from "bcryptjs";
+import { userCreateSchema } from "@/lib/zod-schemas";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -29,15 +30,21 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
 
-  const hashed = await bcrypt.hash(body.password, 12);
+  const parseResult = userCreateSchema.safeParse(body);
+  if (!parseResult.success) {
+    return NextResponse.json({ error: "Invalid data", details: parseResult.error.format() }, { status: 400 });
+  }
+
+  const { name, email, password, role, officeId } = parseResult.data;
+  const hashed = await bcrypt.hash(password, 12);
   try {
     const user = await prisma.user.create({
       data: {
-        name: body.name,
-        email: body.email,
+        name,
+        email,
         password: hashed,
-        role: body.role,
-        officeId: body.officeId || null,
+        role,
+        officeId: officeId || null,
       },
       select: { id: true, name: true, email: true, role: true, isActive: true, createdAt: true },
     });

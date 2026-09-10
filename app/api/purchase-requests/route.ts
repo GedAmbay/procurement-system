@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-
+import { purchaseRequestSchema } from "@/lib/zod-schemas";
 // Function to generate the next PR Number in YY-MM-XXXX format
 async function generatePRNumber() {
   const now = new Date();
@@ -73,7 +73,12 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { officeId, purpose, fundSourceId, chargeToAccount, lineItems } = body;
+    const parseResult = purchaseRequestSchema.safeParse(body);
+    if (!parseResult.success) {
+      return NextResponse.json({ error: "Invalid data", details: parseResult.error.format() }, { status: 400 });
+    }
+
+    const { officeId, purpose, fundSourceId, chargeToAccount, lineItems } = parseResult.data;
 
     const prNumber = await generatePRNumber();
     const totalAmount = lineItems.reduce((sum: number, item: any) => sum + (item.quantity * item.unitCost), 0);

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-
+import { purchaseRequestSchema, purchaseRequestStatusUpdateSchema } from "@/lib/zod-schemas";
 export async function GET(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -48,6 +48,10 @@ export async function PATCH(
 
     // Check if it's just a status update
     if (body.status && Object.keys(body).length === 1) {
+      const parseResult = purchaseRequestStatusUpdateSchema.safeParse(body);
+      if (!parseResult.success) {
+        return NextResponse.json({ error: "Invalid status data", details: parseResult.error.format() }, { status: 400 });
+      }
       // Add status workflow checks here if necessary
       const updatedPR = await prisma.purchaseRequest.update({
         where: { id },
@@ -61,7 +65,12 @@ export async function PATCH(
       return NextResponse.json({ error: "Cannot edit submitted or approved PR" }, { status: 400 });
     }
 
-    const { officeId, purpose, fundSourceId, chargeToAccount, lineItems } = body;
+    const parseResult = purchaseRequestSchema.safeParse(body);
+    if (!parseResult.success) {
+      return NextResponse.json({ error: "Invalid data", details: parseResult.error.format() }, { status: 400 });
+    }
+
+    const { officeId, purpose, fundSourceId, chargeToAccount, lineItems } = parseResult.data;
     const totalAmount = lineItems.reduce((sum: number, item: any) => sum + (item.quantity * item.unitCost), 0);
 
     const updatedPR = await prisma.$transaction(async (tx) => {
