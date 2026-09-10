@@ -295,6 +295,7 @@
 }
 
 /* ─── Tables ───────────────────────────────────────────────────────────────── */
+
 .table-container {
   overflow-x: auto;
   border-radius: 1.25rem;
@@ -314,14 +315,12 @@ thead {
 }
 
 thead th {
-  padding: 0.75rem 1rem;
-  text-align: left;
+  padding: 5px;
   font-size: 0.75rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #64748b;
-  border-bottom: 2px solid rgba(209, 217, 230, 0.5);
+  color: #000000;
+  border-bottom: 2px solid rgb(0, 0, 0);
+  font-family: "Times New Roman", Times, serif;
 }
 
 tbody tr {
@@ -338,9 +337,13 @@ tbody tr:hover {
 }
 
 tbody td {
-  padding: 0.875rem 1rem;
-  color: #374151;
+  padding: 5px;
+  color: #000000;
   vertical-align: middle;
+}
+
+.sign-text {
+  font-family: "Times New Roman", Times, serif;
 }
 
 /* ─── Badges / Status Pills ────────────────────────────────────────────────── */

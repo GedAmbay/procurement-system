@@ -245,7 +245,7 @@ export default function PurchaseRequestEditor() {
 
               <div className="border-2 border-black">
                 {/* Title Block */}
-                <div className="text-center p-4 border-b-2 border-black">
+                <div className="text-center p-4 border-b-4 border-double border-black">
                   <h2 className="font-extrabold text-3xl uppercase tracking-wide mb-1">Purchase Request</h2>
                   <div className="text-sm font-semibold underline decoration-black">
                     Municipality of Pandan, Antique
@@ -256,7 +256,7 @@ export default function PurchaseRequestEditor() {
                 </div>
 
                 {/* Grid Block */}
-                <div className="grid grid-cols-2 text-sm border-b-2 border-black">
+                <div className="grid grid-cols-2 text-sm border-b-4 border-double border-black">
                   <div className="border-r-2 border-black p-2 flex flex-col justify-center">
                     <div className="flex mb-2"><span className="w-24 whitespace-nowrap">Department :</span> <span className="border-b border-black flex-1 text-center">{offices.find(o => o.id === watchAllFields.officeId)?.name || "Office of the Mayor"}</span></div>
                     <div className="flex"><span className="w-24 whitespace-nowrap">Section :</span> <span className="border-b border-black flex-1 text-center">{"\u00A0"}</span></div>
@@ -269,48 +269,48 @@ export default function PurchaseRequestEditor() {
                 </div>
 
                 {/* Table Block */}
-                <table className="w-full table-fixed border-collapse text-sm border-b-2 border-black">
+                <table className="w-full table-fixed border-collapse text-sm border-b-4 border-double border-black">
                   <thead>
                     <tr className="bg-white">
-                      <th className="border border-black border-t-0 border-l-0 p-1 font-bold text-center w-[7%]">ITEM<br />NO.</th>
-                      <th className="border border-black border-t-0 p-1 font-bold text-center w-[11%]">QUANTITY</th>
-                      <th className="border border-black border-t-0 p-1 font-bold text-center w-[12%]">UNIT OF<br />ISSUE</th>
-                      <th className="border border-black border-t-0 p-1 font-bold text-center w-[40%]">ITEM DESCRIPTION</th>
-                      <th className="border border-black border-t-0 p-1 font-bold text-center w-[15%]">ESTIMATED<br />UNIT COST</th>
-                      <th className="border border-black border-t-0 border-r-0 p-1 font-bold text-center w-[15%]">ESTIMATED<br />COST</th>
+                      <th className="border border-black border-t-0 border-l-0 p-1 font-bold text-center w-[7%]">Item<br />No.</th>
+                      <th className="border border-black border-t-0 p-1 font-bold text-center w-[11%]">Quantity</th>
+                      <th className="border border-black border-t-0 p-1 font-bold text-center w-[12%]">Unit Of<br />Issue</th>
+                      <th className="border border-black border-t-0 p-1 font-bold text-center w-[40%]">Item Description</th>
+                      <th className="border border-black border-t-0 p-1 font-bold text-center w-[15%]">Estimated<br />Unit Cost</th>
+                      <th className="border border-black border-t-0 border-r-0 p-1 font-bold text-center w-[15%]">Estimated<br />Cost</th>
                     </tr>
                   </thead>
 
                   <tbody>
                     {watchLineItems.length > 0 ? watchLineItems.map((item, idx) => (
                       <tr key={idx}>
-                        <td className="border border-black border-l-0 px-1 py-1 leading-tight text-center align-top">{idx + 1}</td>
-                        <td className="border border-black py-1 leading-tight text-center align-top">{item.quantity}</td>
-                        <td className="border border-black px-1 py-1 leading-tight text-center align-top">{item.unit}</td>
-                        <td className="border border-black px-1 pl-2 py-1 leading-tight whitespace-normal break-words align-top">{item.description}</td>
-                        <td className="border border-black px-1 py-1 leading-tight text-right align-top">{item.unitCost ? formatCurrency(item.unitCost).replace('₱', '') : '0.00'}</td>
-                        <td className="border border-black border-r-0 px-1 py-1 leading-tight text-right align-top">{(item.quantity && item.unitCost) ? formatCurrency(item.quantity * item.unitCost).replace('₱', '') : '0.00'}</td>
+                        <td className="border border-black border-l-0 p-0 leading-tight text-center align-top">{idx + 1}</td>
+                        <td className="border border-black p-0 leading-tight text-center align-top">{item.quantity}</td>
+                        <td className="border border-black p-0 leading-tight text-center align-top">{item.unit}</td>
+                        <td className="border border-black p-0 pl-1 leading-tight whitespace-normal break-words align-top">{item.description}</td>
+                        <td className="border border-black p-0 leading-tight text-right align-top pr-1">{item.unitCost ? formatCurrency(item.unitCost).replace('₱', '') : '0.00'}</td>
+                        <td className="border border-black border-r-0 p-0 leading-tight text-right align-top pr-1">{(item.quantity && item.unitCost) ? formatCurrency(item.quantity * item.unitCost).replace('₱', '') : '0.00'}</td>
                       </tr>
                     )) : null}
                     {Array.from({ length: Math.max(0, 15 - watchLineItems.length) }).map((_, i) => (
-                      <tr key={`empty-${i}`}>
-                        <td className="border border-black border-l-0 px-1 py-1"></td>
-                        <td className="border border-black px-1 py-1"></td>
-                        <td className="border border-black px-1 py-1"></td>
-                        <td className="border border-black px-1 py-1"></td>
-                        <td className="border border-black px-1 py-1"></td>
-                        <td className="border border-black border-r-0 px-1 py-1"></td>
+                      <tr key={`empty-${i}`} className="h-6">
+                        <td className="border border-black border-l-0 p-0"></td>
+                        <td className="border border-black p-0"></td>
+                        <td className="border border-black p-0"></td>
+                        <td className="border border-black p-0"></td>
+                        <td className="border border-black p-0"></td>
+                        <td className="border border-black border-r-0 p-0"></td>
                       </tr>
                     ))}
-                    <tr>
-                      <td colSpan={5} className="border border-black border-l-0 border-b-0 p-1"></td>
-                      <td className="border border-black border-r-0 border-b-0 p-1 text-right pr-4">-</td>
+                    <tr className="h-6">
+                      <td colSpan={5} className="border border-black border-l-0 border-b-0 p-0"></td>
+                      <td className="border border-black border-r-0 border-b-0 p-0 text-right pr-1">-</td>
                     </tr>
                   </tbody>
                 </table>
 
                 {/* Purpose Block */}
-                <div className="p-3 text-sm flex gap-2 border-b-2 border-black">
+                <div className="p-3 text-sm flex gap-2 border-b-4 border-double border-black">
                   <span className="shrink-0">Purpose: </span>
                   <div className="flex-1 flex flex-col gap-1 mt-1">
                     <div className="border-b border-black text-left min-h-[1.5rem] relative">
@@ -332,12 +332,12 @@ export default function PurchaseRequestEditor() {
                   <tbody>
                     <tr>
                       <td className="border border-black border-l-0 border-t-0 py-0 px-1"></td>
-                      <td className="border border-black border-t-0 py-0 px-1 leading-tight font-bold">Requested by:</td>
-                      <td className="border border-black border-t-0 py-0 px-1 leading-tight font-bold">Cash availability:</td>
-                      <td className="border border-black border-t-0 border-r-0 py-0 px-1 leading-tight font-bold">Approved by:</td>
+                      <td className="border border-black border-t-0 py-0 px-1 leading-tight font-bold sign-text">Requested by:</td>
+                      <td className="border border-black border-t-0 py-0 px-1 leading-tight font-bold sign-text">Cash availability:</td>
+                      <td className="border border-black border-t-0 border-r-0 py-0 px-1 leading-tight font-bold sign-text">Approved by:</td>
                     </tr>
                     <tr>
-                      <td className="border border-black border-l-0 py-0 px-1 pl-2 italic text-left align-top h-[50px] text-[13px]">Signature:</td>
+                      <td className="border border-black border-l-0 py-0 px-1 pl-2 italic text-left align-top h-[10px] text-[13px]">Signature:</td>
                       <td className="border border-black py-0 px-1"></td>
                       <td className="border border-black py-0 px-1"></td>
                       <td className="border border-black border-r-0 py-0 px-1"></td>
@@ -349,7 +349,7 @@ export default function PurchaseRequestEditor() {
                       <td className="border border-black border-r-0 py-0 px-1 font-bold uppercase text-[12px] leading-tight">HON. TOMAS U. ESTOPEREZ JR.</td>
                     </tr>
                     <tr>
-                      <td className="border border-black border-l-0 py-0 px-1 pl-2 italic text-left text-[13px] leading-tight">Designation:</td>
+                      <td className="border border-black border-l-0 py-0 px-1 pl-2 italic text-left h-[30px] text-[13px] leading-tight">Designation:</td>
                       <td className="border border-black py-0 px-1 text-[13px] leading-tight">MHO</td>
                       <td className="border border-black py-0 px-1 text-[13px] leading-tight">Acting Municipal Treasurer</td>
                       <td className="border border-black border-r-0 py-0 px-1 text-[13px] leading-tight">Municipal Mayor</td>
@@ -357,8 +357,6 @@ export default function PurchaseRequestEditor() {
                   </tbody>
                 </table>
               </div>
-
-
             </div>
           </div>
         </div>
