@@ -17,6 +17,7 @@ export async function GET(
       include: {
         office: true,
         requestedBy: { select: { id: true, name: true, role: true } },
+        requestedBySignatory: true,
         fundSource: true,
         lineItems: { orderBy: { sortOrder: "asc" }, include: { item: true } },
       },
@@ -70,7 +71,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Invalid data", details: parseResult.error.format() }, { status: 400 });
     }
 
-    const { officeId, purpose, fundSourceId, chargeToAccount, lineItems } = parseResult.data;
+    const { officeId, purpose, requestedBySignatoryId, fundSourceId, chargeToAccount, lineItems } = parseResult.data;
     const totalAmount = lineItems.reduce((sum: number, item: any) => sum + (item.quantity * item.unitCost), 0);
 
     const updatedPR = await prisma.$transaction(async (tx) => {
@@ -83,6 +84,7 @@ export async function PATCH(
         data: {
           officeId,
           purpose,
+          requestedBySignatoryId: requestedBySignatoryId || null,
           fundSourceId: fundSourceId || null,
           chargeToAccount,
           totalAmount,

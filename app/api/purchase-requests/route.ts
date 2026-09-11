@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid data", details: parseResult.error.format() }, { status: 400 });
     }
 
-    const { officeId, purpose, fundSourceId, chargeToAccount, lineItems } = parseResult.data;
+    const { officeId, purpose, requestedBySignatoryId, fundSourceId, chargeToAccount, lineItems } = parseResult.data;
 
     const prNumber = await generatePRNumber();
     const totalAmount = lineItems.reduce((sum: number, item: any) => sum + (item.quantity * item.unitCost), 0);
@@ -89,6 +89,7 @@ export async function POST(req: NextRequest) {
         prNumber,
         officeId,
         requestedById: user.id,
+        requestedBySignatoryId: requestedBySignatoryId || null,
         purpose,
         fundSourceId: fundSourceId || null,
         chargeToAccount,

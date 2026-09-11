@@ -22,6 +22,7 @@ interface PRFormValues {
   fundSourceId: string;
   purpose: string;
   chargeToAccount: string;
+  requestedBySignatoryId: string;
   lineItems: PrLineItem[];
 }
 
@@ -40,6 +41,7 @@ export default function PurchaseRequestEditor() {
   // Options
   const [offices, setOffices] = useState<any[]>([]);
   const [fundSources, setFundSources] = useState<any[]>([]);
+  const [signatories, setSignatories] = useState<any[]>([]);
   const [items, setItems] = useState<any[]>([]);
 
   const { register, control, handleSubmit, watch, setValue, reset } = useForm<PRFormValues>({
@@ -48,6 +50,7 @@ export default function PurchaseRequestEditor() {
       fundSourceId: "",
       purpose: "",
       chargeToAccount: "",
+      requestedBySignatoryId: "",
       lineItems: [],
     }
   });
@@ -73,15 +76,17 @@ export default function PurchaseRequestEditor() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [officesRes, fundsRes, itemsRes] = await Promise.all([
+        const [officesRes, fundsRes, itemsRes, signatoriesRes] = await Promise.all([
           fetch("/api/offices").then(r => r.json()),
           fetch("/api/fund-sources").then(r => r.json()),
-          fetch("/api/items").then(r => r.json())
+          fetch("/api/items").then(r => r.json()),
+          fetch("/api/signatories").then(r => r.json())
         ]);
 
         setOffices(Array.isArray(officesRes) ? officesRes : []);
         setFundSources(Array.isArray(fundsRes) ? fundsRes : []);
         setItems(Array.isArray(itemsRes) ? itemsRes : []);
+        setSignatories(Array.isArray(signatoriesRes) ? signatoriesRes : []);
 
         if (!isNew) {
           const prRes = await fetch(`/api/purchase-requests/${params.id}`);
@@ -93,6 +98,7 @@ export default function PurchaseRequestEditor() {
               fundSourceId: pr.fundSourceId || "",
               purpose: pr.purpose || "",
               chargeToAccount: pr.chargeToAccount || "",
+              requestedBySignatoryId: pr.requestedBySignatoryId || "",
               lineItems: pr.lineItems.map((li: any) => ({
                 itemId: li.itemId,
                 description: li.description,
@@ -358,7 +364,7 @@ export default function PurchaseRequestEditor() {
 
                 {/* Purpose Block */}
                 <div className="p-3 text-sm flex gap-2 border-b-4 border-double border-black">
-                  <span className="shrink-0">Purpose: </span>
+                  <span className="shrink-0 italic">Purpose: </span>
                   <div className="flex-1 flex flex-col gap-1 mt-1">
                     <div className="border-b border-black text-left min-h-[1.5rem] relative">
                       <span className="absolute left-0 right-0 -top-1 whitespace-nowrap overflow-hidden text-ellipsis px-2">{watchAllFields.purpose || "\u00A0"}</span>
@@ -391,13 +397,17 @@ export default function PurchaseRequestEditor() {
                     </tr>
                     <tr className="border-none">
                       <td className="border border-black border-l-0 border-y-0 py-0 px-1 pl-2 italic text-left text-[13px] leading-tight">Printed Name:</td>
-                      <td className="border border-black py-0 px-1 font-bold uppercase text-[12px] leading-tight">{prData?.requestedBy?.name || user?.name || "JEZREEL BON T. JUANITEZ, MD"}</td>
-                      <td className="border border-black py-0 px-1 font-bold uppercase text-[13px] leading-tight">EDSEL J. AMBUBUYOG</td>
+                      <td className="border border-black py-0 px-1 font-bold uppercase text-[12px] leading-tight">
+                        {signatories.find(s => s.id === watchAllFields.requestedBySignatoryId)?.name || ""}
+                      </td>
+                      <td className="border border-black py-0 px-1 font-bold uppercase text-[12px] leading-tight">EDSEL J. AMBUBUYOG</td>
                       <td className="border border-black border-r-0 py-0 px-1 font-bold uppercase text-[12px] leading-tight">HON. TOMAS U. ESTOPEREZ JR.</td>
                     </tr>
                     <tr className="border-none">
                       <td className="border border-black border-l-0 border-t-0 border-b-0 py-0 px-1 pl-2 italic text-left h-[30px] text-[13px] leading-tight">Designation:</td>
-                      <td className="border border-black py-0 px-1 text-[13px] leading-tight">MHO</td>
+                      <td className="border border-black py-0 px-1 text-[13px] leading-tight">
+                        {signatories.find(s => s.id === watchAllFields.requestedBySignatoryId)?.position || ""}
+                      </td>
                       <td className="border border-black py-0 px-1 text-[13px] leading-tight">Acting Municipal Treasurer</td>
                       <td className="border border-black border-r-0 py-0 px-1 text-[13px] leading-tight">Municipal Mayor</td>
                     </tr>
@@ -438,6 +448,20 @@ export default function PurchaseRequestEditor() {
                   <option value="">Select Fund Source...</option>
                   {fundSources.map(f => (
                     <option key={f.id} value={f.id}>{f.name} ({f.code})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Requested By (Signatory)</label>
+                <select
+                  {...register("requestedBySignatoryId")}
+                  className="w-full p-2 border border-slate-300 rounded-md bg-slate-50 text-sm"
+                  disabled={isReadOnly}
+                >
+                  <option value="">Select Signatory...</option>
+                  {signatories.map(s => (
+                    <option key={s.id} value={s.id}>{s.name} - {s.position}</option>
                   ))}
                 </select>
               </div>
@@ -508,7 +532,7 @@ export default function PurchaseRequestEditor() {
                         <label className="block text-xs font-semibold text-slate-600 mb-1">Qty</label>
                         <input
                           type="number"
-                          step="0.01"
+                          step="1"
                           value={draftItem.quantity}
                           onChange={(e) => setDraftItem({ ...draftItem, quantity: Number(e.target.value) })}
                           className="w-full p-2 border border-slate-300 rounded-md text-sm bg-white text-right"
@@ -519,7 +543,7 @@ export default function PurchaseRequestEditor() {
                         <label className="block text-xs font-semibold text-slate-600 mb-1">Cost</label>
                         <input
                           type="number"
-                          step="0.01"
+                          step="0.25"
                           value={draftItem.unitCost}
                           onChange={(e) => setDraftItem({ ...draftItem, unitCost: Number(e.target.value) })}
                           className="w-full p-2 border border-slate-300 rounded-md text-sm bg-white text-right"
@@ -529,7 +553,7 @@ export default function PurchaseRequestEditor() {
 
                     <div className="flex items-center justify-between border-t border-slate-200 pt-3">
                       <div className="text-sm font-bold text-emerald-600">
-                        Total: {formatCurrency(draftItem.quantity * draftItem.unitCost)}
+                        Estimated Cost: {formatCurrency(draftItem.quantity * draftItem.unitCost)}
                       </div>
                       <div className="flex gap-2">
                         {activeItemIndex !== null && (

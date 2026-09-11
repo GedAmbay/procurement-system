@@ -56,6 +56,7 @@ model Signatory {
   updatedAt DateTime @updatedAt
 
   office Office? @relation(fields: [officeId], references: [id])
+  purchaseRequests PurchaseRequest[] @relation("PrRequestedBy")
 
   @@map("signatories")
 }
@@ -123,9 +124,10 @@ model FundSource {
 model PurchaseRequest {
   id              String   @id @default(cuid())
   prNumber        String   @unique
-  officeId        String
-  requestedById   String
-  purpose         String
+  officeId               String
+  requestedById          String
+  requestedBySignatoryId String?
+  purpose                String
   fundSourceId    String?
   chargeToAccount String?
   totalAmount     Float    @default(0)
@@ -138,9 +140,10 @@ model PurchaseRequest {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  office       Office       @relation(fields: [officeId], references: [id])
-  requestedBy  User         @relation(fields: [requestedById], references: [id])
-  fundSource   FundSource?  @relation(fields: [fundSourceId], references: [id])
+  office               Office       @relation(fields: [officeId], references: [id])
+  requestedBy          User         @relation(fields: [requestedById], references: [id])
+  requestedBySignatory Signatory?   @relation("PrRequestedBy", fields: [requestedBySignatoryId], references: [id])
+  fundSource           FundSource?  @relation(fields: [fundSourceId], references: [id])
   lineItems    PrLineItem[]
   rfqs         Rfq[]
 
