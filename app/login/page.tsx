@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Shield, Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
 import { LGU_INFO } from "@/lib/utils";
 import SplashScreen from "@/components/ui/splash-screen";
 
@@ -35,9 +35,6 @@ export default function LoginPage() {
   const demoAccounts = [
     { label: "Admin", email: "admin@pandan.gov.ph", password: "Admin@1234", color: "#515050ff" },
     { label: "BAC", email: "bac@pandan.gov.ph", password: "Bac@1234", color: "#515050ff" },
-    { label: "End User", email: "enduser@pandan.gov.ph", password: "User@1234", color: "#515050ff" },
-    { label: "Budget", email: "budget@pandan.gov.ph", password: "Budget@1234", color: "#515050ff" },
-    { label: "Mayor", email: "mayor@pandan.gov.ph", password: "Mayor@1234", color: "#515050ff" },
   ];
 
   return (
@@ -140,7 +137,7 @@ export default function LoginPage() {
           position: "relative",
         }}>
 
-          <div style={{ width: "100%", maxWidth: "400px" }}>
+          <div style={{ width: "100%", maxWidth: "400px", zoom: "1.25" }}>
             {/* Mobile Header */}
             <div className="login-mobile-header" style={{
               display: "none",

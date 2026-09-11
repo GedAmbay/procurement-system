@@ -52,13 +52,21 @@ export default function PurchaseRequestEditor() {
     }
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const watchAllFields = watch();
+  const watchLineItems = watch("lineItems");
+  const { fields, append, remove, update } = useFieldArray({
     control,
     name: "lineItems",
   });
 
-  const watchAllFields = watch();
-  const watchLineItems = watch("lineItems");
+  const [activeItemIndex, setActiveItemIndex] = useState<number | null>(null);
+  const [draftItem, setDraftItem] = useState<PrLineItem>({
+    itemId: "",
+    description: "",
+    unit: "Piece",
+    quantity: 1,
+    unitCost: 0,
+  });
 
   const totalAmount = watchLineItems.reduce((sum, item) => sum + (Number(item.quantity) * Number(item.unitCost) || 0), 0);
 
@@ -109,12 +117,51 @@ export default function PurchaseRequestEditor() {
     if (session) loadData();
   }, [isNew, params.id, reset, router, session]);
 
-  const handleItemSelect = (index: number, itemId: string) => {
+  const handleItemSelect = (itemId: string) => {
     const item = items.find(i => i.id === itemId);
     if (item) {
-      setValue(`lineItems.${index}.description`, item.description);
-      setValue(`lineItems.${index}.unit`, item.unit);
-      setValue(`lineItems.${index}.unitCost`, item.standardCost);
+      setDraftItem({ ...draftItem, itemId, description: item.description, unit: item.unit, unitCost: item.standardCost });
+    } else {
+      setDraftItem({ ...draftItem, itemId: "" });
+    }
+  };
+
+  const handleRowClick = (index: number) => {
+    if (isReadOnly) return;
+    setActiveItemIndex(index);
+    setDraftItem(watchLineItems[index]);
+  };
+
+  const handleAddOrUpdate = () => {
+    if (!draftItem.description) {
+      toast.error("Description is required");
+      return;
+    }
+    if (draftItem.quantity <= 0) {
+      toast.error("Quantity must be greater than 0");
+      return;
+    }
+
+    if (activeItemIndex !== null) {
+      update(activeItemIndex, draftItem);
+      toast.success("Item updated");
+    } else {
+      append(draftItem);
+      toast.success("Item added");
+    }
+    handleClearDraft();
+  };
+
+  const handleClearDraft = () => {
+    setActiveItemIndex(null);
+    setDraftItem({ itemId: "", description: "", unit: "Piece", quantity: 1, unitCost: 0 });
+  };
+
+  const handleDeleteItem = () => {
+    if (activeItemIndex !== null) {
+      remove(activeItemIndex);
+      handleClearDraft();
+      toast.success("Item deleted");
     }
   };
 
@@ -283,7 +330,7 @@ export default function PurchaseRequestEditor() {
 
                   <tbody>
                     {watchLineItems.length > 0 ? watchLineItems.map((item, idx) => (
-                      <tr key={idx}>
+                      <tr key={idx} onClick={() => handleRowClick(idx)} className={!isReadOnly ? `cursor-pointer transition-colors ${activeItemIndex === idx ? "bg-blue-100 hover:bg-blue-200" : "hover:bg-blue-50"}` : ""}>
                         <td className="border border-black border-l-0 p-0 leading-tight text-center align-top">{idx + 1}</td>
                         <td className="border border-black p-0 leading-tight text-center align-top">{item.quantity}</td>
                         <td className="border border-black p-0 leading-tight text-center align-top">{item.unit}</td>
@@ -336,20 +383,20 @@ export default function PurchaseRequestEditor() {
                       <td className="border border-black border-t-0 py-0 px-1 leading-tight font-bold sign-text">Cash availability:</td>
                       <td className="border border-black border-t-0 border-r-0 py-0 px-1 leading-tight font-bold sign-text">Approved by:</td>
                     </tr>
-                    <tr>
-                      <td className="border border-black border-l-0 py-0 px-1 pl-2 italic text-left align-top h-[10px] text-[13px]">Signature:</td>
+                    <tr className="border-none">
+                      <td className="border border-black border-l-0 border-b-0 py-0 px-1 pl-2 italic text-left align-top h-[10px] text-[13px]">Signature:</td>
                       <td className="border border-black py-0 px-1"></td>
                       <td className="border border-black py-0 px-1"></td>
                       <td className="border border-black border-r-0 py-0 px-1"></td>
                     </tr>
-                    <tr>
-                      <td className="border border-black border-l-0 py-0 px-1 pl-2 italic text-left text-[13px] leading-tight">Printed Name:</td>
+                    <tr className="border-none">
+                      <td className="border border-black border-l-0 border-y-0 py-0 px-1 pl-2 italic text-left text-[13px] leading-tight">Printed Name:</td>
                       <td className="border border-black py-0 px-1 font-bold uppercase text-[12px] leading-tight">{prData?.requestedBy?.name || user?.name || "JEZREEL BON T. JUANITEZ, MD"}</td>
                       <td className="border border-black py-0 px-1 font-bold uppercase text-[13px] leading-tight">EDSEL J. AMBUBUYOG</td>
                       <td className="border border-black border-r-0 py-0 px-1 font-bold uppercase text-[12px] leading-tight">HON. TOMAS U. ESTOPEREZ JR.</td>
                     </tr>
-                    <tr>
-                      <td className="border border-black border-l-0 py-0 px-1 pl-2 italic text-left h-[30px] text-[13px] leading-tight">Designation:</td>
+                    <tr className="border-none">
+                      <td className="border border-black border-l-0 border-t-0 border-b-0 py-0 px-1 pl-2 italic text-left h-[30px] text-[13px] leading-tight">Designation:</td>
                       <td className="border border-black py-0 px-1 text-[13px] leading-tight">MHO</td>
                       <td className="border border-black py-0 px-1 text-[13px] leading-tight">Acting Municipal Treasurer</td>
                       <td className="border border-black border-r-0 py-0 px-1 text-[13px] leading-tight">Municipal Mayor</td>
@@ -407,98 +454,110 @@ export default function PurchaseRequestEditor() {
 
               <div className="pt-4 border-t border-slate-200">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-bold text-slate-800">Line Items</h3>
-                  {!isReadOnly && (
+                  <h3 className="font-bold text-slate-800">
+                    {activeItemIndex !== null ? "Edit Item" : "Add New Item"}
+                  </h3>
+                  {activeItemIndex !== null && !isReadOnly && (
                     <button
                       type="button"
-                      onClick={() => append({ itemId: "", description: "", unit: "pcs", quantity: 1, unitCost: 0 })}
-                      className="text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-md font-semibold flex items-center gap-1"
+                      onClick={handleClearDraft}
+                      className="text-xs bg-slate-100 text-slate-600 hover:bg-slate-200 px-3 py-1.5 rounded-md font-semibold transition-colors btn btn-secondary"
                     >
-                      <Plus size={14} /> Add Item
+                      Cancel Edit
                     </button>
                   )}
                 </div>
 
-                <div className="space-y-4">
-                  {fields.map((field, index) => (
-                    <div key={field.id} className="p-4 border border-slate-200 rounded-lg bg-slate-50 relative group">
-                      {!isReadOnly && (
+                {!isReadOnly && (
+                  <div className="p-4 border border-slate-200 rounded-lg bg-slate-50 relative">
+                    <div className="grid grid-cols-12 gap-3 mb-4">
+                      <div className="col-span-12">
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">Catalog Item (Optional)</label>
+                        <select
+                          value={draftItem.itemId || ""}
+                          onChange={(e) => handleItemSelect(e.target.value)}
+                          className="w-full p-2 border border-slate-300 rounded-md text-sm bg-white"
+                        >
+                          <option value="">-- Custom Item --</option>
+                          {items.map(item => (
+                            <option key={item.id} value={item.id}>{item.description}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="col-span-12">
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">Description</label>
+                        <input
+                          value={draftItem.description}
+                          onChange={(e) => setDraftItem({ ...draftItem, description: e.target.value })}
+                          className="w-full p-2 border border-slate-300 rounded-md text-sm bg-white"
+                          placeholder="Enter description..."
+                        />
+                      </div>
+
+                      <div className="col-span-4">
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">Unit</label>
+                        <input
+                          value={draftItem.unit}
+                          onChange={(e) => setDraftItem({ ...draftItem, unit: e.target.value })}
+                          className="w-full p-2 border border-slate-300 rounded-md text-sm bg-white"
+                        />
+                      </div>
+
+                      <div className="col-span-4">
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">Qty</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={draftItem.quantity}
+                          onChange={(e) => setDraftItem({ ...draftItem, quantity: Number(e.target.value) })}
+                          className="w-full p-2 border border-slate-300 rounded-md text-sm bg-white text-right"
+                        />
+                      </div>
+
+                      <div className="col-span-4">
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">Cost</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={draftItem.unitCost}
+                          onChange={(e) => setDraftItem({ ...draftItem, unitCost: Number(e.target.value) })}
+                          className="w-full p-2 border border-slate-300 rounded-md text-sm bg-white text-right"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between border-t border-slate-200 pt-3">
+                      <div className="text-sm font-bold text-emerald-600">
+                        Total: {formatCurrency(draftItem.quantity * draftItem.unitCost)}
+                      </div>
+                      <div className="flex gap-2">
+                        {activeItemIndex !== null && (
+                          <button
+                            type="button"
+                            onClick={handleDeleteItem}
+                            className="bg-red-100 text-red-600 hover:bg-red-200 px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1 transition-colors btn btn-danger"
+                          >
+                            <Trash2 size={14} /> Delete
+                          </button>
+                        )}
                         <button
                           type="button"
-                          onClick={() => remove(index)}
-                          className="absolute -top-2 -right-2 bg-red-100 text-red-600 p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+                          onClick={handleAddOrUpdate}
+                          className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-1.5 rounded-md text-xs font-semibold transition-colors btn btn-primary"
                         >
-                          <Trash2 size={14} />
+                          {activeItemIndex !== null ? "Update Item" : "Add Item"}
                         </button>
-                      )}
-
-                      <div className="grid grid-cols-12 gap-3 mb-3">
-                        <div className="col-span-12">
-                          <label className="block text-xs font-semibold text-slate-600 mb-1">Catalog Item (Optional)</label>
-                          <select
-                            {...register(`lineItems.${index}.itemId`)}
-                            onChange={(e) => handleItemSelect(index, e.target.value)}
-                            className="w-full p-2 border border-slate-300 rounded-md text-sm bg-white"
-                            disabled={isReadOnly}
-                          >
-                            <option value="">-- Custom Item --</option>
-                            {items.map(item => (
-                              <option key={item.id} value={item.id}>{item.description}</option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div className="col-span-12">
-                          <label className="block text-xs font-semibold text-slate-600 mb-1">Description</label>
-                          <input
-                            {...register(`lineItems.${index}.description`)}
-                            className="w-full p-2 border border-slate-300 rounded-md text-sm bg-white"
-                            disabled={isReadOnly}
-                          />
-                        </div>
-
-                        <div className="col-span-4">
-                          <label className="block text-xs font-semibold text-slate-600 mb-1">Unit</label>
-                          <input
-                            {...register(`lineItems.${index}.unit`)}
-                            className="w-full p-2 border border-slate-300 rounded-md text-sm bg-white"
-                            disabled={isReadOnly}
-                          />
-                        </div>
-
-                        <div className="col-span-4">
-                          <label className="block text-xs font-semibold text-slate-600 mb-1">Qty</label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            {...register(`lineItems.${index}.quantity`)}
-                            className="w-full p-2 border border-slate-300 rounded-md text-sm bg-white text-right"
-                            disabled={isReadOnly}
-                          />
-                        </div>
-
-                        <div className="col-span-4">
-                          <label className="block text-xs font-semibold text-slate-600 mb-1">Cost</label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            {...register(`lineItems.${index}.unitCost`)}
-                            className="w-full p-2 border border-slate-300 rounded-md text-sm bg-white text-right"
-                            disabled={isReadOnly}
-                          />
-                        </div>
-                      </div>
-                      <div className="text-right text-sm font-bold text-emerald-600 border-t border-slate-200 pt-2">
-                        Total: {formatCurrency((watch(`lineItems.${index}.quantity`) || 0) * (watch(`lineItems.${index}.unitCost`) || 0))}
                       </div>
                     </div>
-                  ))}
-                  {fields.length === 0 && (
-                    <div className="text-center p-6 border-2 border-dashed border-slate-200 rounded-lg text-slate-500 text-sm">
-                      No line items added.<br />Click "Add Item" to start.
-                    </div>
-                  )}
-                </div>
+                  </div>
+                )}
+
+                {isReadOnly && watchLineItems.length === 0 && (
+                  <div className="text-center p-6 border-2 border-dashed border-slate-200 rounded-lg text-slate-500 text-sm">
+                    No line items added.
+                  </div>
+                )}
               </div>
             </form>
           </div>

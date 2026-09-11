@@ -33,7 +33,7 @@
   --shadow-neu-inner-sm: inset 8px 8px 16px #D1D9E6, inset -8px -8px 16px #ffffff;
   --shadow-neu-drop-hover: 12px 12px 24px #D1D9E6, -12px -12px 24px #ffffff;
 
-  --system-zoom: 0.9;
+  --system-zoom: 0.8;
   --full-vh: calc(100vh / var(--system-zoom));
 }
 
@@ -324,13 +324,9 @@ thead th {
 }
 
 tbody tr {
-  border-bottom: 1px solid rgba(209, 217, 230, 0.3);
   transition: all 0.2s ease-in-out;
 }
 
-tbody tr:last-child {
-  border-bottom: none;
-}
 
 tbody tr:hover {
   background: rgba(255, 255, 255, 0.4);
