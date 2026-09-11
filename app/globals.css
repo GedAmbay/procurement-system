@@ -302,6 +302,7 @@
   background: var(--color-page-bg);
   box-shadow: var(--shadow-neu-inner-sm);
   padding: 1rem;
+  text-align: center;
 }
 
 table {

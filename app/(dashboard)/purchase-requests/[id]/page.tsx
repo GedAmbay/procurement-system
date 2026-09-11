@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
 import { formatCurrency, LGU_INFO } from "@/lib/utils";
 import { Printer, Save, Send, CheckCircle2, XCircle, Plus, Trash2, ArrowLeft, Loader2, ZoomIn, ZoomOut } from "lucide-react";
@@ -32,6 +32,8 @@ export default function PurchaseRequestEditor() {
   const { data: session } = useSession();
   const user = session?.user as any;
   const isNew = params.id === "new";
+  const searchParams = useSearchParams();
+  const isViewMode = searchParams.get('mode') === 'view';
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -227,7 +229,7 @@ export default function PurchaseRequestEditor() {
     window.print();
   };
 
-  const isReadOnly = prData && prData.status !== "DRAFT" && prData.status !== "REJECTED";
+  const isReadOnly = isViewMode || (prData && prData.status !== "DRAFT" && prData.status !== "SUBMITTED" && prData.status !== "REJECTED");
 
   if (loading) return <div className="p-8 flex justify-center"><Loader2 className="animate-spin text-blue-500" /></div>;
 
@@ -257,12 +259,12 @@ export default function PurchaseRequestEditor() {
               <Save size={16} /> Save
             </button>
           )}
-          {!isNew && prData?.status === "DRAFT" && (
+          {!isViewMode && !isNew && prData?.status === "DRAFT" && (
             <button onClick={() => updateStatus("SUBMITTED")} className="btn btn-primary">
               <Send size={16} /> Submit
             </button>
           )}
-          {!isNew && prData?.status === "SUBMITTED" && user?.role === "APPROVING_OFFICIAL" && (
+          {!isViewMode && !isNew && prData?.status === "SUBMITTED" && user?.role === "APPROVING_OFFICIAL" && (
             <>
               <button onClick={() => updateStatus("REJECTED")} className="btn btn-danger">
                 <XCircle size={16} /> Reject
@@ -272,7 +274,7 @@ export default function PurchaseRequestEditor() {
               </button>
             </>
           )}
-          {!isNew && prData?.status === "APPROVED" && (user?.role === "BAC_SECRETARIAT" || user?.role === "ADMIN") && (
+          {!isViewMode && !isNew && prData?.status === "APPROVED" && (user?.role === "BAC_SECRETARIAT" || user?.role === "ADMIN") && (
             <button onClick={() => updateStatus("FOR_RFQ")} className="btn" style={{ color: "#ea580c" }}>
               Create RFQ
             </button>

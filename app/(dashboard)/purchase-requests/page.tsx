@@ -4,7 +4,7 @@ import { useState } from "react";
 import { FileText, Printer, Eye, CheckCircle2, XCircle, Clock, Send } from "lucide-react";
 import { useRouter } from "next/navigation";
 import DataTable from "@/components/ui/data-table";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, PR_STATUS_LABELS } from "@/lib/utils";
 
 interface PR {
   id: string;
@@ -34,9 +34,9 @@ export default function PurchaseRequestsPage() {
   const columns = [
     {
       key: "prNumber",
-      label: "PR Number",
+      label: <div style={{ fontSize: "0.9rem" }}>PR Number</div>,
       render: (row: PR) => (
-        <div style={{ fontWeight: "600", color: "#0f172a", fontFamily: "monospace", fontSize: "0.875rem" }}>
+        <div style={{ fontWeight: "600", color: "#0f172a", fontFamily: "monospace", fontSize: "0.875rem", textAlign: "center" }}>
           {row.prNumber}
         </div>
       ),
@@ -44,22 +44,22 @@ export default function PurchaseRequestsPage() {
     },
     {
       key: "office",
-      label: "Requesting Office",
+      label: <div style={{ fontSize: "0.9rem" }}>Requesting Office</div>,
       render: (row: PR) => (
         <div>
-          <div style={{ fontWeight: "600", color: "#1e293b", fontSize: "0.875rem" }}>{row.office.code}</div>
-          <div style={{ fontSize: "0.75rem", color: "#64748b" }}>{row.requestedBy.name}</div>
+          <div style={{ fontWeight: "600", color: "#1e293b", fontSize: "0.875rem", textAlign: "center" }}>{row.office?.name || row.office?.code || ""}</div>
         </div>
       ),
-      width: "160px",
+      width: "200px",
     },
     {
       key: "purpose",
-      label: "Purpose",
+      label: <div style={{ fontSize: "0.9rem" }}>Purpose</div>,
       render: (row: PR) => (
         <div style={{
           fontSize: "0.875rem", color: "#334155",
-          maxWidth: "300px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis"
+          maxWidth: "300px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", margin: "0 auto",
+          textAlign: "center"
         }}>
           {row.purpose}
         </div>
@@ -67,9 +67,9 @@ export default function PurchaseRequestsPage() {
     },
     {
       key: "totalAmount",
-      label: "Total Amount",
+      label: <div style={{ fontSize: "0.9rem" }}>Total Amount</div>,
       render: (row: PR) => (
-        <div style={{ fontWeight: "700", color: "#059669" }}>
+        <div style={{ fontWeight: "700", color: "#059669", textAlign: "center" }}>
           {formatCurrency(row.totalAmount)}
         </div>
       ),
@@ -77,12 +77,12 @@ export default function PurchaseRequestsPage() {
     },
     {
       key: "status",
-      label: "Status",
+      label: <div style={{ fontSize: "0.9rem" }}>Status</div>,
       render: (row: PR) => {
         const conf = STATUS_COLORS[row.status] || STATUS_COLORS.DRAFT;
         return (
-          <span className="badge" style={{ background: conf.bg, color: conf.color, display: "inline-flex", alignItems: "center", gap: "0.25rem" }}>
-            {conf.icon} {row.status}
+          <span className="badge" style={{ background: conf.bg, color: conf.color, display: "inline-flex", alignItems: "center", gap: "0.25rem", textAlign: "center" }}>
+            {conf.icon} {PR_STATUS_LABELS[row.status] || row.status}
           </span>
         );
       },
@@ -90,9 +90,9 @@ export default function PurchaseRequestsPage() {
     },
     {
       key: "createdAt",
-      label: "Date",
+      label: <div style={{ fontSize: "0.9rem" }}>Date</div>,
       render: (row: PR) => (
-        <span style={{ fontSize: "0.8125rem", color: "#64748b" }}>
+        <span style={{ fontSize: "0.8125rem", color: "#64748b", display: "block", textAlign: "center" }}>
           {new Date(row.createdAt).toLocaleDateString("en-PH")}
         </span>
       ),
@@ -114,6 +114,7 @@ export default function PurchaseRequestsPage() {
         columns={columns}
         searchPlaceholder="Search by PR number or purpose..."
         onAdd={() => router.push("/purchase-requests/new")}
+        onView={(row) => router.push(`/purchase-requests/${row.id}?mode=view`)}
         onEdit={handleEdit}
         emptyIcon={<FileText size={40} style={{ opacity: 0.3 }} />}
         emptyText="No Purchase Requests found"

@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, Plus, Pencil, Trash2, CheckCircle, XCircle, Loader2, RefreshCw } from "lucide-react";
+import { Search, Plus, Pencil, Trash2, CheckCircle, XCircle, Loader2, RefreshCw, Eye } from "lucide-react";
 import { toast } from "sonner";
 
 interface Column<T> {
   key: string;
-  label: string;
+  label: React.ReactNode;
   render?: (row: T) => React.ReactNode;
   width?: string;
 }
@@ -18,6 +18,7 @@ interface DataTableProps<T extends { id: string; isActive?: boolean }> {
   columns: Column<T>[];
   searchPlaceholder?: string;
   onAdd?: () => void;
+  onView?: (row: T) => void;
   onEdit?: (row: T) => void;
   onDelete?: (row: T) => Promise<void>;
   extraHeaderContent?: React.ReactNode;
@@ -33,6 +34,7 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
   columns,
   searchPlaceholder = "Search...",
   onAdd,
+  onView,
   onEdit,
   onDelete,
   extraHeaderContent,
@@ -142,7 +144,7 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
                   {columns.map((col) => (
                     <th key={col.key} style={{ width: col.width }}>{col.label}</th>
                   ))}
-                  {(onEdit || onDelete) && <th style={{ width: "100px", textAlign: "right" }}>Actions</th>}
+                  {(onView || onEdit || onDelete) && <th style={{ width: "100px", textAlign: "center", fontSize: "0.9rem" }}>Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -153,9 +155,19 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
                         {col.render ? col.render(row) : String((row as any)[col.key] ?? "—")}
                       </td>
                     ))}
-                    {(onEdit || onDelete) && (
+                    {(onView || onEdit || onDelete) && (
                       <td>
                         <div style={{ display: "flex", gap: "0.25rem", justifyContent: "flex-end" }}>
+                          {onView && (
+                            <button
+                              className="btn btn-secondary btn-sm"
+                              onClick={() => onView(row)}
+                              title="View"
+                              style={{ padding: "0.3rem 0.5rem" }}
+                            >
+                              <Eye size={13} />
+                            </button>
+                          )}
                           {onEdit && (
                             <button
                               className="btn btn-secondary btn-sm"

@@ -22,22 +22,24 @@ interface Supplier {
 const columns = [
   {
     key: "name",
-    label: "Supplier Name",
+    label: <div style={{ textAlign: "left", fontSize: "0.9rem" }}>Supplier Name</div>,
     render: (row: Supplier) => (
       <div>
-        <div style={{ fontWeight: "600", color: "#0f172a" }}>{row.name}</div>
-        {row.philgepsNo && <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>PhilGEPS: {row.philgepsNo}</div>}
+        <div style={{ fontWeight: "600", color: "#0f172a", textAlign: "left" }}>{row.name}</div>
+        {row.philgepsNo && <div style={{ fontSize: "0.75rem", color: "#94a3b8", textAlign: "left" }}>PhilGEPS: {row.philgepsNo}</div>}
       </div>
     ),
+    width: "400px",
   },
   {
     key: "tin",
-    label: "TIN",
+    label: <div style={{ fontSize: "0.9rem" }}>TIN</div>,
     render: (row: Supplier) => <span style={{ fontFamily: "monospace", fontSize: "0.8125rem" }}>{row.tin ?? "—"}</span>,
+    width: "120px"
   },
   {
     key: "contactPerson",
-    label: "Contact Person",
+    label: <div style={{ fontSize: "0.9rem" }}>Contact Person</div>,
     render: (row: Supplier) => (
       <div>
         <div style={{ fontSize: "0.875rem" }}>{row.contactPerson ?? "—"}</div>
@@ -45,18 +47,19 @@ const columns = [
         {row.email && <div style={{ fontSize: "0.75rem", color: "#64748b" }}>{row.email}</div>}
       </div>
     ),
+    width: "100px"
   },
   {
     key: "address",
-    label: "Address",
-    render: (row: Supplier) => <span style={{ fontSize: "0.8125rem", color: "#64748b" }}>{row.address ?? "—"}</span>,
-    width: "200px",
+    label: <div style={{ fontSize: "0.9rem" }}>Address</div>,
+    render: (row: Supplier) => <span style={{ fontSize: "0.8125rem", color: "#64748b", textAlign: "left" }}>{row.address ?? "—"}</span>,
+    width: "300px",
   },
   {
     key: "isActive",
-    label: "Status",
+    label: <div style={{ fontSize: "0.9rem" }}>Status</div>,
     render: (row: Supplier) => row.isActive ? (
-      <span className="badge" style={{ background: "#f0fdf4", color: "#16a34a" }}>
+      <span className="badge" style={{ background: "#f0fdf4", color: "#16a34a", }}>
         <CheckCircle2 size={11} style={{ marginRight: "3px" }} /> Active
       </span>
     ) : (

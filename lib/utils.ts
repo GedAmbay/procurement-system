@@ -66,7 +66,7 @@ export const ROLE_LABELS: Record<string, string> = {
 
 export const PR_STATUS_LABELS: Record<string, string> = {
   DRAFT: "Draft",
-  SUBMITTED: "Submitted",
+  SUBMITTED: "Signing",
   APPROVED: "Approved",
   FOR_RFQ: "For RFQ",
   CLOSED: "Closed",
