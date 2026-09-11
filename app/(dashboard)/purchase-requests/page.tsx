@@ -104,6 +104,10 @@ export default function PurchaseRequestsPage() {
     router.push(`/purchase-requests/${row.id}`);
   };
 
+  const handleDuplicate = (row: PR) => {
+    router.push(`/purchase-requests/new?duplicateFrom=${row.id}`);
+  };
+
   return (
     <div>
       <DataTable<PR>
@@ -116,6 +120,7 @@ export default function PurchaseRequestsPage() {
         onAdd={() => router.push("/purchase-requests/new")}
         onView={(row) => router.push(`/purchase-requests/${row.id}?mode=view`)}
         onEdit={handleEdit}
+        onDuplicate={handleDuplicate}
         emptyIcon={<FileText size={40} style={{ opacity: 0.3 }} />}
         emptyText="No Purchase Requests found"
       />

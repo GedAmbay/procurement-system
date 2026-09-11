@@ -113,6 +113,27 @@ export default function PurchaseRequestEditor() {
             toast.error("Failed to load PR");
             router.push("/purchase-requests");
           }
+        } else if (searchParams.get("duplicateFrom")) {
+          const duplicateId = searchParams.get("duplicateFrom");
+          const prRes = await fetch(`/api/purchase-requests/${duplicateId}`);
+          if (prRes.ok) {
+            const pr = await prRes.json();
+            reset({
+              officeId: pr.officeId || "",
+              fundSourceId: pr.fundSourceId || "",
+              purpose: `[COPY] ${pr.purpose || ""}`,
+              chargeToAccount: pr.chargeToAccount || "",
+              requestedBySignatoryId: pr.requestedBySignatoryId || "",
+              lineItems: pr.lineItems.map((li: any) => ({
+                itemId: li.itemId,
+                description: li.description,
+                unit: li.unit,
+                quantity: li.quantity,
+                unitCost: li.unitCost
+              }))
+            });
+            toast.success("Loaded PR data for duplication");
+          }
         }
       } catch (err) {
         console.error(err);

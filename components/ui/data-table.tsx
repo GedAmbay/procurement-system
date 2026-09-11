@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, Plus, Pencil, Trash2, CheckCircle, XCircle, Loader2, RefreshCw, Eye } from "lucide-react";
+import { Search, Plus, Pencil, Trash2, CheckCircle, XCircle, Loader2, RefreshCw, Eye, Copy, X } from "lucide-react";
 import { toast } from "sonner";
 
 interface Column<T> {
@@ -20,6 +20,7 @@ interface DataTableProps<T extends { id: string; isActive?: boolean }> {
   onAdd?: () => void;
   onView?: (row: T) => void;
   onEdit?: (row: T) => void;
+  onDuplicate?: (row: T) => void;
   onDelete?: (row: T) => Promise<void>;
   extraHeaderContent?: React.ReactNode;
   emptyIcon?: React.ReactNode;
@@ -36,6 +37,7 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
   onAdd,
   onView,
   onEdit,
+  onDuplicate,
   onDelete,
   extraHeaderContent,
   emptyIcon,
@@ -46,6 +48,7 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [selectedRow, setSelectedRow] = useState<T | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -144,54 +147,27 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
                   {columns.map((col) => (
                     <th key={col.key} style={{ width: col.width }}>{col.label}</th>
                   ))}
-                  {(onView || onEdit || onDelete) && <th style={{ width: "100px", textAlign: "center", fontSize: "0.9rem" }}>Actions</th>}
+
                 </tr>
               </thead>
               <tbody>
                 {data.map((row) => (
-                  <tr key={row.id} style={{ opacity: row.isActive === false ? 0.5 : 1 }}>
+                  <tr
+                    key={row.id}
+                    style={{
+                      opacity: row.isActive === false ? 0.5 : 1,
+                      cursor: (onView || onEdit || onDuplicate || onDelete) ? "pointer" : "default",
+                      backgroundColor: selectedRow?.id === row.id ? "#f1f5f9" : "transparent"
+                    }}
+                    onClick={() => {
+                      if (onView || onEdit || onDuplicate || onDelete) setSelectedRow(row);
+                    }}
+                  >
                     {columns.map((col) => (
                       <td key={col.key}>
                         {col.render ? col.render(row) : String((row as any)[col.key] ?? "—")}
                       </td>
                     ))}
-                    {(onView || onEdit || onDelete) && (
-                      <td>
-                        <div style={{ display: "flex", gap: "0.25rem", justifyContent: "flex-end" }}>
-                          {onView && (
-                            <button
-                              className="btn btn-secondary btn-sm"
-                              onClick={() => onView(row)}
-                              title="View"
-                              style={{ padding: "0.3rem 0.5rem" }}
-                            >
-                              <Eye size={13} />
-                            </button>
-                          )}
-                          {onEdit && (
-                            <button
-                              className="btn btn-secondary btn-sm"
-                              onClick={() => onEdit(row)}
-                              title="Edit"
-                              style={{ padding: "0.3rem 0.5rem" }}
-                            >
-                              <Pencil size={13} />
-                            </button>
-                          )}
-                          {onDelete && row.isActive !== false && (
-                            <button
-                              className="btn btn-danger btn-sm"
-                              onClick={() => handleDelete(row)}
-                              disabled={deleting === row.id}
-                              title="Deactivate"
-                              style={{ padding: "0.3rem 0.5rem" }}
-                            >
-                              {deleting === row.id ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> : <Trash2 size={13} />}
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    )}
                   </tr>
                 ))}
               </tbody>
@@ -206,7 +182,83 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
         )}
       </div>
 
+      {selectedRow && (onView || onEdit || onDuplicate || onDelete) && (
+        <div style={{
+          position: "fixed",
+          bottom: "1.5rem",
+          left: "60%",
+          transform: "translateX(-50%)",
+          backgroundColor: "#ffffffff",
+          color: "white",
+          borderRadius: "0.5rem",
+          display: "flex",
+          alignItems: "center",
+          boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+          zIndex: 50,
+          overflow: "hidden"
+        }}>
+          <div className="btn btn-secondary" style={{
+            padding: "0.75rem 1.25rem",
+            fontSize: "0.875rem",
+            fontWeight: "600",
+            display: "flex",
+            alignItems: "center",
+            marginLeft: "1rem",
+            marginRight: "1rem"
+          }}>
+            1 Record Selected
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", padding: "0 0.5rem" }}>
+            {onView && (
+              <button
+                onClick={() => { onView(selectedRow); setSelectedRow(null); }}
+                style={{ background: "none", border: "none", color: "#1e293b", padding: "1rem 3rem", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem", cursor: "pointer", fontSize: "0.75rem" }}
+              >
+                <Eye size={16} /> View
+              </button>
+            )}
+            {onEdit && (
+              <button
+                onClick={() => { onEdit(selectedRow); setSelectedRow(null); }}
+                style={{ background: "none", border: "none", color: "#1e293b", padding: "1rem 3rem", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem", cursor: "pointer", fontSize: "0.75rem" }}
+              >
+                <Pencil size={16} /> Edit
+              </button>
+            )}
+            {onDuplicate && (
+              <button
+                onClick={() => { onDuplicate(selectedRow); setSelectedRow(null); }}
+                style={{ background: "none", border: "none", color: "#1e293b", padding: "1rem 2rem", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem", cursor: "pointer", fontSize: "0.75rem" }}
+              >
+                <Copy size={16} /> Duplicate
+              </button>
+            )}
+            {onDelete && selectedRow.isActive !== false && (
+              <button
+                onClick={() => { handleDelete(selectedRow); setSelectedRow(null); }}
+                disabled={deleting === selectedRow.id}
+                style={{ background: "none", border: "none", color: "white", padding: "1rem 5rem", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem", cursor: "pointer", fontSize: "0.75rem", opacity: deleting === selectedRow.id ? 0.5 : 1 }}
+              >
+                {deleting === selectedRow.id ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Trash2 size={16} />}
+                Delete
+              </button>
+            )}
+          </div>
+
+          <div style={{ padding: "0 1rem", borderLeft: "1px solid #334155", display: "flex", alignItems: "center", alignSelf: "stretch" }}>
+            <button
+              onClick={() => setSelectedRow(null)}
+              style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", padding: "0.25rem", display: "flex" }}
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+      )
+      }
+
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
-    </div>
+    </div >
   );
 }
