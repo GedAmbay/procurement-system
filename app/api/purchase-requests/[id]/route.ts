@@ -61,9 +61,9 @@ export async function PATCH(
       return NextResponse.json(updatedPR);
     }
 
-    // Otherwise, full update (only allowed if DRAFT or REJECTED)
-    if (pr.status !== "DRAFT" && pr.status !== "REJECTED") {
-      return NextResponse.json({ error: "Cannot edit submitted or approved PR" }, { status: 400 });
+    // Otherwise, full update (only allowed if DRAFT, SUBMITTED or REJECTED)
+    if (pr.status !== "DRAFT" && pr.status !== "REJECTED" && pr.status !== "SUBMITTED") {
+      return NextResponse.json({ error: "Cannot edit approved or processed PR" }, { status: 400 });
     }
 
     const parseResult = purchaseRequestSchema.safeParse(body);
