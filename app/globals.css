@@ -334,7 +334,6 @@ tbody tr:hover {
 }
 
 tbody td {
-  padding: 5px;
   color: #000000;
   vertical-align: middle;
 }
@@ -516,6 +515,22 @@ tbody td {
   }
 
   @page {
-    margin: 0;
+    margin-top: 0.5in;
+    margin-bottom: 0.5in;
+    margin-left: 0.25in;
+    margin-right: 0.25in;
+  }
+
+  table {
+    page-break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  thead {
+    display: table-header-group;
   }
 }

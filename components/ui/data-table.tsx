@@ -193,6 +193,10 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
                     onClick={() => {
                       if (onView || onEdit || onDuplicate || onDelete) setSelectedRow(row);
                     }}
+                    onDoubleClick={() => {
+                      if (onView) onView(row);
+                      else if (onEdit) onEdit(row);
+                    }}
                   >
                     {columns.map((col) => (
                       <td key={col.key}>

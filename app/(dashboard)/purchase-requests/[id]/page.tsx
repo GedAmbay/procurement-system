@@ -255,7 +255,7 @@ export default function PurchaseRequestEditor() {
   if (loading) return <div className="p-8 flex justify-center"><Loader2 className="animate-spin text-blue-500" /></div>;
 
   return (
-    <div className="flex flex-col overflow-hidden" style={{ height: 'calc(var(--full-vh) - 128px)' }}>
+    <div className="flex flex-col overflow-hidden print:block print:!h-auto print:!overflow-visible" style={{ height: 'calc(var(--full-vh) - 128px)' }}>
       {/* Header (No Print) */}
       <div className="no-print flex items-center justify-between p-4 border-b border-slate-300 shadow-sm z-10" style={{ background: 'var(--color-page-bg)' }}>
         <div className="flex items-center gap-3">
@@ -293,7 +293,7 @@ export default function PurchaseRequestEditor() {
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden relative">
+      <div className="flex flex-1 overflow-hidden relative print:block print:!h-auto print:!overflow-visible">
         {/* Zoom Controls */}
         <div className="no-print absolute bottom-6 left-6 flex items-center gap-1 bg-white p-1 rounded-full shadow-md border border-slate-200 z-10 text-slate-600">
           <button type="button" onClick={() => setZoom(z => Math.max(z - 0.1, 0.5))} className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Zoom Out"><ZoomOut size={18} /></button>
@@ -302,7 +302,7 @@ export default function PurchaseRequestEditor() {
         </div>
 
         {/* Left Side: Live Print Preview */}
-        <div className="flex-1 overflow-auto bg-slate-200 print:p-0 print:bg-white print:overflow-visible">
+        <div className="flex-1 overflow-auto bg-slate-200 print:p-0 print:bg-white print:block print:!overflow-visible print:!h-auto">
 
           <div className="p-8 print:p-0 w-max mx-auto min-w-full flex justify-center origin-top print:block print:w-full print:min-w-0 print:!transform-none print:!mb-0" style={{ transform: `scale(${zoom})`, marginBottom: `${(zoom - 1) * 1056}px` }}>
             <div className="print-area w-[816px] bg-white shadow-xl min-h-[1056px] p-10 print:shadow-none print:w-full print:max-w-none print:p-8 print:m-0 print:min-h-0">
