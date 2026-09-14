@@ -285,17 +285,7 @@ export default function PurchaseRequestEditor() {
               <Send size={16} /> Submit
             </button>
           )}
-          {!isViewMode && !isNew && prData?.status === "SUBMITTED" && user?.role === "APPROVING_OFFICIAL" && (
-            <>
-              <button onClick={() => updateStatus("REJECTED")} className="btn btn-danger">
-                <XCircle size={16} /> Reject
-              </button>
-              <button onClick={() => updateStatus("APPROVED")} className="btn" style={{ color: "#16a34a" }}>
-                <CheckCircle2 size={16} /> Approve
-              </button>
-            </>
-          )}
-          {!isViewMode && !isNew && prData?.status === "APPROVED" && (user?.role === "BAC_SECRETARIAT" || user?.role === "ADMIN") && (
+          {!isViewMode && !isNew && prData?.status === "SUBMITTED" && (user?.role === "BAC_SECRETARIAT" || user?.role === "ADMIN") && (
             <button onClick={() => updateStatus("FOR_RFQ")} className="btn" style={{ color: "#ea580c" }}>
               Create RFQ
             </button>

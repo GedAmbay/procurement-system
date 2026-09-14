@@ -53,11 +53,97 @@ export async function PATCH(
       if (!parseResult.success) {
         return NextResponse.json({ error: "Invalid status data", details: parseResult.error.format() }, { status: 400 });
       }
-      // Add status workflow checks here if necessary
-      const updatedPR = await prisma.purchaseRequest.update({
-        where: { id },
-        data: { status: body.status },
+      
+      const updatedPR = await prisma.$transaction(async (tx) => {
+        const prUpdate = await tx.purchaseRequest.update({
+          where: { id },
+          data: { status: body.status },
+          include: { fundSource: true, lineItems: true }
+        });
+        
+        // Automatic generation of RFQ, AOQ, PO when FOR_RFQ
+        if (body.status === "FOR_RFQ") {
+          const existingRfq = await tx.rfq.findFirst({ where: { prId: id } });
+          
+          if (!existingRfq) {
+            let fundPrefix = "GF";
+            if (prUpdate.fundSource && prUpdate.fundSource.code.toUpperCase().startsWith("TF")) {
+              fundPrefix = "TF";
+            }
+            
+            const yy = String(prUpdate.fiscalYear).slice(-2) || String(new Date().getFullYear()).slice(-2);
+            const prParts = prUpdate.prNumber.split("-");
+            const xxxx = prParts[prParts.length - 1]; 
+            const rfqNumber = `${fundPrefix}-${yy}-${xxxx}`;
+            
+            const rfq = await tx.rfq.create({
+              data: {
+                rfqNumber,
+                prId: id,
+                fiscalYear: prUpdate.fiscalYear,
+                status: "DRAFT",
+                lineItems: {
+                  create: prUpdate.lineItems.map(li => ({
+                    description: li.description,
+                    unit: li.unit,
+                    quantity: li.quantity,
+                    unitCost: li.unitCost,
+                    totalCost: li.totalCost,
+                    sortOrder: li.sortOrder
+                  }))
+                }
+              }
+            });
+            
+            const aoqNumber = `${rfqNumber}-AOQ`;
+            
+            const aoq = await tx.abstractOfQuotation.create({
+              data: {
+                aoqNumber,
+                rfqId: rfq.id,
+                fiscalYear: prUpdate.fiscalYear,
+                totalAmount: prUpdate.totalAmount, 
+                status: "DRAFT",
+                lineItems: {
+                  create: prUpdate.lineItems.map(li => ({
+                    description: li.description,
+                    unit: li.unit,
+                    quantity: li.quantity,
+                    lowestUnitPrice: 0,
+                    totalPrice: 0,
+                    sortOrder: li.sortOrder
+                  }))
+                }
+              }
+            });
+            
+            const poNumber = `${rfqNumber}-PO`;
+            
+            await tx.purchaseOrder.create({
+              data: {
+                poNumber,
+                aoqId: aoq.id,
+                fiscalYear: prUpdate.fiscalYear,
+                totalAmount: prUpdate.totalAmount,
+                status: "DRAFT",
+                lineItems: {
+                  create: prUpdate.lineItems.map(li => ({
+                    description: li.description,
+                    unit: li.unit,
+                    quantity: li.quantity,
+                    unitPrice: li.unitCost,
+                    totalPrice: li.totalCost,
+                    sortOrder: li.sortOrder
+                  }))
+                }
+              }
+            });
+          }
+        }
+        
+        return prUpdate;
       });
+
       return NextResponse.json(updatedPR);
     }
 

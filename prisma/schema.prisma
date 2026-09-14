@@ -78,6 +78,7 @@ model Supplier {
 
   rfqSuppliers    RfqSupplier[]
   purchaseOrders  PurchaseOrder[]
+  quotations      Quotation[]
 
   @@map("suppliers")
 }
@@ -233,6 +234,7 @@ model Quotation {
   updatedAt   DateTime @updatedAt
 
   rfq       Rfq                 @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  supplier  Supplier            @relation(fields: [supplierId], references: [id])
   lineItems QuotationLineItem[]
 
   @@map("quotations")
@@ -297,7 +299,7 @@ model PurchaseOrder {
   id              String   @id @default(cuid())
   poNumber        String   @unique
   aoqId           String?
-  supplierId      String
+  supplierId      String?
   deliveryTerms   String?
   paymentTerms    String?
   placeOfDelivery String?
@@ -312,7 +314,7 @@ model PurchaseOrder {
   updatedAt       DateTime @updatedAt
 
   aoq        AbstractOfQuotation? @relation(fields: [aoqId], references: [id])
-  supplier   Supplier              @relation(fields: [supplierId], references: [id])
+  supplier   Supplier?             @relation(fields: [supplierId], references: [id])
   lineItems  PoLineItem[]
 
   @@map("purchase_orders")
