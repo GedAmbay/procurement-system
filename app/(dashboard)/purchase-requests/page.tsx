@@ -73,7 +73,7 @@ export default function PurchaseRequestsPage() {
           {formatCurrency(row.totalAmount)}
         </div>
       ),
-      width: "140px",
+      width: "200px",
     },
     {
       key: "status",

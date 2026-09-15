@@ -98,8 +98,23 @@ export default function RFQPage() {
     }
   ];
 
-  const handleRowClick = (row: RFQ) => {
+  const handleEdit = (row: RFQ) => {
     router.push(`/rfqs/${row.id}`);
+  };
+
+  const handleDuplicate = (row: RFQ) => {
+    router.push(`/rfqs/new?duplicateFrom=${row.id}`);
+  };
+
+  const handleDelete = async (row: RFQ) => {
+    if (!confirm("Are you sure you want to delete this RFQ?")) return;
+    try {
+      const res = await fetch(`/api/rfqs/${row.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      setRefreshKey(k => k + 1);
+    } catch {
+      alert("Failed to delete RFQ");
+    }
   };
 
   return (
@@ -111,7 +126,10 @@ export default function RFQPage() {
         apiPath="/api/rfqs"
         columns={columns}
         searchPlaceholder="Search by Quotation Number..."
-        onEdit={handleRowClick}
+        onView={(row) => router.push(`/rfqs/${row.id}?mode=view`)}
+        onEdit={handleEdit}
+        onDuplicate={handleDuplicate}
+        onDelete={handleDelete}
         emptyIcon={<PackageSearch size={40} style={{ opacity: 0.3 }} />}
         emptyText="No RFQs generated yet. Approve a PR first."
       />

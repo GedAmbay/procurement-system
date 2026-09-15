@@ -47,12 +47,9 @@ export default function Topbar({ user }: TopbarProps) {
   return (
     <div className="topbar">
       <div>
-        <h1 style={{ fontSize: "1.0625rem", fontWeight: "600", color: "#0f172a", margin: 0 }}>
+        <h1 style={{ fontSize: "1.75rem", fontWeight: "900", color: "#0f172a", marginLeft: "10px" }}>
           {getTitle()}
         </h1>
-        <p style={{ fontSize: "0.75rem", color: "#94a3b8", margin: 0, marginTop: "1px" }}>
-          {user.officeName ?? "Municipality of Pandan"}
-        </p>
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>

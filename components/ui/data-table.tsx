@@ -120,13 +120,9 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
     <div>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "1.25rem", flexWrap: "wrap", gap: "1rem" }}>
-        <div>
-          <h2 style={{ fontSize: "1.125rem", fontWeight: "700", color: "#0f172a", margin: 0 }}>{title}</h2>
-          {description && <p style={{ color: "#64748b", fontSize: "0.875rem", margin: "0.25rem 0 0" }}>{description}</p>}
-        </div>
         <div style={{ display: "flex", gap: "0.625rem", alignItems: "center", flexWrap: "wrap" }}>
           {extraHeaderContent}
-          <div className="search-input" style={{ minWidth: "220px" }}>
+          <div className="search-input" style={{ minWidth: "400px" }}>
             <Search size={15} color="#94a3b8" style={{ flexShrink: 0 }} />
             <input
               type="text"
@@ -222,7 +218,7 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
           bottom: "2rem",
           left: "55%",
           transform: "translateX(-50%)",
-          animation: isClosing ? "slideDown 0.3s forwards cubic-bezier(0.16, 1, 0.3, 1)" : "slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
+          animation: isClosing ? "modalSlideDown 0.3s forwards cubic-bezier(0.16, 1, 0.3, 1)" : "modalSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
           backgroundColor: "#e0e5ec",
           color: "#334155",
           borderRadius: "1rem",
@@ -297,8 +293,8 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
 
       <style>{`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @keyframes slideUp { from { transform: translate(-50%, 100%); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
-        @keyframes slideDown { from { transform: translate(-50%, 0); opacity: 1; } to { transform: translate(-50%, 100%); opacity: 0; } }
+        @keyframes modalSlideUp { from { transform: translate(-50%, 100%); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+        @keyframes modalSlideDown { from { transform: translate(-50%, 0); opacity: 1; } to { transform: translate(-50%, 100%); opacity: 0; } }
       `}</style>
     </div >
   );

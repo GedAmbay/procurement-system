@@ -21,7 +21,7 @@
   --color-sidebar-border: #1e2d4a;
   --color-sidebar-text: #94a3b8;
   --color-sidebar-text-active: #f1f5f9;
-  --color-sidebar-hover: #1e2d4a;
+  --color-sidebar-hover: #373f50;
   --color-sidebar-active: #1d4ed8;
 
   --color-card-bg: #ECF0F3;
@@ -89,6 +89,16 @@
   flex: 1;
   padding: 1rem 1.25rem;
   overflow-y: auto;
+  /* Hide scrollbar so it doesn't overlap the cutout effect */
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  display: none;
+  /* Chrome, Safari and Opera */
 }
 
 .sidebar-nav-section {
@@ -115,7 +125,7 @@
   font-weight: 600;
   color: #94a3b8;
   cursor: pointer;
-  transition: all 0.2s ease-in-out;
+  transition: color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
   text-decoration: none;
   margin-bottom: 0.75rem;
   background: #0f172a;
@@ -127,8 +137,36 @@
 }
 
 .sidebar-nav-item.active {
-  color: #f8fafc;
-  box-shadow: inset 6px 6px 12px rgba(0, 0, 0, 0.4), inset -6px -6px 12px rgba(255, 255, 255, 0.05);
+  color: #0f172a;
+  background-color: var(--color-page-bg);
+  border-radius: 1.5rem 0 0 1.5rem;
+  margin-right: -1.25rem;
+  padding-right: 1.25rem;
+  box-shadow: none;
+  position: relative;
+  z-index: 50;
+}
+
+.sidebar-nav-item.active::before {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: -20px;
+  width: 20px;
+  height: 20px;
+  background: radial-gradient(circle at top left, transparent 20px, var(--color-page-bg) 0);
+  pointer-events: none;
+}
+
+.sidebar-nav-item.active::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -20px;
+  width: 20px;
+  height: 20px;
+  background: radial-gradient(circle at bottom left, transparent 20px, var(--color-page-bg) 0);
+  pointer-events: none;
 }
 
 .sidebar-nav-item .icon {
@@ -148,7 +186,10 @@
 .topbar {
   background: var(--color-page-bg);
   box-shadow: 0 4px 16px rgba(209, 217, 230, 0.4);
-  padding: 0 1.5rem;
+  padding-bottom: 2.5rem;
+  padding-top: 3rem;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
   height: 64px;
   display: flex;
   align-items: center;
@@ -351,11 +392,12 @@ tbody td {
 
 .data-table thead th {
   padding: 5px;
-  font-size: 0.75rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  color: #000000;
-  border-bottom: 2px solid rgb(0, 0, 0);
-  font-family: "Times New Roman", Times, serif;
+  color: #ffffff;
+  border-bottom: 2px solid rgb(255, 255, 255);
+  font-family: var(--font-sans);
+  background-color: #0f1729;
 }
 
 .data-table tbody tr {
@@ -447,6 +489,19 @@ tbody td {
   }
 }
 
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.page-transition {
+  animation: pageEnter 0.4s ease-out forwards;
+}
+
 /* ─── Search Input ─────────────────────────────────────────────────────────── */
 .search-input {
   display: flex;
@@ -520,7 +575,7 @@ tbody td {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #0f1729;
   border-radius: 3px;
 }
 

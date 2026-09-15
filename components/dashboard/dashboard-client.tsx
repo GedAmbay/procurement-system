@@ -54,7 +54,7 @@ const statCards = (stats: DashboardClientProps["data"]["stats"]) => [
     color: "#64748b",
     bg: "#ecfeff",
     subtext: "Awaiting supplier quotations",
-    href: "/dashboard/rfqs",
+    href: "/rfqs",
   },
   {
     label: "POs for Signature",
@@ -63,7 +63,7 @@ const statCards = (stats: DashboardClientProps["data"]["stats"]) => [
     color: "#64748b",
     bg: "#fffbeb",
     subtext: "Pending release to suppliers",
-    href: "/dashboard/purchase-orders",
+    href: "/purchase-orders",
   },
   {
     label: "PRs Ready for RFQ",

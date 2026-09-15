@@ -49,15 +49,16 @@ export default function AOQPage() {
           {row.rfq.pr.office.name}
         </div>
       ),
-      width: "200px",
+      width: "250px",
     },
     {
       key: "purpose",
       label: "Purpose",
       render: (row: AOQ) => (
-        <div style={{ 
-          fontSize: "0.875rem", color: "#334155", 
-          maxWidth: "300px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" 
+        <div style={{
+          fontSize: "0.875rem", color: "#334155",
+          maxWidth: "300px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+          margin: "0 auto", textAlign: "center"
         }}>
           {row.rfq.pr.purpose}
         </div>
@@ -71,7 +72,7 @@ export default function AOQPage() {
           {formatCurrency(row.rfq.pr.totalAmount)}
         </div>
       ),
-      width: "130px",
+      width: "200px",
     },
     {
       key: "status",
@@ -98,8 +99,23 @@ export default function AOQPage() {
     }
   ];
 
-  const handleRowClick = (row: AOQ) => {
+  const handleEdit = (row: AOQ) => {
     router.push(`/aoq/${row.id}`);
+  };
+
+  const handleDuplicate = (row: AOQ) => {
+    router.push(`/aoq/new?duplicateFrom=${row.id}`);
+  };
+
+  const handleDelete = async (row: AOQ) => {
+    if (!confirm("Are you sure you want to delete this AOQ?")) return;
+    try {
+      const res = await fetch(`/api/aoq/${row.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      setRefreshKey(k => k + 1);
+    } catch {
+      alert("Failed to delete AOQ");
+    }
   };
 
   return (
@@ -111,7 +127,10 @@ export default function AOQPage() {
         apiPath="/api/aoq"
         columns={columns}
         searchPlaceholder="Search by AOQ Number..."
-        onEdit={handleRowClick}
+        onView={(row) => router.push(`/aoq/${row.id}?mode=view`)}
+        onEdit={handleEdit}
+        onDuplicate={handleDuplicate}
+        onDelete={handleDelete}
         emptyIcon={<ClipboardList size={40} style={{ opacity: 0.3 }} />}
         emptyText="No AOQs generated yet. Close an RFQ first."
       />

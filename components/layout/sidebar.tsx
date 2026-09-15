@@ -67,7 +67,7 @@ export default function Sidebar({ user }: SidebarProps) {
       {/* Logo */}
       <div className="sidebar-logo">
         <div style={{
-          width: "36px", height: "36px", borderRadius: "50%",
+          width: "65px", height: "65px", borderRadius: "50%",
           background: "white",
           display: "flex", alignItems: "center", justifyContent: "center",
           flexShrink: 0,
@@ -77,7 +77,7 @@ export default function Sidebar({ user }: SidebarProps) {
           <img src="/pandan_logo.png" alt="Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
         </div>
         <div style={{ minWidth: 0 }}>
-          <div style={{ color: "#64748b", fontWeight: "700", fontSize: "0.9375rem", lineHeight: "1.2", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          <div style={{ color: "#64748b", fontWeight: "700", fontSize: "1.2rem", lineHeight: "1.2", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             ProcureEase
           </div>
           <div style={{ color: "#64748b", fontSize: "0.6875rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
