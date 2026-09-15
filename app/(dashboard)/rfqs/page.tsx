@@ -56,7 +56,8 @@ export default function RFQPage() {
       render: (row: RFQ) => (
         <div style={{ 
           fontSize: "0.875rem", color: "#334155", 
-          maxWidth: "300px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" 
+          maxWidth: "300px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+          textAlign: "center", width: "100%", margin: "0 auto"
         }}>
           {row.pr.purpose}
         </div>

@@ -172,7 +172,7 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
           </div>
         ) : (
           <div className="table-container" style={{ border: "none", borderRadius: "0.75rem" }}>
-            <table>
+            <table className="data-table">
               <thead>
                 <tr>
                   {columns.map((col) => (
@@ -188,7 +188,7 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
                     style={{
                       opacity: row.isActive === false ? 0.5 : 1,
                       cursor: (onView || onEdit || onDuplicate || onDelete) ? "pointer" : "default",
-                      backgroundColor: selectedRow?.id === row.id ? "#f1f5f9" : "transparent"
+                      backgroundColor: selectedRow?.id === row.id ? "#f1f5f9" : "transparent",
                     }}
                     onClick={() => {
                       if (onView || onEdit || onDuplicate || onDelete) setSelectedRow(row);

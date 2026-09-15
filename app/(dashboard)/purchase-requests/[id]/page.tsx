@@ -355,7 +355,7 @@ export default function PurchaseRequestEditor() {
 
                   <tbody>
                     {watchLineItems.length > 0 ? watchLineItems.map((item, idx) => (
-                      <tr key={idx} onClick={() => handleRowClick(idx)} className={!isReadOnly ? `cursor-pointer transition-colors ${activeItemIndex === idx ? "bg-blue-100 hover:bg-blue-200" : "hover:bg-blue-50"}` : ""}>
+                      <tr key={idx} onClick={() => handleRowClick(idx)} className={`h-6 ${!isReadOnly ? `cursor-pointer transition-colors ${activeItemIndex === idx ? "bg-blue-100 hover:bg-blue-200" : "hover:bg-blue-50"}` : ""}`}>
                         <td className="border border-black border-l-0 p-0 leading-tight text-center align-top">{idx + 1}</td>
                         <td className="border border-black p-0 leading-tight text-center align-top">{item.quantity}</td>
                         <td className="border border-black p-0 leading-tight text-center align-top">{item.unit}</td>

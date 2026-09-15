@@ -32,6 +32,7 @@ export default function SupplierEncodingPage() {
   const [quoteData, setQuoteData] = useState<any>(null);
   const [activeItemIndex, setActiveItemIndex] = useState<number | null>(null);
   const [zoom, setZoom] = useState(1);
+  const [aoqStatus, setAoqStatus] = useState<string>("DRAFT");
 
   const { register, control, handleSubmit, watch, reset, setValue } = useForm<QuoteFormValues>({
     defaultValues: {
@@ -56,6 +57,13 @@ export default function SupplierEncodingPage() {
         if (res.ok) {
           const data = await res.json();
           setQuoteData(data);
+
+          // We also need to know the AOQ status to prevent edits if approved
+          const aoqRes = await fetch(`/api/aoq/${params.id}`);
+          if (aoqRes.ok) {
+            const aoqData = await aoqRes.json();
+            setAoqStatus(aoqData.status);
+          }
 
           // Match the quotation line items with the RFQ line items for display
           const mappedLineItems = data.rfq.lineItems.map((rfqItem: any) => {
@@ -83,7 +91,7 @@ export default function SupplierEncodingPage() {
       }
     }
     loadData();
-  }, [params.supplierId, reset]);
+  }, [params.supplierId, params.id, reset]);
 
   const onSubmit = async (data: QuoteFormValues) => {
     setSubmitting(true);
@@ -105,7 +113,7 @@ export default function SupplierEncodingPage() {
 
       if (res.ok) {
         toast.success("Supplier bid encoded successfully");
-        router.push(`/rfqs/${params.id}`);
+        router.push(`/aoq/${params.id}`);
       } else {
         toast.error("Failed to save quotation");
       }
@@ -120,14 +128,14 @@ export default function SupplierEncodingPage() {
   if (!quoteData) return <div>Error loading data</div>;
 
   const { rfq, supplier } = quoteData;
-  const isCompleted = rfq.status === "COMPLETED";
+  const isCompleted = aoqStatus !== "DRAFT";
 
   return (
     <div className="flex flex-col overflow-hidden print:block print:!h-auto print:!overflow-visible" style={{ height: 'calc(var(--full-vh) - 128px)' }}>
       {/* Header */}
       <div className="no-print flex items-center justify-between p-4 bg-white border-b border-slate-200 shadow-sm z-10">
         <div className="flex items-center gap-3">
-          <Link href={`/rfqs/${params.id}`} className="text-slate-500 hover:text-slate-800 transition-colors bg-white hover:bg-slate-100 p-2 rounded-full border border-slate-200 shadow-sm flex items-center justify-center">
+          <Link href={`/aoq/${params.id}`} className="text-slate-500 hover:text-slate-800 transition-colors bg-white hover:bg-slate-100 p-2 rounded-full border border-slate-200 shadow-sm flex items-center justify-center">
             <ArrowLeft size={18} />
           </Link>
           <div>
@@ -234,7 +242,7 @@ export default function SupplierEncodingPage() {
                     <tr
                       key={idx}
                       onClick={() => !isCompleted && setActiveItemIndex(idx)}
-                      className={`${!isCompleted ? 'cursor-pointer hover:bg-blue-50 transition-colors' : ''} ${activeItemIndex === idx ? 'bg-blue-100' : ''}`}
+                      className={`h-6 ${!isCompleted ? 'cursor-pointer hover:bg-blue-50 transition-colors' : ''} ${activeItemIndex === idx ? 'bg-blue-100' : ''}`}
                     >
                       <td className="border border-black p-0 text-center">{idx + 1}</td>
                       <td className="border border-black p-0 pl-2">{item.description}</td>
@@ -246,13 +254,13 @@ export default function SupplierEncodingPage() {
                   ))}
                   {/* Empty rows filler */}
                   {Array.from({ length: Math.max(0, 15 - watchLineItems.length) }).map((_, i) => (
-                    <tr key={`empty-${i}`}>
-                      <td className="border border-black p-3"></td>
-                      <td className="border border-black p-3"></td>
-                      <td className="border border-black p-3"></td>
-                      <td className="border border-black p-3"></td>
-                      <td className="border border-black p-3"></td>
-                      <td className="border border-black p-3"></td>
+                    <tr key={`empty-${i}`} className="h-6">
+                      <td className="border border-black p-0"></td>
+                      <td className="border border-black p-0"></td>
+                      <td className="border border-black p-0"></td>
+                      <td className="border border-black p-0"></td>
+                      <td className="border border-black p-0"></td>
+                      <td className="border border-black p-0"></td>
                     </tr>
                   ))}
                 </tbody>

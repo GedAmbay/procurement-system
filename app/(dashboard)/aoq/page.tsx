@@ -1,10 +1,120 @@
-import { ClipboardList } from "lucide-react";
-export default function AoqPage() {
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import DataTable from "@/components/ui/data-table";
+import { formatCurrency } from "@/lib/utils";
+import { Send, Clock, CheckCircle2, ClipboardList } from "lucide-react";
+
+interface AOQ {
+  id: string;
+  aoqNumber: string;
+  rfq: {
+    pr: {
+      purpose: string;
+      totalAmount: number;
+      office: { name: string; code: string };
+    };
+  };
+  status: string;
+  createdAt: string;
+}
+
+const STATUS_COLORS: Record<string, { bg: string; color: string; icon: React.ReactNode }> = {
+  DRAFT: { bg: "#f1f5f9", color: "#475569", icon: <Clock size={11} /> },
+  RECOMMENDED: { bg: "#eff6ff", color: "#2563eb", icon: <Send size={11} /> },
+  APPROVED: { bg: "#f0fdf4", color: "#16a34a", icon: <CheckCircle2 size={11} /> },
+};
+
+export default function AOQPage() {
+  const router = useRouter();
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const columns = [
+    {
+      key: "aoqNumber",
+      label: "AOQ Number",
+      render: (row: AOQ) => (
+        <div style={{ fontWeight: "700", color: "#0f172a", fontFamily: "monospace", fontSize: "0.875rem" }}>
+          {row.aoqNumber}
+        </div>
+      ),
+      width: "150px",
+    },
+    {
+      key: "office",
+      label: "Requesting Office",
+      render: (row: AOQ) => (
+        <div style={{ fontWeight: "600", color: "#1e293b", fontSize: "0.875rem" }}>
+          {row.rfq.pr.office.name}
+        </div>
+      ),
+      width: "200px",
+    },
+    {
+      key: "purpose",
+      label: "Purpose",
+      render: (row: AOQ) => (
+        <div style={{ 
+          fontSize: "0.875rem", color: "#334155", 
+          maxWidth: "300px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" 
+        }}>
+          {row.rfq.pr.purpose}
+        </div>
+      ),
+    },
+    {
+      key: "abc",
+      label: "ABC",
+      render: (row: AOQ) => (
+        <div style={{ fontWeight: "700", color: "#059669" }}>
+          {formatCurrency(row.rfq.pr.totalAmount)}
+        </div>
+      ),
+      width: "130px",
+    },
+    {
+      key: "status",
+      label: "Status",
+      render: (row: AOQ) => {
+        const conf = STATUS_COLORS[row.status] || STATUS_COLORS.DRAFT;
+        return (
+          <span className="badge" style={{ background: conf.bg, color: conf.color, display: "inline-flex", alignItems: "center", gap: "0.25rem" }}>
+            {conf.icon} {row.status.replace(/_/g, ' ')}
+          </span>
+        );
+      },
+      width: "140px",
+    },
+    {
+      key: "createdAt",
+      label: "Date",
+      render: (row: AOQ) => (
+        <span style={{ fontSize: "0.8125rem", color: "#64748b" }}>
+          {new Date(row.createdAt).toLocaleDateString("en-PH")}
+        </span>
+      ),
+      width: "100px",
+    }
+  ];
+
+  const handleRowClick = (row: AOQ) => {
+    router.push(`/aoq/${row.id}`);
+  };
+
   return (
-    <div className="card" style={{ textAlign: "center", padding: "3rem" }}>
-      <ClipboardList size={48} color="#e2e8f0" style={{ margin: "0 auto 1rem" }} />
-      <h3 style={{ color: "#64748b", fontWeight: "600" }}>Abstract of Quotation</h3>
-      <p style={{ color: "#94a3b8", fontSize: "0.875rem" }}>Phase 6 — Quotation consolidation and auto-computation. Coming next.</p>
+    <div>
+      <DataTable<AOQ>
+        key={refreshKey}
+        title="Abstract of Quotation"
+        description="Consolidate supplier bids and recommend the lowest calculated responsive quotation."
+        apiPath="/api/aoq"
+        columns={columns}
+        searchPlaceholder="Search by AOQ Number..."
+        onEdit={handleRowClick}
+        emptyIcon={<ClipboardList size={40} style={{ opacity: 0.3 }} />}
+        emptyText="No AOQs generated yet. Close an RFQ first."
+      />
     </div>
   );
 }

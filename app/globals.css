@@ -328,7 +328,6 @@ tbody tr {
   transition: all 0.2s ease-in-out;
 }
 
-
 tbody tr:hover {
   background: rgba(255, 255, 255, 0.4);
 }
@@ -336,6 +335,41 @@ tbody tr:hover {
 tbody td {
   color: #000000;
   vertical-align: middle;
+}
+
+/* ─── Data Tables ──────────────────────────────────────────────────────────── */
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.data-table thead {
+  background: transparent;
+}
+
+.data-table thead th {
+  padding: 5px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #000000;
+  border-bottom: 2px solid rgb(0, 0, 0);
+  font-family: "Times New Roman", Times, serif;
+}
+
+.data-table tbody tr {
+  transition: all 0.2s ease-in-out;
+}
+
+.data-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.data-table tbody td {
+  color: #000000;
+  vertical-align: middle;
+  padding: 6px;
 }
 
 .sign-text {
@@ -384,6 +418,7 @@ tbody td {
     opacity: 0;
     transform: scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: scale(1);

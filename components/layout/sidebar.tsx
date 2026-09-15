@@ -30,7 +30,7 @@ const navItems = [
     items: [
       { label: "Purchase Requests", href: "/purchase-requests", icon: ShoppingCart, roles: [] },
       { label: "Requests for Quotation", href: "/rfqs", icon: FileText, roles: [] },
-      { label: "Abstract of Quotation", href: "/aoq", icon: ClipboardList, roles: [] },
+      { label: "Abstract", href: "/aoq", icon: ClipboardList, roles: [] },
       { label: "Purchase Orders", href: "/purchase-orders", icon: Package, roles: [] },
     ],
   },
