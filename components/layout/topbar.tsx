@@ -126,7 +126,8 @@ export default function Topbar({ user }: TopbarProps) {
                 borderRadius: "1rem", minWidth: "220px",
                 boxShadow: "var(--shadow-neu-drop)",
                 zIndex: 50, overflow: "hidden",
-                animation: "slideUp 0.2s ease",
+                transformOrigin: "top right",
+                animation: "dropdownOpen 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards",
               }}>
                 <div style={{ padding: "1rem", borderBottom: "1px solid rgba(209, 217, 230, 0.5)" }}>
                   <div style={{ fontSize: "0.875rem", fontWeight: "600", color: "#0f172a" }}>{user.name}</div>

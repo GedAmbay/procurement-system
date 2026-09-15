@@ -147,8 +147,8 @@ export async function PATCH(
       return NextResponse.json(updatedPR);
     }
 
-    // Otherwise, full update (only allowed if DRAFT, SUBMITTED or REJECTED)
-    if (pr.status !== "DRAFT" && pr.status !== "REJECTED" && pr.status !== "SUBMITTED") {
+    // Otherwise, full update (only allowed if DRAFT, SUBMITTED, REJECTED, or FOR_RFQ)
+    if (pr.status !== "DRAFT" && pr.status !== "REJECTED" && pr.status !== "SUBMITTED" && pr.status !== "FOR_RFQ") {
       return NextResponse.json({ error: "Cannot edit approved or processed PR" }, { status: 400 });
     }
 

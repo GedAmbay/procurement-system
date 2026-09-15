@@ -108,6 +108,18 @@ export default function PurchaseRequestsPage() {
     router.push(`/purchase-requests/new?duplicateFrom=${row.id}`);
   };
 
+  const handleDelete = async (row: PR) => {
+    if (!confirm("Are you sure you want to delete this PR?")) return;
+    try {
+      const res = await fetch(`/api/purchase-requests/${row.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      // Optional toast.success here if toast is imported, but let's assume it works without or just use window.alert
+      setRefreshKey(k => k + 1);
+    } catch {
+      alert("Failed to delete PR");
+    }
+  };
+
   return (
     <div>
       <DataTable<PR>
@@ -121,6 +133,7 @@ export default function PurchaseRequestsPage() {
         onView={(row) => router.push(`/purchase-requests/${row.id}?mode=view`)}
         onEdit={handleEdit}
         onDuplicate={handleDuplicate}
+        onDelete={handleDelete}
         emptyIcon={<FileText size={40} style={{ opacity: 0.3 }} />}
         emptyText="No Purchase Requests found"
       />

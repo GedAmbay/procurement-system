@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
 import { formatCurrency, LGU_INFO } from "@/lib/utils";
-import { Printer, Save, Send, CheckCircle2, XCircle, Plus, Trash2, ArrowLeft, Loader2, ZoomIn, ZoomOut } from "lucide-react";
+import { Printer, Save, Send, CheckCircle2, XCircle, Plus, Trash2, ArrowLeft, Loader2, ZoomIn, ZoomOut, Lock, Unlock } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -39,6 +39,7 @@ export default function PurchaseRequestEditor() {
   const [submitting, setSubmitting] = useState(false);
   const [prData, setPrData] = useState<any>(null);
   const [zoom, setZoom] = useState(1);
+  const [isUnlocked, setIsUnlocked] = useState(false);
 
   // Options
   const [offices, setOffices] = useState<any[]>([]);
@@ -250,7 +251,7 @@ export default function PurchaseRequestEditor() {
     window.print();
   };
 
-  const isReadOnly = isViewMode || (prData && prData.status !== "DRAFT" && prData.status !== "SUBMITTED" && prData.status !== "REJECTED");
+  const isReadOnly = isViewMode || (prData && prData.status !== "DRAFT" && prData.status !== "SUBMITTED" && prData.status !== "REJECTED" && !(prData.status === "FOR_RFQ" && isUnlocked));
 
   if (loading) return <div className="p-8 flex justify-center"><Loader2 className="animate-spin text-blue-500" /></div>;
 
@@ -273,6 +274,11 @@ export default function PurchaseRequestEditor() {
           {!isNew && (
             <button onClick={handlePrint} className="btn btn-secondary">
               <Printer size={16} /> Print
+            </button>
+          )}
+          {!isViewMode && !isNew && prData?.status === "FOR_RFQ" && (
+            <button type="button" onClick={() => setIsUnlocked(!isUnlocked)} className={`btn ${isUnlocked ? 'btn-secondary' : 'btn-primary'}`}>
+              {isUnlocked ? <><Lock size={16} /> Lock</> : <><Unlock size={16} /> Unlock</>}
             </button>
           )}
           {!isReadOnly && (
