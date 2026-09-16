@@ -132,7 +132,7 @@ export default function RfqLivePreviewPage() {
               <button type="button" onClick={() => setIsUnlocked(!isUnlocked)} className={`btn ${isUnlocked ? 'btn-secondary' : 'btn-primary'}`}>
                 {isUnlocked ? <><Lock size={16} /> Lock</> : <><Unlock size={16} /> Unlock</>}
               </button>
-              <button onClick={() => updateStatus("CLOSED")} className="btn-success flex items-center gap-2">
+              <button onClick={() => updateStatus("CLOSED")} className="btn bg-success text-success flex items-center gap-2">
                 <CheckCircle2 size={16} /> Close RFQ
               </button>
             </>

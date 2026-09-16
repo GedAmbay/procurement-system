@@ -53,7 +53,7 @@ export default function SupplierEncodingPage() {
   useEffect(() => {
     async function loadData() {
       try {
-        const res = await fetch(`/api/rfqss/${params.supplierId}`);
+        const res = await fetch(`/api/rfqs/${params.supplierId}`);
         if (res.ok) {
           const data = await res.json();
           setQuoteData(data);
@@ -105,7 +105,7 @@ export default function SupplierEncodingPage() {
         }))
       };
 
-      const res = await fetch(`/api/rfqss/${params.supplierId}`, {
+      const res = await fetch(`/api/rfqs/${params.supplierId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
