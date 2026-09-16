@@ -20,6 +20,7 @@ export async function GET(
             office: true,
           }
         },
+        signatory: true,
         lineItems: { orderBy: { sortOrder: "asc" } },
         quotations: {
           include: {
@@ -55,6 +56,18 @@ export async function PATCH(
       const updatedRfq = await prisma.rfq.update({
         where: { id },
         data: { status: body.status },
+      });
+      return NextResponse.json(updatedRfq);
+    }
+    
+    // Handle General Update (Deadline, Signatory)
+    if (body.deadline !== undefined || body.signatoryId !== undefined) {
+      const updatedRfq = await prisma.rfq.update({
+        where: { id },
+        data: {
+          deadline: body.deadline,
+          signatoryId: body.signatoryId || null,
+        },
       });
       return NextResponse.json(updatedRfq);
     }

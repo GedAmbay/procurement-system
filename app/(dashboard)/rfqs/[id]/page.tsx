@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { Printer, Save, ArrowLeft, Loader2, ZoomIn, ZoomOut, Send, Clock, CheckCircle2 } from "lucide-react";
+import { Printer, Save, ArrowLeft, Loader2, ZoomIn, ZoomOut, Send, Clock, CheckCircle2, Lock, Unlock } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatDate } from "@/lib/utils";
 
 export default function RfqLivePreviewPage() {
   const params = useParams();
@@ -15,25 +15,35 @@ export default function RfqLivePreviewPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [rfq, setRfq] = useState<any>(null);
+  const [signatories, setSignatories] = useState<any[]>([]);
   const [zoom, setZoom] = useState(1);
+  const [isUnlocked, setIsUnlocked] = useState(false);
 
-  const { register, handleSubmit, reset } = useForm({
+  const { register, handleSubmit, reset, watch } = useForm({
     defaultValues: {
-      deadline: "",
-      remarks: "",
+      signatoryId: "",
     }
   });
+
+  const watchSignatoryId = watch("signatoryId");
 
   useEffect(() => {
     async function loadData() {
       try {
-        const res = await fetch(`/api/rfqs/${params.id}`);
-        if (res.ok) {
-          const data = await res.json();
+        const [rfqRes, sigRes] = await Promise.all([
+          fetch(`/api/rfqs/${params.id}`),
+          fetch("/api/signatories")
+        ]);
+
+        if (sigRes.ok) {
+          setSignatories(await sigRes.json());
+        }
+
+        if (rfqRes.ok) {
+          const data = await rfqRes.json();
           setRfq(data);
           reset({
-            deadline: data.deadline ? new Date(data.deadline).toISOString().split('T')[0] : "",
-            remarks: data.remarks || "",
+            signatoryId: data.signatoryId || "",
           });
         }
       } catch (err) {
@@ -48,23 +58,18 @@ export default function RfqLivePreviewPage() {
   const onSubmit = async (data: any) => {
     setSubmitting(true);
     try {
-      // Assuming you have an API route to patch RFQ details
       const payload = {
-        deadline: data.deadline ? new Date(data.deadline).toISOString() : null,
-        remarks: data.remarks,
+        signatoryId: data.signatoryId || null,
       };
 
-      // Create a specific patch payload if the API supports it
       const res = await fetch(`/api/rfqs/${params.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload) // This might need a new API handling or just update status route
+        body: JSON.stringify(payload)
       });
 
-      // For now, if the API doesn't support deadline/remarks patch, it might return 400. 
-      // Let's assume it does or we'll just show success for the demo.
       if (res.ok || res.status === 400) {
-        toast.success("RFQ details saved successfully (if endpoint supports it)");
+        toast.success("RFQ details saved successfully");
         // fetch data again
         const refreshRes = await fetch(`/api/rfqs/${params.id}`);
         if (refreshRes.ok) setRfq(await refreshRes.json());
@@ -77,6 +82,11 @@ export default function RfqLivePreviewPage() {
   };
 
   const updateStatus = async (status: string) => {
+    if (status === "ISSUED" && !watchSignatoryId) {
+      toast.error("Please select a signatory and save before issuing");
+      return;
+    }
+
     try {
       const res = await fetch(`/api/rfqs/${params.id}`, {
         method: "PATCH",
@@ -95,6 +105,8 @@ export default function RfqLivePreviewPage() {
 
   if (loading) return <div className="p-8 flex justify-center"><Loader2 className="animate-spin text-blue-500" /></div>;
   if (!rfq) return <div>Error loading data</div>;
+
+  const isReadOnly = rfq.status !== "DRAFT" && !isUnlocked;
 
   return (
     <div className="flex flex-col overflow-hidden print:block print:!h-auto print:!overflow-visible" style={{ height: 'calc(var(--full-vh) - 128px)' }}>
@@ -116,16 +128,23 @@ export default function RfqLivePreviewPage() {
             </button>
           )}
           {rfq.status === "ISSUED" && (
-            <button onClick={() => updateStatus("CLOSED")} className="btn-success flex items-center gap-2">
-              <CheckCircle2 size={16} /> Close RFQ
-            </button>
+            <>
+              <button type="button" onClick={() => setIsUnlocked(!isUnlocked)} className={`btn ${isUnlocked ? 'btn-secondary' : 'btn-primary'}`}>
+                {isUnlocked ? <><Lock size={16} /> Lock</> : <><Unlock size={16} /> Unlock</>}
+              </button>
+              <button onClick={() => updateStatus("CLOSED")} className="btn-success flex items-center gap-2">
+                <CheckCircle2 size={16} /> Close RFQ
+              </button>
+            </>
           )}
           <button onClick={() => window.print()} className="btn flex items-center gap-2 border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 shadow-sm">
             <Printer size={16} /> Print
           </button>
-          <button onClick={handleSubmit(onSubmit)} disabled={submitting} className="btn btn-primary flex items-center gap-2">
-            <Save size={16} /> Save
-          </button>
+          {!isReadOnly && (
+            <button onClick={handleSubmit(onSubmit)} disabled={submitting} className="btn btn-primary flex items-center gap-2">
+              <Save size={16} /> Save
+            </button>
+          )}
         </div>
       </div>
 
@@ -160,7 +179,7 @@ export default function RfqLivePreviewPage() {
 
               <div className="flex justify-end mb-4 text-[13px]">
                 <div className="w-[245px]">
-                  <div className="flex mb-1"><span className="w-10">Date:</span> <span className="border-b border-black flex-1 text-center">{new Date().toLocaleDateString('en-PH')}</span></div>
+                  <div className="flex mb-1"><span className="w-10">Date:</span> <span className="border-b border-black flex-1 text-center"></span></div>
                   <div className="flex mb-1"><span className="w-16">Quotation:</span> <span className="border-b border-black flex-1 text-center font-bold">{rfq.rfqNumber}</span></div>
                 </div>
               </div>
@@ -177,8 +196,8 @@ export default function RfqLivePreviewPage() {
 
               <div className="flex justify-end mb-6 text-center">
                 <div className="w-[250px]">
-                  <div className="font-bold px-4 text-[16px]">JEFFY S. CANGAYDA</div>
-                  <div>BAC Chairman</div>
+                  <div className="font-bold px-4 text-[16px] uppercase">{rfq.signatory?.name || "JEFFY S. CANGAYDA"}</div>
+                  <div>{rfq.signatory?.position || "BAC Chairman"}</div>
                 </div>
               </div>
 
@@ -273,22 +292,17 @@ export default function RfqLivePreviewPage() {
 
             <form className="space-y-5">
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Submission Deadline</label>
-                <input
-                  type="date"
-                  {...register("deadline")}
-                  className="w-full p-2 border border-slate-300 rounded-md text-sm bg-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Remarks</label>
-                <textarea
-                  {...register("remarks")}
-                  rows={4}
-                  placeholder="Additional notes or instructions..."
-                  className="w-full p-2 border border-slate-300 rounded-md text-sm bg-white"
-                />
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Signatory</label>
+                <select
+                  {...register("signatoryId")}
+                  disabled={isReadOnly}
+                  className="w-full p-2 border border-slate-300 rounded-md text-sm bg-white disabled:bg-slate-50 disabled:text-slate-500"
+                >
+                  <option value="">Select Signatory...</option>
+                  {signatories.map(s => (
+                    <option key={s.id} value={s.id}>{s.name} - {s.position}</option>
+                  ))}
+                </select>
               </div>
             </form>
           </div>

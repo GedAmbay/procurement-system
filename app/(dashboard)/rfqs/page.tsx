@@ -54,8 +54,8 @@ export default function RFQPage() {
       key: "purpose",
       label: "Purpose",
       render: (row: RFQ) => (
-        <div style={{ 
-          fontSize: "0.875rem", color: "#334155", 
+        <div style={{
+          fontSize: "0.875rem", color: "#334155",
           maxWidth: "300px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
           textAlign: "center", width: "100%", margin: "0 auto"
         }}>
