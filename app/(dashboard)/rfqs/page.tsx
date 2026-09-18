@@ -19,7 +19,7 @@ interface RFQ {
 }
 
 const STATUS_COLORS: Record<string, { bg: string; color: string; icon: React.ReactNode }> = {
-  DRAFT: { bg: "#f1f5f9", color: "#475569", icon: <Clock size={11} /> },
+  DRAFT: { bg: "#fef3c7", color: "#b45309", icon: <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "currentColor" }} /> },
   ISSUED: { bg: "#eff6ff", color: "#2563eb", icon: <Send size={11} /> },
   WAITING_FOR_SUPPLIER: { bg: "#fef9c3", color: "#854d0e", icon: <Clock size={11} /> },
   COMPLETED: { bg: "#f0fdf4", color: "#16a34a", icon: <CheckCircle2 size={11} /> },
@@ -38,7 +38,7 @@ export default function RFQPage() {
           {row.rfqNumber}
         </div>
       ),
-      width: "150px",
+      width: "160px",
     },
     {
       key: "office",
@@ -48,11 +48,12 @@ export default function RFQPage() {
           {row.pr.office.name}
         </div>
       ),
-      width: "200px",
+      width: "250px",
     },
     {
       key: "purpose",
       label: "Purpose",
+      align: "center",
       render: (row: RFQ) => (
         <div style={{
           fontSize: "0.875rem", color: "#334155",
@@ -65,17 +66,19 @@ export default function RFQPage() {
     },
     {
       key: "abc",
-      label: "ABC",
+      label: "Approved Budget",
+      align: "right",
       render: (row: RFQ) => (
         <div style={{ fontWeight: "700", color: "#059669" }}>
           {formatCurrency(row.pr.totalAmount)}
         </div>
       ),
-      width: "130px",
+      width: "140px",
     },
     {
       key: "status",
       label: "Status",
+      align: "center",
       render: (row: RFQ) => {
         const conf = STATUS_COLORS[row.status] || STATUS_COLORS.DRAFT;
         return (
@@ -89,12 +92,13 @@ export default function RFQPage() {
     {
       key: "createdAt",
       label: "Date",
+      align: "center",
       render: (row: RFQ) => (
         <span style={{ fontSize: "0.8125rem", color: "#64748b" }}>
           {new Date(row.createdAt).toLocaleDateString("en-PH")}
         </span>
       ),
-      width: "100px",
+      width: "120px",
     }
   ];
 

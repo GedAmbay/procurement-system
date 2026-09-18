@@ -51,6 +51,7 @@ const columns = [
   {
     key: "role",
     label: "Role",
+    align: "center",
     render: (row: User) => {
       const c = ROLE_COLORS[row.role] ?? { bg: "#f1f5f9", color: "#475569" };
       return (
@@ -60,7 +61,7 @@ const columns = [
         </span>
       );
     },
-    width: "200px",
+    width: "150px",
   },
   {
     key: "office",
@@ -70,12 +71,13 @@ const columns = [
   {
     key: "isActive",
     label: "Status",
+    align: "center",
     render: (row: User) => row.isActive ? (
       <span className="badge" style={{ background: "#f0fdf4", color: "#16a34a" }}><CheckCircle2 size={11} style={{ marginRight: "3px" }} /> Active</span>
     ) : (
       <span className="badge" style={{ background: "#fef2f2", color: "#dc2626" }}><XCircle size={11} style={{ marginRight: "3px" }} /> Inactive</span>
     ),
-    width: "80px",
+    width: "140px",
   },
   {
     key: "createdAt",

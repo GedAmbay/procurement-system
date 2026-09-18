@@ -39,7 +39,7 @@ const columns = [
         {row.code ?? "—"}
       </span>
     ),
-    width: "100px",
+    width: "120px",
   },
   {
     key: "description",
@@ -50,15 +50,18 @@ const columns = [
   {
     key: "standardCost",
     label: "Standard Unit Cost",
+    align: "right",
     render: (row: Item) => <span style={{ fontWeight: "600", color: "#059669" }}>{formatCurrency(row.standardCost)}</span>,
-    width: "140px",
+    width: "160px",
   },
   {
     key: "category",
     label: "Category",
+    align: "center",
     render: (row: Item) => row.category ? (
       <span className="badge" style={{ background: "#eff6ff", color: "#1d4ed8" }}>{row.category}</span>
-    ) : <span style={{ color: "#94a3b8" }}>—</span>,
+    ) : "—",
+    width: "150px",
   },
   {
     key: "isActive",

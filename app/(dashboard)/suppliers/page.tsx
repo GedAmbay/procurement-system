@@ -22,24 +22,24 @@ interface Supplier {
 const columns = [
   {
     key: "name",
-    label: <div style={{ textAlign: "left", fontSize: "0.9rem" }}>Supplier Name</div>,
+    label: "Supplier Name",
     render: (row: Supplier) => (
       <div>
-        <div style={{ fontWeight: "600", color: "#0f172a", textAlign: "left" }}>{row.name}</div>
-        {row.philgepsNo && <div style={{ fontSize: "0.75rem", color: "#94a3b8", textAlign: "left" }}>PhilGEPS: {row.philgepsNo}</div>}
+        <div style={{ fontWeight: "600", color: "#0f172a" }}>{row.name}</div>
+        {row.philgepsNo && <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>PhilGEPS: {row.philgepsNo}</div>}
       </div>
     ),
-    width: "400px",
+    width: "250px",
   },
   {
     key: "tin",
-    label: <div style={{ fontSize: "0.9rem" }}>TIN</div>,
+    label: "TIN",
     render: (row: Supplier) => <span style={{ fontFamily: "monospace", fontSize: "0.8125rem" }}>{row.tin ?? "—"}</span>,
     width: "120px"
   },
   {
     key: "contactPerson",
-    label: <div style={{ fontSize: "0.9rem" }}>Contact Person</div>,
+    label: "Contact Person",
     render: (row: Supplier) => (
       <div>
         <div style={{ fontSize: "0.875rem" }}>{row.contactPerson ?? "—"}</div>
@@ -47,19 +47,19 @@ const columns = [
         {row.email && <div style={{ fontSize: "0.75rem", color: "#64748b" }}>{row.email}</div>}
       </div>
     ),
-    width: "100px"
+    width: "200px"
   },
   {
     key: "address",
-    label: <div style={{ fontSize: "0.9rem" }}>Address</div>,
-    render: (row: Supplier) => <span style={{ fontSize: "0.8125rem", color: "#64748b", textAlign: "left" }}>{row.address ?? "—"}</span>,
-    width: "300px",
+    label: "Address",
+    render: (row: Supplier) => <span style={{ fontSize: "0.8125rem", color: "#64748b" }}>{row.address ?? "—"}</span>,
   },
   {
     key: "isActive",
-    label: <div style={{ fontSize: "0.9rem" }}>Status</div>,
+    label: "Status",
+    align: "center",
     render: (row: Supplier) => row.isActive ? (
-      <span className="badge" style={{ background: "#f0fdf4", color: "#16a34a", }}>
+      <span className="badge" style={{ background: "#f0fdf4", color: "#16a34a" }}>
         <CheckCircle2 size={11} style={{ marginRight: "3px" }} /> Active
       </span>
     ) : (
@@ -67,7 +67,7 @@ const columns = [
         <XCircle size={11} style={{ marginRight: "3px" }} /> Inactive
       </span>
     ),
-    width: "90px",
+    width: "140px",
   },
 ];
 

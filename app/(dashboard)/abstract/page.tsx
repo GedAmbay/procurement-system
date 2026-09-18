@@ -21,7 +21,7 @@ interface AOQ {
 }
 
 const STATUS_COLORS: Record<string, { bg: string; color: string; icon: React.ReactNode }> = {
-  DRAFT: { bg: "#f1f5f9", color: "#475569", icon: <Clock size={11} /> },
+  DRAFT: { bg: "#fef3c7", color: "#b45309", icon: <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "currentColor" }} /> },
   RECOMMENDED: { bg: "#eff6ff", color: "#2563eb", icon: <Send size={11} /> },
   APPROVED: { bg: "#f0fdf4", color: "#16a34a", icon: <CheckCircle2 size={11} /> },
 };
@@ -39,7 +39,7 @@ export default function AOQPage() {
           {row.aoqNumber}
         </div>
       ),
-      width: "150px",
+      width: "160px",
     },
     {
       key: "office",
@@ -54,6 +54,7 @@ export default function AOQPage() {
     {
       key: "purpose",
       label: "Purpose",
+      align: "center",
       render: (row: AOQ) => (
         <div style={{
           fontSize: "0.875rem", color: "#334155",
@@ -66,17 +67,19 @@ export default function AOQPage() {
     },
     {
       key: "abc",
-      label: "ABC",
+      label: "Approved Budget",
+      align: "right",
       render: (row: AOQ) => (
         <div style={{ fontWeight: "700", color: "#059669" }}>
           {formatCurrency(row.rfq.pr.totalAmount)}
         </div>
       ),
-      width: "200px",
+      width: "140px",
     },
     {
       key: "status",
       label: "Status",
+      align: "center",
       render: (row: AOQ) => {
         const conf = STATUS_COLORS[row.status] || STATUS_COLORS.DRAFT;
         return (
@@ -90,27 +93,28 @@ export default function AOQPage() {
     {
       key: "createdAt",
       label: "Date",
+      align: "center",
       render: (row: AOQ) => (
         <span style={{ fontSize: "0.8125rem", color: "#64748b" }}>
           {new Date(row.createdAt).toLocaleDateString("en-PH")}
         </span>
       ),
-      width: "100px",
+      width: "120px",
     }
   ];
 
   const handleEdit = (row: AOQ) => {
-    router.push(`/aoq/${row.id}`);
+    router.push(`/abstract/${row.id}`);
   };
 
   const handleDuplicate = (row: AOQ) => {
-    router.push(`/aoq/new?duplicateFrom=${row.id}`);
+    router.push(`/abstract/new?duplicateFrom=${row.id}`);
   };
 
   const handleDelete = async (row: AOQ) => {
     if (!confirm("Are you sure you want to delete this AOQ?")) return;
     try {
-      const res = await fetch(`/api/aoq/${row.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/abstract/${row.id}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
       setRefreshKey(k => k + 1);
     } catch {
@@ -124,10 +128,10 @@ export default function AOQPage() {
         key={refreshKey}
         title="Abstract of Quotation"
         description="Consolidate supplier bids and recommend the lowest calculated responsive quotation."
-        apiPath="/api/aoq"
+        apiPath="/api/abstract"
         columns={columns}
         searchPlaceholder="Search by AOQ Number..."
-        onView={(row) => router.push(`/aoq/${row.id}?mode=view`)}
+        onView={(row) => router.push(`/abstract/${row.id}?mode=view`)}
         onEdit={handleEdit}
         onDuplicate={handleDuplicate}
         onDelete={handleDelete}

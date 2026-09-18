@@ -59,7 +59,7 @@ export default function SupplierEncodingPage() {
           setQuoteData(data);
 
           // We also need to know the AOQ status to prevent edits if approved
-          const aoqRes = await fetch(`/api/aoq/${params.id}`);
+          const aoqRes = await fetch(`/api/abstract/${params.id}`);
           if (aoqRes.ok) {
             const aoqData = await aoqRes.json();
             setAoqStatus(aoqData.status);
@@ -113,7 +113,7 @@ export default function SupplierEncodingPage() {
 
       if (res.ok) {
         toast.success("Supplier bid encoded successfully");
-        router.push(`/aoq/${params.id}`);
+        router.push(`/abstract/${params.id}`);
       } else {
         toast.error("Failed to save quotation");
       }
@@ -135,7 +135,7 @@ export default function SupplierEncodingPage() {
       {/* Header */}
       <div className="no-print flex items-center justify-between p-4 bg-white border-b border-slate-200 shadow-sm z-10">
         <div className="flex items-center gap-3">
-          <Link href={`/aoq/${params.id}`} className="text-slate-500 hover:text-slate-800 transition-colors bg-white hover:bg-slate-100 p-2 rounded-full border border-slate-200 shadow-sm flex items-center justify-center">
+          <Link href={`/abstract/${params.id}`} className="text-slate-500 hover:text-slate-800 transition-colors bg-white hover:bg-slate-100 p-2 rounded-full border border-slate-200 shadow-sm flex items-center justify-center">
             <ArrowLeft size={18} />
           </Link>
           <div>

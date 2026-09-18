@@ -48,6 +48,7 @@ const columns = [
   {
     key: "totalBudget",
     label: "Total Budget",
+    align: "right",
     render: (row: FundSource) => <span style={{ fontWeight: "600", color: "#0f172a" }}>{formatCurrency(row.totalBudget)}</span>,
     width: "140px",
   },
@@ -74,12 +75,13 @@ const columns = [
   {
     key: "isActive",
     label: "Status",
+    align: "center",
     render: (row: FundSource) => row.isActive ? (
       <span className="badge" style={{ background: "#f0fdf4", color: "#16a34a" }}><CheckCircle2 size={11} style={{ marginRight: "3px" }} /> Active</span>
     ) : (
       <span className="badge" style={{ background: "#fef2f2", color: "#dc2626" }}><XCircle size={11} style={{ marginRight: "3px" }} /> Inactive</span>
     ),
-    width: "80px",
+    width: "140px",
   },
 ];
 

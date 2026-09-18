@@ -9,6 +9,7 @@ interface Column<T> {
   label: React.ReactNode;
   render?: (row: T) => React.ReactNode;
   width?: string;
+  align?: "left" | "center" | "right" | (string & {});
 }
 
 interface DataTableProps<T extends { id: string; isActive?: boolean }> {
@@ -47,6 +48,8 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const [deleting, setDeleting] = useState<string | null>(null);
   const [selectedRow, setSelectedRow] = useState<T | null>(null);
   const [showActionBar, setShowActionBar] = useState(false);
@@ -101,6 +104,13 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
     return () => clearTimeout(t);
   }, [fetchData]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  const totalPages = Math.max(1, Math.ceil(data.length / itemsPerPage));
+  const paginatedData = data.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   const handleDelete = async (row: T) => {
     if (!onDelete) return;
     if (!confirm(`Are you sure you want to deactivate this record?`)) return;
@@ -144,10 +154,15 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
             </button>
           )}
         </div>
+        {!loading && (
+          <div style={{ display: "flex", alignItems: "center", height: "36px", color: "#64748b", fontSize: "0.875rem", fontWeight: "500" }}>
+            {data.length} record{data.length !== 1 ? "s" : ""} {search ? `matching "${search}"` : "total"}
+          </div>
+        )}
       </div>
 
       {/* Table */}
-      <div className="card" style={{ padding: 0 }}>
+      <div className="table-container">
         {loading ? (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "3rem", gap: "0.75rem", color: "#94a3b8" }}>
             <Loader2 size={20} style={{ animation: "spin 1s linear infinite" }} />
@@ -167,18 +182,18 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
             )}
           </div>
         ) : (
-          <div className="table-container" style={{ border: "none", borderRadius: "0.75rem" }}>
+          <div style={{ overflowX: "auto" }}>
             <table className="data-table">
               <thead>
                 <tr>
                   {columns.map((col) => (
-                    <th key={col.key} style={{ width: col.width }}>{col.label}</th>
+                    <th key={col.key} style={{ width: col.width, textAlign: (col.align || "left") as any }}>{col.label}</th>
                   ))}
 
                 </tr>
               </thead>
               <tbody>
-                {data.map((row) => (
+                {paginatedData.map((row) => (
                   <tr
                     key={row.id}
                     style={{
@@ -195,7 +210,7 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
                     }}
                   >
                     {columns.map((col) => (
-                      <td key={col.key}>
+                      <td key={col.key} style={{ textAlign: (col.align || "left") as any }}>
                         {col.render ? col.render(row) : String((row as any)[col.key] ?? "—")}
                       </td>
                     ))}
@@ -205,13 +220,32 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
             </table>
           </div>
         )}
-        {/* Footer count */}
-        {!loading && data.length > 0 && (
-          <div style={{ padding: "0.625rem 1rem", borderTop: "1px solid #f1f5f9", color: "#94a3b8", fontSize: "0.75rem" }}>
-            {data.length} record{data.length !== 1 ? "s" : ""} {search ? `matching "${search}"` : "total"}
-          </div>
-        )}
       </div>
+      
+      {/* Pagination Footer */}
+      {!loading && data.length > 0 && (
+        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", padding: "1rem 0.5rem", gap: "1rem", color: "#64748b", fontSize: "0.875rem", fontWeight: "500" }}>
+          <span>Page {currentPage} of {totalPages}</span>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <button 
+              className="btn btn-secondary btn-sm" 
+              disabled={currentPage === 1} 
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              style={{ padding: "0.25rem 0.75rem", opacity: currentPage === 1 ? 0.5 : 1 }}
+            >
+              Prev
+            </button>
+            <button 
+              className="btn btn-secondary btn-sm" 
+              disabled={currentPage === totalPages} 
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              style={{ padding: "0.25rem 0.75rem", opacity: currentPage === totalPages ? 0.5 : 1 }}
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
       {showActionBar && (onView || onEdit || onDuplicate || onDelete) && (
         <div ref={actionBarRef} style={{
           position: "fixed",

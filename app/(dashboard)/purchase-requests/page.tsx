@@ -19,7 +19,7 @@ interface PR {
 }
 
 const STATUS_COLORS: Record<string, { bg: string; color: string; icon: React.ReactNode }> = {
-  DRAFT: { bg: "#f1f5f9", color: "#475569", icon: <Clock size={11} /> },
+  DRAFT: { bg: "#fef3c7", color: "#b45309", icon: <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "currentColor" }} /> },
   SUBMITTED: { bg: "#eff6ff", color: "#2563eb", icon: <Send size={11} /> },
   APPROVED: { bg: "#f0fdf4", color: "#16a34a", icon: <CheckCircle2 size={11} /> },
   REJECTED: { bg: "#fef2f2", color: "#dc2626", icon: <XCircle size={11} /> },
@@ -34,32 +34,32 @@ export default function PurchaseRequestsPage() {
   const columns = [
     {
       key: "prNumber",
-      label: <div style={{ fontSize: "0.9rem" }}>PR Number</div>,
+      label: "PR Number",
       render: (row: PR) => (
-        <div style={{ fontWeight: "600", color: "#0f172a", fontFamily: "monospace", fontSize: "0.875rem", textAlign: "center" }}>
+        <div style={{ fontWeight: "600", color: "#0f172a", fontFamily: "monospace", fontSize: "0.875rem" }}>
           {row.prNumber}
         </div>
       ),
-      width: "130px",
+      width: "160px",
     },
     {
       key: "office",
-      label: <div style={{ fontSize: "0.9rem" }}>Requesting Office</div>,
+      label: "Requesting Office",
       render: (row: PR) => (
         <div>
-          <div style={{ fontWeight: "600", color: "#1e293b", fontSize: "0.875rem", textAlign: "center" }}>{row.office?.name || row.office?.code || ""}</div>
+          <div style={{ fontWeight: "600", color: "#1e293b", fontSize: "0.875rem" }}>{row.office?.name || row.office?.code || ""}</div>
         </div>
       ),
-      width: "200px",
+      width: "250px",
     },
     {
       key: "purpose",
-      label: <div style={{ fontSize: "0.9rem" }}>Purpose</div>,
+      label: "Purpose",
+      align: "center",
       render: (row: PR) => (
         <div style={{
           fontSize: "0.875rem", color: "#334155",
-          maxWidth: "300px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", margin: "0 auto",
-          textAlign: "center"
+          maxWidth: "300px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", margin: "0 auto"
         }}>
           {row.purpose}
         </div>
@@ -67,36 +67,39 @@ export default function PurchaseRequestsPage() {
     },
     {
       key: "totalAmount",
-      label: <div style={{ fontSize: "0.9rem" }}>Total Amount</div>,
+      label: "Total Amount",
+      align: "right",
       render: (row: PR) => (
-        <div style={{ fontWeight: "700", color: "#059669", textAlign: "center" }}>
+        <div style={{ fontWeight: "700", color: "#059669" }}>
           {formatCurrency(row.totalAmount)}
         </div>
       ),
-      width: "200px",
+      width: "140px",
     },
     {
       key: "status",
-      label: <div style={{ fontSize: "0.9rem" }}>Status</div>,
+      label: "Status",
+      align: "center",
       render: (row: PR) => {
         const conf = STATUS_COLORS[row.status] || STATUS_COLORS.DRAFT;
         return (
-          <span className="badge" style={{ background: conf.bg, color: conf.color, display: "inline-flex", alignItems: "center", gap: "0.25rem", textAlign: "center" }}>
+          <span className="badge" style={{ background: conf.bg, color: conf.color, display: "inline-flex", alignItems: "center", gap: "0.25rem" }}>
             {conf.icon} {PR_STATUS_LABELS[row.status] || row.status}
           </span>
         );
       },
-      width: "120px",
+      width: "140px",
     },
     {
       key: "createdAt",
-      label: <div style={{ fontSize: "0.9rem" }}>Date</div>,
+      label: "Date",
+      align: "center",
       render: (row: PR) => (
-        <span style={{ fontSize: "0.8125rem", color: "#64748b", display: "block", textAlign: "center" }}>
+        <span style={{ fontSize: "0.8125rem", color: "#64748b", display: "block" }}>
           {new Date(row.createdAt).toLocaleDateString("en-PH")}
         </span>
       ),
-      width: "100px",
+      width: "120px",
     }
   ];
 

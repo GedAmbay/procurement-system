@@ -22,7 +22,7 @@ export default function AoqSupplierHub() {
 
   const fetchData = async () => {
     try {
-      const res = await fetch(`/api/aoq/${params.id}`);
+      const res = await fetch(`/api/abstract/${params.id}`);
       if (res.ok) {
         const data = await res.json();
         setAoq(data);
@@ -65,7 +65,7 @@ export default function AoqSupplierHub() {
 
   const updateStatus = async (status: string) => {
     try {
-      const res = await fetch(`/api/aoq/${params.id}`, {
+      const res = await fetch(`/api/abstract/${params.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status })
@@ -93,7 +93,7 @@ export default function AoqSupplierHub() {
   return (
     <div className="max-w-5xl mx-auto py-8 px-4">
       <div className="flex items-center gap-4 mb-8">
-        <Link href="/aoq" className="p-2 bg-white rounded-full border border-slate-200 hover:bg-slate-50 text-slate-600 shadow-sm">
+        <Link href="/abstract" className="p-2 bg-white rounded-full border border-slate-200 hover:bg-slate-50 text-slate-600 shadow-sm">
           <ArrowLeft size={18} />
         </Link>
         <div>
@@ -171,7 +171,7 @@ export default function AoqSupplierHub() {
           {quotations.map((q: any) => (
             <div
               key={q.id}
-              onClick={() => router.push(`/aoq/${aoq.id}/supplier/${q.id}`)}
+              onClick={() => router.push(`/abstract/${aoq.id}/supplier/${q.id}`)}
               className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-pointer flex flex-col"
             >
               <div className="flex items-start gap-3 mb-4">
