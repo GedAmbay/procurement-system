@@ -12,7 +12,7 @@ export default function AbstractLivePreviewPage() {
   const [data, setData] = useState<any>(null);
   const [allSignatories, setAllSignatories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [zoom, setZoom] = useState(0.85);
+  const [zoom, setZoom] = useState(0.75);
 
   // Editable form state
   const [showPrNo, setShowPrNo] = useState(true);
@@ -155,13 +155,13 @@ export default function AbstractLivePreviewPage() {
 
         {/* ─── Left: Live Preview ─── */}
         <div className="flex-1 overflow-auto bg-slate-200 print:p-0 print:bg-white print:block print:!overflow-visible print:!h-auto">
-          <div className="p-8 print:p-0 w-max mx-auto min-w-full flex justify-center origin-top print:block print:w-full print:min-w-0 print:!transform-none print:!mb-0"
-            style={{ transform: `scale(${zoom})`, marginBottom: `${(zoom - 1) * 1100}px` }}>
+          <div className="p-8 print:p-0 mx-auto min-w-full flex justify-center print:block print:w-full print:min-w-0"
+            style={{ zoom }}>
             <div style={{
-              width: "1050px", background: "#fff",
+              background: "#fff",
               border: "1px solid #000",
               padding: "20px 0", fontFamily: "Arial, sans-serif", fontSize: "9px",
-            }} className="shadow-xl min-h-[700px] print:shadow-none print:w-full print:max-w-none print:p-0 print:m-0 print:min-h-0">
+            }} className="w-[1150px] shadow-xl min-h-[700px] print:shadow-none print:!w-full print:!max-w-none print:!p-0 print:!m-0 print:!min-h-0 print:border-0">
 
               {/* Doc Header */}
               <div style={{ textAlign: "center", marginBottom: "6px" }}>
@@ -194,7 +194,7 @@ export default function AbstractLivePreviewPage() {
                 <thead>
                   <tr>
                     <th style={{ ...headerCell, width: "26px" }} rowSpan={3}>NO.</th>
-                    <th style={{ ...headerCell }} rowSpan={3}>DESCRIPTION</th>
+                    <th style={{ ...headerCell, width: "50%" }} rowSpan={3}>DESCRIPTION</th>
                     <th style={{ ...headerCell, width: "38px" }} rowSpan={3}>QTY</th>
                     <th style={{ ...headerCell, width: "34px" }} rowSpan={3}>UNIT</th>
                     <th style={{ ...headerCell }} colSpan={displayQuotes.length * 2}>SUPPLIER&apos;S NAME</th>
@@ -209,8 +209,8 @@ export default function AbstractLivePreviewPage() {
                   <tr>
                     {displayQuotes.map((_: any, i: number) => (
                       <React.Fragment key={i}>
-                        <th key={`up-${i}`} style={{ ...headerCell, width: "75px", fontSize: "7.5px" }}>UNIT PRICE</th>
-                        <th key={`tp-${i}`} style={{ ...headerCell, width: "85px", fontSize: "7.5px" }}>TOTAL PRICE</th>
+                        <th key={`up-${i}`} style={{ ...headerCell, width: "8%", fontSize: "8px" }}>UNIT PRICE</th>
+                        <th key={`tp-${i}`} style={{ ...headerCell, width: "8%", fontSize: "8px" }}>TOTAL PRICE</th>
                       </React.Fragment>
                     ))}
                   </tr>
