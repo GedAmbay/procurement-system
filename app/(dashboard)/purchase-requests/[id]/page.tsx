@@ -438,16 +438,16 @@ export default function PurchaseRequestEditor() {
         </div>
 
         {/* Right Side: Data Entry Form (No Print) */}
-        <div className="no-print w-[400px] xl:w-[500px] shrink-0 border-l border-slate-200 bg-white overflow-y-auto flex flex-col">
-          <div className="p-6 flex-1">
-            <h3 className="font-bold text-slate-800 mb-6 text-lg">PR Details</h3>
+        <div className="no-print" style={{ width: "420px", flexShrink: 0, borderLeft: "1px solid #e2e8f0", background: "var(--color-page-bg)", overflowY: "auto", display: "flex", flexDirection: "column" }}>
+          <div style={{ padding: "1.25rem", flex: 1 }}>
+            <h3 style={{ fontWeight: "800", color: "#0f172a", marginBottom: "1.25rem", fontSize: "1rem" }}>PR Details</h3>
 
-            <form className="space-y-5">
+            <form style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Requesting Office</label>
+                <label className="form-label">Requesting Office</label>
                 <select
                   {...register("officeId")}
-                  className="w-full p-2 border border-slate-300 rounded-md bg-slate-50 text-sm"
+                  className="form-select"
                   disabled={isReadOnly}
                 >
                   <option value="">Select Office...</option>
@@ -458,10 +458,10 @@ export default function PurchaseRequestEditor() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Fund Source</label>
+                <label className="form-label">Fund Source</label>
                 <select
                   {...register("fundSourceId")}
-                  className="w-full p-2 border border-slate-300 rounded-md bg-slate-50 text-sm"
+                  className="form-select"
                   disabled={isReadOnly}
                 >
                   <option value="">Select Fund Source...</option>
@@ -472,10 +472,10 @@ export default function PurchaseRequestEditor() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Requested By (Signatory)</label>
+                <label className="form-label">Requested By (Signatory)</label>
                 <select
                   {...register("requestedBySignatoryId")}
-                  className="w-full p-2 border border-slate-300 rounded-md bg-slate-50 text-sm"
+                  className="form-select"
                   disabled={isReadOnly}
                 >
                   <option value="">Select Signatory...</option>
@@ -486,25 +486,26 @@ export default function PurchaseRequestEditor() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Purpose</label>
+                <label className="form-label">Purpose</label>
                 <textarea
                   {...register("purpose")}
-                  className="w-full p-2 border border-slate-300 rounded-md bg-slate-50 text-sm min-h-[80px]"
+                  className="form-input"
+                  style={{ minHeight: "80px", resize: "vertical" }}
                   placeholder="Enter purpose of procurement..."
                   disabled={isReadOnly}
                 />
               </div>
 
-              <div className="pt-4 border-t border-slate-200">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-bold text-slate-800">
+              <div style={{ paddingTop: "1rem", borderTop: "1px solid #e2e8f0" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+                  <h3 style={{ fontWeight: "700", color: "#334155", fontSize: "0.9375rem" }}>
                     {activeItemIndex !== null ? "Edit Item" : "Add New Item"}
                   </h3>
                   {activeItemIndex !== null && !isReadOnly && (
                     <button
                       type="button"
                       onClick={handleClearDraft}
-                      className="text-xs bg-slate-100 text-slate-600 hover:bg-slate-200 px-3 py-1.5 rounded-md font-semibold transition-colors btn btn-secondary"
+                      className="btn btn-secondary btn-sm"
                     >
                       Cancel Edit
                     </button>
@@ -512,14 +513,14 @@ export default function PurchaseRequestEditor() {
                 </div>
 
                 {!isReadOnly && (
-                  <div className="p-4 border border-slate-200 rounded-lg bg-slate-50 relative">
-                    <div className="grid grid-cols-12 gap-3 mb-4">
-                      <div className="col-span-12">
-                        <label className="block text-xs font-semibold text-slate-600 mb-1">Catalog Item (Optional)</label>
+                  <div style={{ borderRadius: "1rem", background: "var(--color-page-bg)", boxShadow: "inset 4px 4px 8px rgba(163,177,198,0.5), inset -4px -4px 8px rgba(255,255,255,0.9)", padding: "1rem" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "0.75rem", marginBottom: "1rem" }}>
+                      <div>
+                        <label className="form-label">Catalog Item <span style={{ fontWeight: "400", color: "#94a3b8" }}>(optional)</span></label>
                         <select
                           value={draftItem.itemId || ""}
                           onChange={(e) => handleItemSelect(e.target.value)}
-                          className="w-full p-2 border border-slate-300 rounded-md text-sm bg-white"
+                          className="form-select"
                         >
                           <option value="">-- Custom Item --</option>
                           {items.map(item => (
@@ -528,68 +529,73 @@ export default function PurchaseRequestEditor() {
                         </select>
                       </div>
 
-                      <div className="col-span-12">
-                        <label className="block text-xs font-semibold text-slate-600 mb-1">Description</label>
+                      <div>
+                        <label className="form-label">Description</label>
                         <input
                           value={draftItem.description}
                           onChange={(e) => setDraftItem({ ...draftItem, description: e.target.value })}
-                          className="w-full p-2 border border-slate-300 rounded-md text-sm bg-white"
+                          className="form-input"
                           placeholder="Enter description..."
                         />
                       </div>
 
-                      <div className="col-span-4">
-                        <label className="block text-xs font-semibold text-slate-600 mb-1">Unit</label>
-                        <input
-                          value={draftItem.unit}
-                          onChange={(e) => setDraftItem({ ...draftItem, unit: e.target.value })}
-                          className="w-full p-2 border border-slate-300 rounded-md text-sm bg-white"
-                        />
-                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
+                        <div>
+                          <label className="form-label">Unit</label>
+                          <input
+                            value={draftItem.unit}
+                            onChange={(e) => setDraftItem({ ...draftItem, unit: e.target.value })}
+                            className="form-input"
+                          />
+                        </div>
 
-                      <div className="col-span-4">
-                        <label className="block text-xs font-semibold text-slate-600 mb-1">Qty</label>
-                        <input
-                          type="number"
-                          step="1"
-                          value={draftItem.quantity}
-                          onChange={(e) => setDraftItem({ ...draftItem, quantity: Number(e.target.value) })}
-                          className="w-full p-2 border border-slate-300 rounded-md text-sm bg-white text-right"
-                        />
-                      </div>
+                        <div>
+                          <label className="form-label">Qty</label>
+                          <input
+                            type="number"
+                            step="1"
+                            value={draftItem.quantity}
+                            onChange={(e) => setDraftItem({ ...draftItem, quantity: Number(e.target.value) })}
+                            className="form-input"
+                            style={{ textAlign: "right" }}
+                          />
+                        </div>
 
-                      <div className="col-span-4">
-                        <label className="block text-xs font-semibold text-slate-600 mb-1">Cost</label>
-                        <input
-                          type="number"
-                          step="0.25"
-                          value={draftItem.unitCost}
-                          onChange={(e) => setDraftItem({ ...draftItem, unitCost: Number(e.target.value) })}
-                          className="w-full p-2 border border-slate-300 rounded-md text-sm bg-white text-right"
-                        />
+                        <div>
+                          <label className="form-label">Cost</label>
+                          <input
+                            type="number"
+                            step="0.25"
+                            value={draftItem.unitCost}
+                            onChange={(e) => setDraftItem({ ...draftItem, unitCost: Number(e.target.value) })}
+                            className="form-input"
+                            style={{ textAlign: "right" }}
+                          />
+                        </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between border-t border-slate-200 pt-3">
-                      <div className="text-sm font-bold text-emerald-600">
-                        Estimated Cost: {formatCurrency(draftItem.quantity * draftItem.unitCost)}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid #e2e8f0", paddingTop: "0.75rem" }}>
+                      <div style={{ fontSize: "0.875rem", fontWeight: "700", color: "#059669" }}>
+                        Est: {formatCurrency(draftItem.quantity * draftItem.unitCost)}
                       </div>
-                      <div className="flex gap-2">
+                      <div style={{ display: "flex", gap: "0.5rem" }}>
                         {activeItemIndex !== null && (
                           <button
                             type="button"
                             onClick={handleDeleteItem}
-                            className="bg-red-100 text-red-600 hover:bg-red-200 px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1 transition-colors btn btn-danger"
+                            className="btn btn-danger btn-sm"
+                            style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}
                           >
-                            <Trash2 size={14} /> Delete
+                            <Trash2 size={13} /> Delete
                           </button>
                         )}
                         <button
                           type="button"
                           onClick={handleAddOrUpdate}
-                          className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-1.5 rounded-md text-xs font-semibold transition-colors btn btn-primary"
+                          className="btn btn-primary btn-sm"
                         >
-                          {activeItemIndex !== null ? "Update Item" : "Add Item"}
+                          {activeItemIndex !== null ? "Update" : "Add Item"}
                         </button>
                       </div>
                     </div>
@@ -597,7 +603,7 @@ export default function PurchaseRequestEditor() {
                 )}
 
                 {isReadOnly && watchLineItems.length === 0 && (
-                  <div className="text-center p-6 border-2 border-dashed border-slate-200 rounded-lg text-slate-500 text-sm">
+                  <div style={{ textAlign: "center", padding: "1.5rem", border: "2px dashed #e2e8f0", borderRadius: "0.75rem", color: "#94a3b8", fontSize: "0.875rem" }}>
                     No line items added.
                   </div>
                 )}
@@ -605,10 +611,10 @@ export default function PurchaseRequestEditor() {
             </form>
           </div>
 
-          <div className="p-4 bg-slate-50 border-t border-slate-200 sticky bottom-0">
-            <div className="flex justify-between items-center text-lg font-bold text-slate-800">
+          <div style={{ padding: "1rem", background: "var(--color-page-bg)", borderTop: "1px solid #e2e8f0", position: "sticky", bottom: 0, boxShadow: "0 -2px 8px rgba(163,177,198,0.2)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontWeight: "800", fontSize: "1rem", color: "#0f172a" }}>
               <span>Grand Total:</span>
-              <span className="text-emerald-600">{formatCurrency(totalAmount)}</span>
+              <span style={{ color: "#059669" }}>{formatCurrency(totalAmount)}</span>
             </div>
           </div>
         </div>

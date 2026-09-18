@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Printer, Loader2, ZoomIn, ZoomOut, Users, Edit3 } from "lucide-react";
 import Link from "next/link";
@@ -16,14 +16,18 @@ export default function AbstractLivePreviewPage() {
 
   // Editable form state
   const [showPrNo, setShowPrNo] = useState(true);
-  const [docDate, setDocDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [docDate, setDocDate] = useState("");
   const [bacResNo, setBacResNo] = useState("");
   const [dateReceived, setDateReceived] = useState("");
-  const [dateAwarded, setDateAwarded] = useState(() => new Date().toISOString().split("T")[0]);
+  const [dateAwarded, setDateAwarded] = useState("");
 
   // Signatories overrides: record of id -> { name, position, label }
   const [sigOverrides, setSigOverrides] = useState<Record<string, { name: string; position: string; label: string }>>({});
   const [selectedSigIds, setSelectedSigIds] = useState<string[]>([]);
+  const [editingSigId, setEditingSigId] = useState<string | null>(null);
+  const [showAllSigs, setShowAllSigs] = useState(false);
+  const [reqOfficerName, setReqOfficerName] = useState("");
+  const [reqOfficerOffice, setReqOfficerOffice] = useState("");
 
   useEffect(() => {
     async function load() {
@@ -35,12 +39,10 @@ export default function AbstractLivePreviewPage() {
         if (aoqRes.ok) {
           const d = await aoqRes.json();
           setData(d);
-          // Pre-fill date received from earliest quotation submittedAt
-          const dates = (d.rfq?.quotations || [])
-            .map((q: any) => q.submittedAt)
-            .filter(Boolean)
-            .sort();
-          if (dates.length > 0) setDateReceived(new Date(dates[0]).toISOString().split("T")[0]);
+          if (d.rfq?.pr) {
+            setReqOfficerName(d.rfq.pr.requestedBy || "");
+            setReqOfficerOffice(d.rfq.pr.office?.name || "");
+          }
         }
         if (sigRes.ok) {
           const sigs = await sigRes.json();
@@ -73,7 +75,7 @@ export default function AbstractLivePreviewPage() {
       <Loader2 size={28} style={{ animation: "spin 1s linear infinite", color: "#2563eb" }} />
     </div>
   );
-  if (!data) return <div style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>Not found</div>;
+  if (!data) return <div style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>Abstract not found</div>;
 
   const rfq = data.rfq;
   const pr = rfq.pr;
@@ -110,7 +112,7 @@ export default function AbstractLivePreviewPage() {
 
   return (
     <div className="flex flex-col overflow-hidden print:block print:!h-auto print:!overflow-visible"
-      style={{ height: "calc(var(--full-vh, 100vh) - 72px)" }}>
+      style={{ height: "calc(var(--full-vh, 100vh) - 170px)" }}>
 
       {/* ─── Header Bar ─── */}
       <div className="no-print" style={{
@@ -136,34 +138,30 @@ export default function AbstractLivePreviewPage() {
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          {/* Zoom Controls */}
-          <div style={{
-            display: "flex", alignItems: "center", gap: "0.125rem",
-            background: "var(--color-page-bg)", borderRadius: "9999px",
-            boxShadow: "var(--shadow-neu-drop)", padding: "0.25rem 0.5rem",
-          }}>
-            <button type="button" onClick={() => setZoom(z => Math.max(z - 0.1, 0.4))} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b", display: "flex", padding: "4px" }}><ZoomOut size={15} /></button>
-            <button type="button" onClick={() => setZoom(1)} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b", fontSize: "0.75rem", fontWeight: "700", padding: "4px 6px", minWidth: "40px" }}>{Math.round(zoom * 100)}%</button>
-            <button type="button" onClick={() => setZoom(z => Math.min(z + 0.1, 2))} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b", display: "flex", padding: "4px" }}><ZoomIn size={15} /></button>
-          </div>
-          <button onClick={() => window.print()} className="btn btn-primary btn-sm" style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
-            <Printer size={14} /> Print / Save PDF
+          <button onClick={() => window.print()} className="btn flex items-center gap-2 border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 shadow-sm">
+            <Printer size={14} /> Print
           </button>
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden print:block print:!h-auto">
+      <div className="flex flex-1 overflow-hidden relative print:block print:!h-auto">
+
+        {/* Zoom Controls (Bottom Left) */}
+        <div className="no-print absolute bottom-6 left-6 flex items-center gap-1 bg-white p-1 rounded-full shadow-md border border-slate-200 z-10 text-slate-600">
+          <button type="button" onClick={() => setZoom(z => Math.max(z - 0.1, 0.4))} className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Zoom Out"><ZoomOut size={18} /></button>
+          <button type="button" onClick={() => setZoom(1)} className="px-3 hover:bg-slate-100 rounded-full font-bold text-xs h-full transition-colors" title="Reset Zoom">{Math.round(zoom * 100)}%</button>
+          <button type="button" onClick={() => setZoom(z => Math.min(z + 0.1, 2))} className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Zoom In"><ZoomIn size={18} /></button>
+        </div>
 
         {/* ─── Left: Live Preview ─── */}
-        <div style={{ flex: 1, overflowY: "auto", background: "#94a3b8", padding: "1.5rem" }}
-          className="print:p-0 print:bg-white print:block print:!overflow-visible">
-          <div style={{ transform: `scale(${zoom})`, transformOrigin: "top center", marginBottom: `${(zoom - 1) * 1100}px` }}
-            className="print:!transform-none print:!mb-0">
+        <div className="flex-1 overflow-auto bg-slate-200 print:p-0 print:bg-white print:block print:!overflow-visible print:!h-auto">
+          <div className="p-8 print:p-0 w-max mx-auto min-w-full flex justify-center origin-top print:block print:w-full print:min-w-0 print:!transform-none print:!mb-0"
+            style={{ transform: `scale(${zoom})`, marginBottom: `${(zoom - 1) * 1100}px` }}>
             <div style={{
-              width: "1050px", background: "#fff", margin: "0 auto",
-              padding: "20px 24px", fontFamily: "Arial, sans-serif", fontSize: "9px",
-              boxShadow: "0 4px 24px rgba(0,0,0,0.2)",
-            }} className="print:shadow-none print:w-full">
+              width: "1050px", background: "#fff",
+              border: "1px solid #000",
+              padding: "20px 0", fontFamily: "Arial, sans-serif", fontSize: "9px",
+            }} className="shadow-xl min-h-[700px] print:shadow-none print:w-full print:max-w-none print:p-0 print:m-0 print:min-h-0">
 
               {/* Doc Header */}
               <div style={{ textAlign: "center", marginBottom: "6px" }}>
@@ -192,7 +190,7 @@ export default function AbstractLivePreviewPage() {
               </div>
 
               {/* Main Table */}
-              <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "6px" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "15px" }}>
                 <thead>
                   <tr>
                     <th style={{ ...headerCell, width: "26px" }} rowSpan={3}>NO.</th>
@@ -210,10 +208,10 @@ export default function AbstractLivePreviewPage() {
                   </tr>
                   <tr>
                     {displayQuotes.map((_: any, i: number) => (
-                      <>
+                      <React.Fragment key={i}>
                         <th key={`up-${i}`} style={{ ...headerCell, width: "75px", fontSize: "7.5px" }}>UNIT PRICE</th>
                         <th key={`tp-${i}`} style={{ ...headerCell, width: "85px", fontSize: "7.5px" }}>TOTAL PRICE</th>
-                      </>
+                      </React.Fragment>
                     ))}
                   </tr>
                 </thead>
@@ -230,14 +228,14 @@ export default function AbstractLivePreviewPage() {
                           const prices = q ? getItemPrice(q, item.id) : { unitPrice: 0, totalPrice: 0 };
                           const isWinner = q && recommendedQuote && q.id === recommendedQuote.id;
                           return (
-                            <>
+                            <React.Fragment key={qi}>
                               <td key={`up-${qi}`} style={{ ...cell, textAlign: "right", fontWeight: isWinner ? "700" : "400" }}>
                                 {fmt2(prices.unitPrice)}
                               </td>
                               <td key={`tp-${qi}`} style={{ ...cell, textAlign: "right", fontWeight: isWinner ? "700" : "400" }}>
                                 {fmt2(prices.totalPrice)}
                               </td>
-                            </>
+                            </React.Fragment>
                           );
                         })}
                       </tr>
@@ -248,7 +246,7 @@ export default function AbstractLivePreviewPage() {
                     <tr key={`fill-${i}`} style={{ height: "14px" }}>
                       <td style={cell}></td><td style={cell}></td><td style={cell}></td><td style={cell}></td>
                       {displayQuotes.map((_: any, qi: number) => (
-                        <><td key={`fu-${qi}`} style={cell}></td><td key={`ft-${qi}`} style={cell}></td></>
+                        <React.Fragment key={qi}><td key={`fu-${qi}`} style={cell}></td><td key={`ft-${qi}`} style={cell}></td></React.Fragment>
                       ))}
                     </tr>
                   ))}
@@ -259,12 +257,12 @@ export default function AbstractLivePreviewPage() {
                     {displayQuotes.map((q: any, qi: number) => {
                       const isWinner = q && recommendedQuote && q.id === recommendedQuote.id;
                       return (
-                        <>
+                        <React.Fragment key={qi}>
                           <td key={`tot-up-${qi}`} style={{ ...cell, borderTop: "2px solid #000" }}></td>
                           <td key={`tot-tp-${qi}`} style={{ ...cell, borderTop: "2px solid #000", textAlign: "right", fontWeight: "700", fontSize: isWinner ? "10px" : "9px" }}>
                             {q && q.totalAmount > 0 ? fmt2(q.totalAmount) : ""}
                           </td>
-                        </>
+                        </React.Fragment>
                       );
                     })}
                   </tr>
@@ -272,7 +270,7 @@ export default function AbstractLivePreviewPage() {
               </table>
 
               {/* BAC Res No */}
-              <div style={{ fontSize: "9px", marginBottom: "8px" }}>
+              <div style={{ fontSize: "9px", marginBottom: "8px", padding: "0 24px" }}>
                 BAC Resolution No.:&nbsp;
                 <span style={{ borderBottom: "1px solid #000", display: "inline-block", minWidth: "100px" }}>
                   &nbsp;{bacResNo}&nbsp;
@@ -280,50 +278,63 @@ export default function AbstractLivePreviewPage() {
               </div>
 
               {/* Certification Paragraph */}
-              <div style={{ fontSize: "9px", lineHeight: "1.6", marginBottom: "14px", textAlign: "justify" }}>
+              <div style={{ fontSize: "9px", lineHeight: "1.6", marginBottom: "50px", textAlign: "justify", padding: "0 24px" }}>
                 &nbsp;&nbsp;&nbsp;&nbsp;We, the undersigned the BAC Chairman, Members and Requisitioning Officer, do hereby certify that the foregoing is the true and correct ABSTRACT OF CANVASS of the Request for Quotation received on <strong>{fmtDate(dateReceived)}</strong> by BAC Secretariat and was opened by Bids and Awards Committee of Pandan, Antique on <strong>{fmtDate(dateAwarded)}</strong> for&nbsp;
                 <span style={{ borderBottom: "1px solid #000" }}><strong>&nbsp;{pr?.purpose}&nbsp;</strong></span>
-                &nbsp;needed for use in the Office of the <strong>{pr?.office?.name || "___________________"}</strong>, Pandan, Antique.
+                &nbsp;needed for use in the Office of the <strong>{reqOfficerOffice || "___________________"}</strong>, Pandan, Antique.
                 The offer <strong><span style={{ textDecoration: "underline" }}>{recommendedQuote ? recommendedQuote.supplier?.name?.toUpperCase() : "___________________"}</span></strong> for items herein and respectively checked and articles/materials are hereby ACCEPTED AND AWARDED OF PRICE RECOMMENDATION. Recommending approval of the award in favor of the dealer quoted most advantageous offers indicating in the column above.
               </div>
 
-              {/* Signatories */}
-              <div style={{ display: "flex", gap: "6px", marginBottom: "16px", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px", flexWrap: "wrap", rowGap: "32px", padding: "0 24px" }}>
                 {bacChairman && (
-                  <div style={{ flex: "0 0 auto", textAlign: "center", minWidth: "120px" }}>
-                    <div style={{ fontWeight: "900", fontSize: "9px", textTransform: "uppercase" }}>{bacChairman.name}</div>
+                  <div
+                    onClick={() => { setEditingSigId(bacChairman.id); setShowAllSigs(false); }}
+                    style={{ flex: "1 1 auto", textAlign: "center", padding: "4px", cursor: "pointer", borderRadius: "6px", backgroundColor: editingSigId === bacChairman.id ? "rgba(37,99,235,0.08)" : "transparent" }}
+                    title="Click to edit"
+                  >
+                    <div style={{ fontWeight: "900", fontSize: "9px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{bacChairman.name}</div>
                     <div style={{ fontSize: "8px" }}>{bacChairman.position}</div>
                     <div style={{ fontSize: "8px", fontWeight: "700" }}>BAC Chairman</div>
                   </div>
                 )}
                 {bacMembers.map((m: any) => (
-                  <div key={m.id} style={{ flex: "0 0 auto", textAlign: "center", minWidth: "100px" }}>
-                    <div style={{ fontWeight: "900", fontSize: "9px", textTransform: "uppercase" }}>{m.name}</div>
+                  <div
+                    key={m.id}
+                    onClick={() => { setEditingSigId(m.id); setShowAllSigs(false); }}
+                    style={{ flex: "1 1 auto", textAlign: "center", padding: "4px", cursor: "pointer", borderRadius: "6px", backgroundColor: editingSigId === m.id ? "rgba(37,99,235,0.08)" : "transparent" }}
+                    title="Click to edit"
+                  >
+                    <div style={{ fontWeight: "900", fontSize: "9px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{m.name}</div>
                     <div style={{ fontSize: "8px" }}>{m.position}</div>
                     <div style={{ fontSize: "8px", fontWeight: "700" }}>{m.label || "BAC Member"}</div>
                   </div>
                 ))}
-                <div style={{ flex: "0 0 auto", textAlign: "center", minWidth: "110px", marginLeft: "auto" }}>
-                  <div style={{ fontWeight: "900", fontSize: "9px", textTransform: "uppercase" }}>{pr?.requestedBy || "___________________"}</div>
-                  <div style={{ fontSize: "8px" }}>{pr?.office?.name}</div>
-                  <div style={{ fontSize: "8px", fontWeight: "700" }}>Requisitioning Officer</div>
+                <div
+                  onClick={() => { setEditingSigId("req"); setShowAllSigs(false); }}
+                  style={{ flex: "1 1 auto", textAlign: "center", padding: "4px", cursor: "pointer", borderRadius: "6px", backgroundColor: editingSigId === "req" ? "rgba(37,99,235,0.08)" : "transparent" }}
+                  title="Click to edit"
+                >
+                  <div style={{ fontWeight: "900", fontSize: "9px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{reqOfficerName || "___________________"}</div>
+                  <div style={{ fontSize: "8px", fontWeight: "700", marginTop: "4px" }}>Requisitioning Officer</div>
                 </div>
               </div>
 
               {/* Approved by */}
-              <div style={{ textAlign: "right", marginTop: "6px" }}>
-                <div style={{ fontSize: "9px", marginBottom: "20px" }}>Approved:</div>
-                {hope ? (
-                  <div style={{ display: "inline-block", textAlign: "center" }}>
-                    <div style={{ fontWeight: "900", fontSize: "10px", textTransform: "uppercase" }}>{hope.name}</div>
-                    <div style={{ fontSize: "9px" }}>{hope.position}</div>
-                  </div>
-                ) : (
-                  <div style={{ display: "inline-block", textAlign: "center" }}>
-                    <div style={{ borderBottom: "1px solid #000", width: "180px", marginBottom: "2px" }}></div>
-                    <div style={{ fontSize: "9px" }}>Municipal Mayor</div>
-                  </div>
-                )}
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "6px", padding: "0 24px", marginBottom: "20px" }}>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+                  <div style={{ fontSize: "9px", marginBottom: "20px" }}>Approved:</div>
+                  {hope ? (
+                    <div style={{ textAlign: "center", minWidth: "180px" }}>
+                      <div style={{ fontWeight: "900", fontSize: "10px", textTransform: "uppercase" }}>{hope.name}</div>
+                      <div style={{ fontSize: "9px" }}>{hope.position}</div>
+                    </div>
+                  ) : (
+                    <div style={{ textAlign: "center", minWidth: "180px" }}>
+                      <div style={{ borderBottom: "1px solid #000", width: "180px", marginBottom: "2px" }}></div>
+                      <div style={{ fontSize: "9px" }}>Municipal Mayor</div>
+                    </div>
+                  )}
+                </div>
               </div>
 
             </div>
@@ -332,34 +343,39 @@ export default function AbstractLivePreviewPage() {
 
         {/* ─── Right: Form Panel ─── */}
         <div className="no-print" style={{
-          width: "340px", flexShrink: 0,
+          width: "450px", flexShrink: 0,
           borderLeft: "1px solid #e2e8f0",
           background: "var(--color-page-bg)",
           overflowY: "auto", display: "flex", flexDirection: "column",
         }}>
-          <div style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+          <div style={{ padding: "2.25rem", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
 
             {/* ── Document Details ── */}
             <section>
-              <div style={{ fontSize: "0.75rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.875rem", display: "flex", alignItems: "center", gap: "0.375rem" }}>
-                📋 Document Details
-              </div>
+              <h3 style={{ fontWeight: "800", color: "#0f172a", marginBottom: "1.25rem", fontSize: "1rem" }}>Abstract Details</h3>
 
               {/* PR Number toggle */}
-              <div style={{ marginBottom: "1rem" }}>
-                <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: "600", color: "#475569", marginBottom: "0.5rem" }}>
+              <div style={{ marginBottom: "1rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <label style={{ fontSize: "0.8125rem", fontWeight: "600", color: "#475569", cursor: "pointer" }} onClick={() => setShowPrNo(!showPrNo)}>
                   Purchase Request No.
                 </label>
-                <div style={{ display: "flex", gap: "1rem" }}>
-                  <label style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8125rem", cursor: "pointer", color: "#334155" }}>
-                    <input type="radio" checked={showPrNo} onChange={() => setShowPrNo(true)} style={{ accentColor: "#2563eb" }} />
-                    Show ({rfq.rfqNumber})
-                  </label>
-                  <label style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8125rem", cursor: "pointer", color: "#334155" }}>
-                    <input type="radio" checked={!showPrNo} onChange={() => setShowPrNo(false)} style={{ accentColor: "#2563eb" }} />
-                    Leave blank
-                  </label>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowPrNo(!showPrNo)}
+                  style={{
+                    width: "44px", height: "24px", borderRadius: "12px",
+                    background: showPrNo ? "#10b981" : "#cbd5e1",
+                    position: "relative", border: "none", cursor: "pointer",
+                    transition: "background 0.3s",
+                    boxShadow: "inset 0 1px 3px rgba(0,0,0,0.1)"
+                  }}
+                >
+                  <div style={{
+                    width: "20px", height: "20px", borderRadius: "50%", background: "#fff",
+                    position: "absolute", top: "2px", left: showPrNo ? "22px" : "2px",
+                    transition: "left 0.3s", boxShadow: "0 1px 3px rgba(0,0,0,0.3)"
+                  }} />
+                </button>
               </div>
 
               {/* Document Date */}
@@ -388,120 +404,138 @@ export default function AbstractLivePreviewPage() {
                 <input type="date" value={dateReceived} onChange={e => setDateReceived(e.target.value)} className="form-input" style={{ width: "100%" }} />
               </div>
 
-              <div style={{ marginBottom: "1rem" }}>
+              <div>
                 <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: "600", color: "#475569", marginBottom: "0.375rem" }}>Date Opened / Awarded</label>
                 <input type="date" value={dateAwarded} onChange={e => setDateAwarded(e.target.value)} className="form-input" style={{ width: "100%" }} />
               </div>
-
-              <div style={{ marginBottom: "1rem" }}>
-                <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: "600", color: "#475569", marginBottom: "0.375rem" }}>Purpose</label>
-                <div style={{
-                  padding: "0.5rem 0.75rem", borderRadius: "0.625rem", fontSize: "0.8125rem",
-                  background: "var(--color-page-bg)", boxShadow: "inset 3px 3px 6px rgba(163,177,198,0.5), inset -3px -3px 6px rgba(255,255,255,0.9)",
-                  color: "#64748b", minHeight: "40px",
-                }}>
-                  {pr?.purpose || "—"}
-                </div>
-              </div>
-
-              <div style={{ marginBottom: "1rem" }}>
-                <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: "600", color: "#475569", marginBottom: "0.375rem" }}>Recommended Supplier <span style={{ color: "#16a34a" }}>(auto)</span></label>
-                <div style={{
-                  padding: "0.5rem 0.75rem", borderRadius: "0.625rem", fontSize: "0.8125rem",
-                  background: "var(--color-page-bg)", boxShadow: "inset 3px 3px 6px rgba(163,177,198,0.5), inset -3px -3px 6px rgba(255,255,255,0.9)",
-                  color: recommendedQuote ? "#059669" : "#94a3b8", fontWeight: recommendedQuote ? "700" : "400",
-                }}>
-                  {recommendedQuote ? recommendedQuote.supplier?.name : "No bids encoded yet"}
-                </div>
-              </div>
-
-              <div>
-                <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: "600", color: "#475569", marginBottom: "0.375rem" }}>Requesting Office <span style={{ color: "#16a34a" }}>(auto)</span></label>
-                <div style={{
-                  padding: "0.5rem 0.75rem", borderRadius: "0.625rem", fontSize: "0.8125rem",
-                  background: "var(--color-page-bg)", boxShadow: "inset 3px 3px 6px rgba(163,177,198,0.5), inset -3px -3px 6px rgba(255,255,255,0.9)",
-                  color: "#64748b",
-                }}>
-                  {pr?.office?.name || "—"}
-                </div>
-              </div>
             </section>
+
+            {/* ── Requisitioning Officer ── */}
+            {(!editingSigId || editingSigId === "req") && (
+              <section>
+                <div style={{ fontSize: "0.75rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.875rem", display: "flex", alignItems: "center", gap: "0.375rem" }}>
+                  👤 Requisitioning Officer
+                </div>
+
+                <div style={{ marginBottom: "0.75rem" }}>
+                  <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: "600", color: "#475569", marginBottom: "0.375rem" }}>Officer Name</label>
+                  <input type="text" value={reqOfficerName} onChange={e => setReqOfficerName(e.target.value)} className="form-input" style={{ width: "100%" }} placeholder="e.g. Juan Dela Cruz" />
+                </div>
+
+                <div style={{ marginBottom: "1rem" }}>
+                  <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: "600", color: "#475569", marginBottom: "0.375rem" }}>Office Name</label>
+                  <input type="text" value={reqOfficerOffice} onChange={e => setReqOfficerOffice(e.target.value)} className="form-input" style={{ width: "100%" }} placeholder="e.g. Municipal Health Office" />
+                </div>
+              </section>
+            )}
 
             {/* ── Signatories ── */}
             <section>
-              <div style={{ fontSize: "0.75rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.875rem", display: "flex", alignItems: "center", gap: "0.375rem" }}>
-                ✍ Signatories
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.875rem" }}>
+                <div style={{ fontSize: "0.75rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  ✍ Signatories
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setShowAllSigs(!showAllSigs); setEditingSigId(null); }}
+                  style={{ fontSize: "0.7rem", color: "#2563eb", background: "none", border: "none", cursor: "pointer", fontWeight: "700" }}
+                >
+                  {showAllSigs ? "Hide List" : "Add / Remove"}
+                </button>
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                {allSignatories.map((sig: any) => {
-                  const isSelected = selectedSigIds.includes(sig.id);
-                  const override = sigOverrides[sig.id] || { name: sig.name, position: sig.position, label: getRoleLabel(sig.role) };
-                  return (
-                    <div key={sig.id} style={{
-                      borderRadius: "0.75rem", padding: "0.75rem",
-                      background: "var(--color-page-bg)",
-                      boxShadow: isSelected ? "var(--shadow-neu-drop)" : "inset 3px 3px 6px rgba(163,177,198,0.4), inset -3px -3px 6px rgba(255,255,255,0.8)",
-                      opacity: isSelected ? 1 : 0.5, transition: "all 0.2s",
-                    }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: isSelected ? "0.625rem" : 0 }}>
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={e => {
-                            setSelectedSigIds(ids => e.target.checked ? [...ids, sig.id] : ids.filter(id => id !== sig.id));
-                          }}
-                          style={{ accentColor: "#2563eb", width: "15px", height: "15px" }}
-                        />
-                        <div style={{ flex: 1, fontSize: "0.8125rem", fontWeight: "700", color: "#334155" }}>{override.name}</div>
-                        <span style={{ fontSize: "0.7rem", color: "#94a3b8", background: "#f1f5f9", padding: "1px 6px", borderRadius: "9999px" }}>
-                          {getRoleLabel(sig.role)}
-                        </span>
-                      </div>
-                      {isSelected && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem", paddingLeft: "1.5rem" }}>
-                          <input
-                            type="text"
-                            value={override.name}
-                            onChange={e => setSigOverrides(prev => ({ ...prev, [sig.id]: { ...prev[sig.id], name: e.target.value } }))}
-                            placeholder="Full Name"
-                            style={{
-                              width: "100%", padding: "0.3rem 0.5rem", border: "none", borderRadius: "0.5rem",
-                              background: "var(--color-page-bg)",
-                              boxShadow: "inset 2px 2px 4px rgba(163,177,198,0.5), inset -2px -2px 4px rgba(255,255,255,0.9)",
-                              fontSize: "0.8125rem", color: "#334155", outline: "none", fontFamily: "inherit",
-                            }}
-                          />
-                          <input
-                            type="text"
-                            value={override.position}
-                            onChange={e => setSigOverrides(prev => ({ ...prev, [sig.id]: { ...prev[sig.id], position: e.target.value } }))}
-                            placeholder="Position / Designation"
-                            style={{
-                              width: "100%", padding: "0.3rem 0.5rem", border: "none", borderRadius: "0.5rem",
-                              background: "var(--color-page-bg)",
-                              boxShadow: "inset 2px 2px 4px rgba(163,177,198,0.5), inset -2px -2px 4px rgba(255,255,255,0.9)",
-                              fontSize: "0.8125rem", color: "#334155", outline: "none", fontFamily: "inherit",
-                            }}
-                          />
-                          <input
-                            type="text"
-                            value={override.label}
-                            onChange={e => setSigOverrides(prev => ({ ...prev, [sig.id]: { ...prev[sig.id], label: e.target.value } }))}
-                            placeholder="Label (e.g. BAC Member)"
-                            style={{
-                              width: "100%", padding: "0.3rem 0.5rem", border: "none", borderRadius: "0.5rem",
-                              background: "var(--color-page-bg)",
-                              boxShadow: "inset 2px 2px 4px rgba(163,177,198,0.5), inset -2px -2px 4px rgba(255,255,255,0.9)",
-                              fontSize: "0.8125rem", color: "#334155", outline: "none", fontFamily: "inherit",
-                            }}
-                          />
+              {!editingSigId && !showAllSigs ? (
+                <div style={{ padding: "2rem 1rem", textAlign: "center", background: "var(--color-page-bg)", borderRadius: "0.75rem", boxShadow: "inset 3px 3px 6px rgba(163,177,198,0.4), inset -3px -3px 6px rgba(255,255,255,0.8)", color: "#94a3b8", fontSize: "0.8125rem", fontStyle: "italic" }}>
+                  Click a signatory on the document to edit their details, or click "Add / Remove" to manage signatories.
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                  {allSignatories
+                    .filter((s: any) => {
+                      if (editingSigId) return s.id === editingSigId;
+                      if (showAllSigs) return s.isActive;
+                      return false;
+                    })
+                    .map((sig: any) => {
+                      const isSelected = selectedSigIds.includes(sig.id);
+                      const isEditing = editingSigId === sig.id;
+                      const override = sigOverrides[sig.id] || { name: sig.name, position: sig.position, label: getRoleLabel(sig.role) };
+                      return (
+                        <div key={sig.id} style={{
+                          borderRadius: "0.75rem", padding: "0.75rem",
+                          background: "var(--color-page-bg)",
+                          boxShadow: isSelected ? "var(--shadow-neu-drop)" : "inset 3px 3px 6px rgba(163,177,198,0.4), inset -3px -3px 6px rgba(255,255,255,0.8)",
+                          opacity: isSelected ? 1 : 0.5, transition: "all 0.2s",
+                        }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={e => {
+                                setSelectedSigIds(ids => e.target.checked ? [...ids, sig.id] : ids.filter(id => id !== sig.id));
+                              }}
+                              style={{ accentColor: "#2563eb", width: "15px", height: "15px" }}
+                            />
+                            <div style={{ flex: 1, fontSize: "0.8125rem", fontWeight: "700", color: "#334155" }}>{override.name}</div>
+                            <span style={{ fontSize: "0.7rem", color: "#94a3b8", background: "#f1f5f9", padding: "1px 6px", borderRadius: "9999px" }}>
+                              {getRoleLabel(sig.role)}
+                            </span>
+                            {isSelected && (
+                              <button
+                                type="button"
+                                onClick={() => setEditingSigId(isEditing ? null : sig.id)}
+                                style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b", padding: "4px" }}
+                                title="Edit details"
+                              >
+                                <Edit3 size={14} />
+                              </button>
+                            )}
+                          </div>
+                          {isSelected && isEditing && (
+                            <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem", paddingLeft: "1.5rem", marginTop: "0.625rem" }}>
+                              <input
+                                type="text"
+                                value={override.name}
+                                onChange={e => setSigOverrides(prev => ({ ...prev, [sig.id]: { ...prev[sig.id], name: e.target.value } }))}
+                                placeholder="Full Name"
+                                style={{
+                                  width: "100%", padding: "0.3rem 0.5rem", border: "none", borderRadius: "0.5rem",
+                                  background: "var(--color-page-bg)",
+                                  boxShadow: "inset 2px 2px 4px rgba(163,177,198,0.5), inset -2px -2px 4px rgba(255,255,255,0.9)",
+                                  fontSize: "0.8125rem", color: "#334155", outline: "none", fontFamily: "inherit",
+                                }}
+                              />
+                              <input
+                                type="text"
+                                value={override.position}
+                                onChange={e => setSigOverrides(prev => ({ ...prev, [sig.id]: { ...prev[sig.id], position: e.target.value } }))}
+                                placeholder="Position / Designation"
+                                style={{
+                                  width: "100%", padding: "0.3rem 0.5rem", border: "none", borderRadius: "0.5rem",
+                                  background: "var(--color-page-bg)",
+                                  boxShadow: "inset 2px 2px 4px rgba(163,177,198,0.5), inset -2px -2px 4px rgba(255,255,255,0.9)",
+                                  fontSize: "0.8125rem", color: "#334155", outline: "none", fontFamily: "inherit",
+                                }}
+                              />
+                              <input
+                                type="text"
+                                value={override.label}
+                                onChange={e => setSigOverrides(prev => ({ ...prev, [sig.id]: { ...prev[sig.id], label: e.target.value } }))}
+                                placeholder="Label (e.g. BAC Member)"
+                                style={{
+                                  width: "100%", padding: "0.3rem 0.5rem", border: "none", borderRadius: "0.5rem",
+                                  background: "var(--color-page-bg)",
+                                  boxShadow: "inset 2px 2px 4px rgba(163,177,198,0.5), inset -2px -2px 4px rgba(255,255,255,0.9)",
+                                  fontSize: "0.8125rem", color: "#334155", outline: "none", fontFamily: "inherit",
+                                }}
+                              />
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+                      );
+                    })}
+                </div>
+              )}
             </section>
           </div>
         </div>
@@ -511,7 +545,7 @@ export default function AbstractLivePreviewPage() {
         @media print {
           .no-print { display: none !important; }
           body { background: white !important; }
-          @page { size: landscape; margin: 0.5cm; }
+          @page { size: 13in 8.5in; margin: 0.5cm; }
         }
       `}</style>
     </div>
@@ -522,6 +556,7 @@ function getRoleLabel(role: string): string {
   const map: Record<string, string> = {
     HOPE: "HOPE / LCE",
     BAC_CHAIRMAN: "BAC Chairman",
+    BAC_VICE_CHAIRMAN: "BAC Vice Chairman",
     BAC_MEMBER: "BAC Member",
     BUDGET_OFFICER: "BAC Member",
     SUPPLY_OFFICER: "BAC Member",

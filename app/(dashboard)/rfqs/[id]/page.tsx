@@ -285,18 +285,18 @@ export default function RfqLivePreviewPage() {
         </div>
 
         {/* Right Side: Data Entry Form */}
-        <div className="no-print w-[400px] border-l border-slate-200 bg-white overflow-y-auto flex flex-col">
-          <div className="p-5 flex-1">
-            <h3 className="font-bold text-slate-800 mb-4 text-lg">RFQ Details</h3>
-            <p className="text-sm text-slate-500 mb-6">Update the details for the Request for Quotation.</p>
+        <div className="no-print" style={{ width: "340px", flexShrink: 0, borderLeft: "1px solid #e2e8f0", background: "var(--color-page-bg)", overflowY: "auto", display: "flex", flexDirection: "column" }}>
+          <div style={{ padding: "1.25rem", flex: 1 }}>
+            <h3 style={{ fontWeight: "800", color: "#0f172a", marginBottom: "1.25rem", fontSize: "1rem" }}>RFQ Details</h3>
+            <p style={{ fontSize: "0.8125rem", color: "#64748b", marginBottom: "1.5rem" }}>Update the details for the Request for Quotation.</p>
 
-            <form className="space-y-5">
+            <form style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Signatory</label>
+                <label className="form-label">Signatory</label>
                 <select
                   {...register("signatoryId")}
                   disabled={isReadOnly}
-                  className="w-full p-2 border border-slate-300 rounded-md text-sm bg-white disabled:bg-slate-50 disabled:text-slate-500"
+                  className="form-select"
                 >
                   <option value="">Select Signatory...</option>
                   {signatories.map(s => (

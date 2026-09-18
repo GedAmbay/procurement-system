@@ -45,7 +45,7 @@ export default function SupplierEncodingPage() {
   useEffect(() => {
     async function loadData() {
       try {
-        const res = await fetch(`/api/rfqs/${params.supplierId}`);
+        const res = await fetch(`/api/quotations/${params.supplierId}`);
         if (res.ok) {
           const data = await res.json();
           setQuoteData(data);
@@ -95,7 +95,7 @@ export default function SupplierEncodingPage() {
         }))
       };
 
-      const res = await fetch(`/api/rfqs/${params.supplierId}`, {
+      const res = await fetch(`/api/quotations/${params.supplierId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -127,7 +127,7 @@ export default function SupplierEncodingPage() {
   const isOverBudget = totalAmount > abc && abc > 0;
 
   return (
-    <div style={{ maxWidth: "860px", margin: "0 auto", padding: "2rem 1rem" }}>
+    <div style={{ width: "100%", maxWidth: "100%", margin: "0 auto", padding: "2rem" }}>
 
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "2rem", flexWrap: "wrap" }}>
@@ -189,20 +189,20 @@ export default function SupplierEncodingPage() {
       {/* Meta Row */}
       <div className="table-container" style={{ marginBottom: "1.5rem", padding: "1.25rem 1.5rem" }}>
         <div style={{ display: "flex", gap: "2rem", alignItems: "center", flexWrap: "wrap" }}>
-          <div>
-            <div style={{ fontSize: "0.75rem", color: "#94a3b8", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.25rem" }}>ABC</div>
-            <div style={{ fontSize: "1.125rem", fontWeight: "800", color: "#059669" }}>{formatCurrency(abc)}</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: "0.75rem", color: "#94a3b8", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.25rem" }}>Approved Budget for the Contract</div>
+            <div style={{ fontSize: "1.5rem", fontWeight: "800", color: "#059669" }}>{formatCurrency(abc)}</div>
           </div>
           <div style={{ width: "1px", height: "36px", background: "#e2e8f0" }} />
-          <div>
+          <div style={{ flex: 1 }}>
             <div style={{ fontSize: "0.75rem", color: "#94a3b8", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.25rem" }}>Total Bid</div>
-            <div style={{ fontSize: "1.125rem", fontWeight: "800", color: isOverBudget ? "#dc2626" : totalAmount > 0 ? "#0f172a" : "#94a3b8" }}>
+            <div style={{ fontSize: "1.5rem", fontWeight: "800", color: isOverBudget ? "#dc2626" : totalAmount > 0 ? "#0f172a" : "#94a3b8" }}>
               {totalAmount > 0 ? formatCurrency(totalAmount) : "—"}
               {isOverBudget && <span style={{ fontSize: "0.75rem", marginLeft: "0.5rem", color: "#dc2626" }}>Over budget</span>}
             </div>
           </div>
           <div style={{ width: "1px", height: "36px", background: "#e2e8f0" }} />
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "0.25rem" }}>
             <label style={{ fontSize: "0.75rem", color: "#94a3b8", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: "0.25rem" }}>
               <Calendar size={12} /> Date Received
             </label>
@@ -212,7 +212,7 @@ export default function SupplierEncodingPage() {
               disabled={isReadOnly}
               style={{
                 border: "none", background: "transparent",
-                fontSize: "0.875rem", fontWeight: "600", color: "#334155",
+                fontSize: "1.5rem", fontWeight: "600", color: "#334155",
                 outline: "none", cursor: isReadOnly ? "default" : "pointer",
               }}
             />
@@ -234,8 +234,8 @@ export default function SupplierEncodingPage() {
                 <th style={{ textAlign: "left" }}>Item Description</th>
                 <th style={{ width: "80px", textAlign: "center" }}>Qty</th>
                 <th style={{ width: "80px", textAlign: "center" }}>Unit</th>
-                <th style={{ width: "160px", textAlign: "right" }}>Unit Price</th>
-                <th style={{ width: "160px", textAlign: "right" }}>Line Total</th>
+                <th style={{ width: "240px", textAlign: "right" }}>Unit Price</th>
+                <th style={{ width: "240px", textAlign: "right" }}>Total Cost</th>
               </tr>
             </thead>
             <tbody>
@@ -265,7 +265,7 @@ export default function SupplierEncodingPage() {
                             {...register(`lineItems.${idx}.unitPrice`)}
                             placeholder="0.00"
                             style={{
-                              width: "110px",
+                              width: "180px",
                               padding: "0.375rem 0.5rem",
                               border: "none",
                               borderRadius: "0.5rem",
@@ -301,45 +301,6 @@ export default function SupplierEncodingPage() {
             </tfoot>
           </table>
         </div>
-
-        {/* Remarks */}
-        <div style={{ marginTop: "1.5rem", paddingTop: "1.25rem", borderTop: "1px solid #e2e8f0" }}>
-          <label style={{ display: "block", fontSize: "0.875rem", fontWeight: "600", color: "#475569", marginBottom: "0.5rem" }}>
-            Remarks / Notes
-          </label>
-          <textarea
-            {...register("remarks")}
-            disabled={isReadOnly}
-            placeholder="Optional notes about this quotation..."
-            rows={3}
-            style={{
-              width: "100%", padding: "0.75rem",
-              border: "none", borderRadius: "0.75rem",
-              background: "var(--color-page-bg)",
-              boxShadow: "inset 3px 3px 6px rgba(163,177,198,0.5), inset -3px -3px 6px rgba(255,255,255,0.9)",
-              fontSize: "0.875rem", color: "#334155",
-              resize: "vertical", outline: "none",
-              fontFamily: "inherit",
-            }}
-          />
-        </div>
-
-        {!isReadOnly && (
-          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "1.25rem" }}>
-            <button
-              onClick={handleSubmit(onSubmit)}
-              disabled={submitting}
-              className="btn btn-primary"
-              style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
-            >
-              {submitting
-                ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} />
-                : <Save size={16} />
-              }
-              Save Bid
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
