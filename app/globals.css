@@ -376,6 +376,7 @@ tbody tr:hover {
 tbody td {
   color: #000000;
   vertical-align: middle;
+  font-family: "Arial", sans-serif;
 }
 
 /* ─── Data Tables ──────────────────────────────────────────────────────────── */

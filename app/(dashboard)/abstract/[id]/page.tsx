@@ -145,16 +145,16 @@ export default function AoqSupplierHub() {
         </div>
 
         <div style={{ display: "flex", gap: "0.5rem" }}>
-          <button className="btn btn-secondary btn-sm" style={{ display: "flex", alignItems: "center", gap: "0.375rem" }} onClick={() => router.push(`/abstract/${params.id}/print`)}>
+          <button className="btn btn-secondary" style={{ display: "flex", alignItems: "center", gap: "0.375rem" }} onClick={() => router.push(`/abstract/${params.id}/print`)}>
             <Printer size={14} /> Open Abstract
           </button>
           {aoq.status === "DRAFT" && quotations.length > 0 && completedCount > 0 && (
-            <button onClick={() => updateStatus("RECOMMENDED")} className="btn btn-primary btn-sm" style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
+            <button onClick={() => updateStatus("RECOMMENDED")} className="btn btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
               <Send size={15} /> Recommend
             </button>
           )}
           {aoq.status === "RECOMMENDED" && (
-            <button onClick={() => updateStatus("APPROVED")} className="btn btn-primary btn-sm" style={{ display: "flex", alignItems: "center", gap: "0.375rem", background: "#16a34a" }}>
+            <button onClick={() => updateStatus("APPROVED")} className="btn btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.375rem", background: "#16a34a" }}>
               <FileCheck2 size={15} /> Approve
             </button>
           )}
@@ -192,7 +192,7 @@ export default function AoqSupplierHub() {
         </h2>
         {aoq.status === "DRAFT" && quotations.length < 3 && (
           <button
-            className="btn btn-primary btn-sm"
+            className="btn btn-primary"
             style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}
             onClick={() => setShowAddSupplier(v => !v)}
           >
@@ -221,7 +221,7 @@ export default function AoqSupplierHub() {
             <button
               onClick={addSupplier}
               disabled={!selectedNewSupplier || addingSupplier}
-              className="btn btn-primary btn-sm"
+              className="btn btn-primary"
             >
               {addingSupplier ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Plus size={14} />}
               Add

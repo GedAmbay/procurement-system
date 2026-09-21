@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Printer, Loader2, ZoomIn, ZoomOut, Users, Edit3 } from "lucide-react";
+import { ArrowLeft, Printer, Loader2, ZoomIn, ZoomOut, Users, Edit3, Minus, Plus } from "lucide-react";
 import Link from "next/link";
 import { formatCurrency, LGU_INFO } from "@/lib/utils";
 import { toast } from "sonner";
@@ -13,6 +13,7 @@ export default function AbstractLivePreviewPage() {
   const [allSignatories, setAllSignatories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [zoom, setZoom] = useState(0.75);
+  const [targetRows, setTargetRows] = useState(15);
 
   // Editable form state
   const [showPrNo, setShowPrNo] = useState(true);
@@ -107,11 +108,11 @@ export default function AbstractLivePreviewPage() {
   const bacChairman = selectedSigs.find(s => s.role === "BAC_CHAIRMAN");
   const bacMembers = selectedSigs.filter(s => s.id !== hope?.id && s.id !== bacChairman?.id);
 
-  const cell: React.CSSProperties = { border: "1px solid #000", padding: "2px 4px", fontSize: "9px", verticalAlign: "middle" };
-  const headerCell: React.CSSProperties = { ...cell, fontWeight: "700", textAlign: "center", background: "#fff" };
+  const cell: React.CSSProperties = { border: "1px solid #000", padding: "2px 2px", fontSize: "11px", verticalAlign: "middle" };
+  const headerCell: React.CSSProperties = { ...cell, fontWeight: "700", textAlign: "center", background: "#fff", padding: 0 };
 
   return (
-    <div className="flex flex-col overflow-hidden print:block print:!h-auto print:!overflow-visible"
+    <div className="flex flex-col w-full min-w-0 max-w-full overflow-hidden print:block print:!h-auto print:!overflow-visible"
       style={{ height: "calc(var(--full-vh, 100vh) - 170px)" }}>
 
       {/* ─── Header Bar ─── */}
@@ -144,199 +145,218 @@ export default function AbstractLivePreviewPage() {
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden relative print:block print:!h-auto">
+      <div className="flex flex-1 w-full min-w-0 max-w-full overflow-hidden relative print:block print:!h-auto">
 
         {/* Zoom Controls (Bottom Left) */}
         <div className="no-print absolute bottom-6 left-6 flex items-center gap-1 bg-white p-1 rounded-full shadow-md border border-slate-200 z-10 text-slate-600">
           <button type="button" onClick={() => setZoom(z => Math.max(z - 0.1, 0.4))} className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Zoom Out"><ZoomOut size={18} /></button>
           <button type="button" onClick={() => setZoom(1)} className="px-3 hover:bg-slate-100 rounded-full font-bold text-xs h-full transition-colors" title="Reset Zoom">{Math.round(zoom * 100)}%</button>
           <button type="button" onClick={() => setZoom(z => Math.min(z + 0.1, 2))} className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Zoom In"><ZoomIn size={18} /></button>
+          <div className="w-[1px] h-6 bg-slate-300 mx-1"></div>
+          <button type="button" onClick={() => setTargetRows(r => Math.max(r - 1, 0))} className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Remove Row"><Minus size={18} /></button>
+          <div className="px-2 font-bold text-xs flex flex-col items-center justify-center h-full" title="Target Table Rows"><span className="leading-none">{targetRows}</span><span className="text-[9px] leading-none text-slate-400">Rows</span></div>
+          <button type="button" onClick={() => setTargetRows(r => r + 1)} className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Add Row"><Plus size={18} /></button>
         </div>
 
         {/* ─── Left: Live Preview ─── */}
-        <div className="flex-1 overflow-auto bg-slate-200 print:p-0 print:bg-white print:block print:!overflow-visible print:!h-auto">
-          <div className="p-8 print:p-0 mx-auto min-w-full flex justify-center print:block print:w-full print:min-w-0"
-            style={{ zoom }}>
-            <div style={{
-              background: "#fff",
-              border: "1px solid #000",
-              padding: "20px 0", fontFamily: "Arial, sans-serif", fontSize: "9px",
-            }} className="w-[1150px] shadow-xl min-h-[700px] print:shadow-none print:!w-full print:!max-w-none print:!p-0 print:!m-0 print:!min-h-0 print:border-0">
+        <div className="flex-1 relative min-w-0 bg-slate-200 print:bg-white print:static print:block print:!overflow-visible print:!h-auto">
+          <div className="absolute inset-0 overflow-auto print:static print:overflow-visible">
+            <style>{`
+              @media print { 
+                .print-zoom-reset { zoom: 1 !important; } 
+                @page { margin-top: 20mm !important; }
+                @page :first { margin-top: 10mm !important; }
+              }
+            `}</style>
+            <div className="w-max mx-auto min-w-full flex justify-center print:block print:w-full print:min-w-0">
+              <div className="p-8 print:p-0 origin-top print:!transform-none print:!m-0"
+                style={{
+                  transform: `scale(${zoom})`,
+                  marginBottom: `${(zoom - 1) * 1759}px`,
+                  marginLeft: `${(zoom - 1) * 1214 / 2}px`,
+                  marginRight: `${(zoom - 1) * 1214 / 2}px`
+                }}>
+                <div style={{
+                  background: "#fff",
+                  color: "#000",
+                  fontFamily: "Arial, sans-serif", fontSize: "11px",
+                }} className="w-[1759px] shadow-xl min-h-[1150px] p-[40px] print:!p-0 block print:shadow-none print:!w-full print:!max-w-none print:!m-0 print:!min-h-0">
+                  <div style={{ border: "1px solid #000", padding: "20px 0" }}>
 
-              {/* Doc Header */}
-              <div style={{ textAlign: "center", marginBottom: "6px" }}>
-                <div>Republic of the Philippines</div>
-                <div>Province of Antique</div>
-                <div>Municipality of Pandan</div>
-              </div>
-              <div style={{ textAlign: "center", marginBottom: "8px" }}>
-                <div style={{ fontSize: "15px", fontWeight: "900", letterSpacing: "0.05em" }}>ABSTRACT OF CANVASS</div>
-              </div>
+                    {/* Doc Header */}
+                    <div style={{ textAlign: "center", marginBottom: "6px" }}>
+                      <div>Republic of the Philippines</div>
+                      <div>Province of Antique</div>
+                      <div>Municipality of Pandan</div>
+                    </div>
+                    <div style={{ textAlign: "center", marginBottom: "8px" }}>
+                      <div style={{ fontSize: "20px", fontWeight: "900", letterSpacing: "0.05em" }}>ABSTRACT OF CANVASS</div>
+                    </div>
 
-              {/* PR No & Date */}
-              <div style={{ display: "flex", justifyContent: "center", gap: "48px", marginBottom: "8px", fontSize: "9px" }}>
-                <div>
-                  Purchase Request No.:&nbsp;
-                  <span style={{ borderBottom: "1px solid #000", display: "inline-block", minWidth: "80px", paddingBottom: "1px" }}>
-                    &nbsp;{showPrNo ? rfq.rfqNumber : ""}&nbsp;
-                  </span>
-                </div>
-                <div>
-                  Dated:&nbsp;
-                  <span style={{ borderBottom: "1px solid #000", display: "inline-block", minWidth: "80px", paddingBottom: "1px" }}>
-                    &nbsp;{docDate ? fmtDate(docDate) : ""}&nbsp;
-                  </span>
-                </div>
-              </div>
+                    {/* PR No & Date */}
+                    <div style={{ display: "flex", justifyContent: "center", gap: "48px", marginBottom: "8px", fontSize: "11px" }}>
+                      <div>
+                        Purchase Request No.:&nbsp;
+                        <span style={{ borderBottom: "1px solid #000", display: "inline-block", minWidth: "80px", paddingBottom: "1px" }}>
+                          &nbsp;{showPrNo ? pr?.prNumber : ""}&nbsp;
+                        </span>
+                      </div>
+                      <div>
+                        Dated:&nbsp;
+                        <span style={{ borderBottom: "1px solid #000", display: "inline-block", minWidth: "80px", paddingBottom: "1px" }}>
+                          &nbsp;{docDate ? fmtDate(docDate) : ""}&nbsp;
+                        </span>
+                      </div>
+                    </div>
 
-              {/* Main Table */}
-              <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "15px" }}>
-                <thead>
-                  <tr>
-                    <th style={{ ...headerCell, width: "26px" }} rowSpan={3}>NO.</th>
-                    <th style={{ ...headerCell, width: "50%" }} rowSpan={3}>DESCRIPTION</th>
-                    <th style={{ ...headerCell, width: "38px" }} rowSpan={3}>QTY</th>
-                    <th style={{ ...headerCell, width: "34px" }} rowSpan={3}>UNIT</th>
-                    <th style={{ ...headerCell }} colSpan={displayQuotes.length * 2}>SUPPLIER&apos;S NAME</th>
-                  </tr>
-                  <tr>
-                    {displayQuotes.map((q: any, i: number) => (
-                      <th key={i} style={{ ...headerCell, fontSize: "8px" }} colSpan={2}>
-                        {q ? q.supplier?.name?.toUpperCase() : `SUPPLIER ${i + 1}`}
-                      </th>
-                    ))}
-                  </tr>
-                  <tr>
-                    {displayQuotes.map((_: any, i: number) => (
-                      <React.Fragment key={i}>
-                        <th key={`up-${i}`} style={{ ...headerCell, width: "8%", fontSize: "8px" }}>UNIT PRICE</th>
-                        <th key={`tp-${i}`} style={{ ...headerCell, width: "8%", fontSize: "8px" }}>TOTAL PRICE</th>
-                      </React.Fragment>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {lineItems.map((item: any, idx: number) => {
-                    const isRec = recommendedQuote !== undefined;
-                    return (
-                      <tr key={item.id}>
-                        <td style={{ ...cell, textAlign: "center", fontWeight: "700", verticalAlign: "top" }}>{idx + 1}</td>
-                        <td style={{ ...cell, fontWeight: "700" }}>{item.description}</td>
-                        <td style={{ ...cell, textAlign: "center" }}>{item.quantity}</td>
-                        <td style={{ ...cell, textAlign: "center" }}>{item.unit}</td>
-                        {displayQuotes.map((q: any, qi: number) => {
-                          const prices = q ? getItemPrice(q, item.id) : { unitPrice: 0, totalPrice: 0 };
-                          const isWinner = q && recommendedQuote && q.id === recommendedQuote.id;
-                          return (
-                            <React.Fragment key={qi}>
-                              <td key={`up-${qi}`} style={{ ...cell, textAlign: "right", fontWeight: isWinner ? "700" : "400" }}>
-                                {fmt2(prices.unitPrice)}
-                              </td>
-                              <td key={`tp-${qi}`} style={{ ...cell, textAlign: "right", fontWeight: isWinner ? "700" : "400" }}>
-                                {fmt2(prices.totalPrice)}
-                              </td>
+                    {/* Main Table */}
+                    <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "15px" }}>
+                      <tbody>
+                        <tr>
+                          <th style={{ ...headerCell, width: "26px" }} rowSpan={3}>NO.</th>
+                          <th style={{ ...headerCell, width: "35%" }} rowSpan={3}>DESCRIPTION</th>
+                          <th style={{ ...headerCell, width: "38px" }} rowSpan={3}>QTY</th>
+                          <th style={{ ...headerCell, width: "34px" }} rowSpan={3}>UNIT</th>
+                          <th style={{ ...headerCell }} colSpan={displayQuotes.length * 2}>SUPPLIER&apos;S NAME</th>
+                        </tr>
+                        <tr>
+                          {displayQuotes.map((q: any, i: number) => (
+                            <th key={i} style={{ ...headerCell, fontSize: "10px" }} colSpan={2}>
+                              {q ? q.supplier?.name?.toUpperCase() : `SUPPLIER ${i + 1}`}
+                            </th>
+                          ))}
+                        </tr>
+                        <tr>
+                          {displayQuotes.map((_: any, i: number) => (
+                            <React.Fragment key={i}>
+                              <th key={`up-${i}`} style={{ ...headerCell, width: "8%", fontSize: "10px" }}>UNIT PRICE</th>
+                              <th key={`tp-${i}`} style={{ ...headerCell, width: "8%", fontSize: "10px" }}>TOTAL PRICE</th>
                             </React.Fragment>
+                          ))}
+                        </tr>
+                      </tbody>
+                      <tbody>
+                        {lineItems.map((item: any, idx: number) => {
+                          const isRec = recommendedQuote !== undefined;
+                          return (
+                            <tr key={item.id}>
+                              <td style={{ ...cell, textAlign: "center", fontWeight: "700", verticalAlign: "top" }}>{idx + 1}</td>
+                              <td style={{ ...cell }}>{item.description}</td>
+                              <td style={{ ...cell, textAlign: "center" }}>{item.quantity}</td>
+                              <td style={{ ...cell, textAlign: "center" }}>{item.unit}</td>
+                              {displayQuotes.map((q: any, qi: number) => {
+                                const prices = q ? getItemPrice(q, item.id) : { unitPrice: 0, totalPrice: 0 };
+                                const isWinner = q && recommendedQuote && q.id === recommendedQuote.id;
+                                return (
+                                  <React.Fragment key={qi}>
+                                    <td key={`up-${qi}`} style={{ ...cell, textAlign: "right" }}>
+                                      {fmt2(prices.unitPrice)}
+                                    </td>
+                                    <td key={`tp-${qi}`} style={{ ...cell, textAlign: "right" }}>
+                                      {fmt2(prices.totalPrice)}
+                                    </td>
+                                  </React.Fragment>
+                                );
+                              })}
+                            </tr>
                           );
                         })}
-                      </tr>
-                    );
-                  })}
 
-                  {Array.from({ length: Math.max(0, 10 - lineItems.length) }).map((_, i) => (
-                    <tr key={`fill-${i}`} style={{ height: "14px" }}>
-                      <td style={cell}></td><td style={cell}></td><td style={cell}></td><td style={cell}></td>
-                      {displayQuotes.map((_: any, qi: number) => (
-                        <React.Fragment key={qi}><td key={`fu-${qi}`} style={cell}></td><td key={`ft-${qi}`} style={cell}></td></React.Fragment>
+                        {Array.from({ length: Math.max(0, targetRows - lineItems.length) }).map((_, i) => (
+                          <tr key={`fill-${i}`} style={{ height: "24px" }}>
+                            <td style={cell}></td><td style={cell}></td><td style={cell}></td><td style={cell}></td>
+                            {displayQuotes.map((_: any, qi: number) => (
+                              <React.Fragment key={qi}><td key={`fu-${qi}`} style={cell}></td><td key={`ft-${qi}`} style={cell}></td></React.Fragment>
+                            ))}
+                          </tr>
+                        ))}
+
+                        {/* TOTAL row */}
+                        <tr>
+                          <td style={{ ...headerCell, borderTop: "2px solid #000", textAlign: "center" }} colSpan={4}>TOTAL AMOUNT</td>
+                          {displayQuotes.map((q: any, qi: number) => {
+                            const isWinner = q && recommendedQuote && q.id === recommendedQuote.id;
+                            return (
+                              <td key={`tot-${qi}`} colSpan={2} style={{ ...cell, borderTop: "2px solid #000", textAlign: "right", fontWeight: "700", fontSize: isWinner ? "12px" : "11px" }}>
+                                {q && q.totalAmount > 0 ? fmt2(q.totalAmount) : ""}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      </tbody>
+                    </table>
+
+                    {/* BAC Res No */}
+                    <div className="print:break-inside-avoid" style={{ fontSize: "11px", marginBottom: "8px", padding: "0 24px" }}>
+                      BAC Resolution No.:&nbsp;
+                      <span style={{ borderBottom: "1px solid #000", display: "inline-block", minWidth: "100px" }}>
+                        &nbsp;{bacResNo}&nbsp;
+                      </span>
+                    </div>
+
+                    {/* Certification Paragraph */}
+                    <div className="print:break-inside-avoid" style={{ fontSize: "11px", lineHeight: "1.6", marginBottom: "40px", textAlign: "justify", padding: "0 24px" }}>
+                      &nbsp;&nbsp;&nbsp;&nbsp;We, the undersigned the BAC Chairman, Members and Requisitioning Officer, do hereby certify that the foregoing is the true and correct ABSTRACT OF CANVASS of the Request for Quotation received on <strong>{fmtDate(dateReceived)}</strong> by BAC Secretariat and was opened by Bids and Awards Committee of Pandan, Antique on <strong>{fmtDate(dateAwarded)}</strong> for&nbsp;
+                      <span style={{ borderBottom: "1px solid #000" }}><strong>&nbsp;{pr?.purpose}&nbsp;</strong></span>
+                      &nbsp;needed for use in the Office of the <strong>{reqOfficerOffice || "___________________"}</strong>, Pandan, Antique.
+                      The offer <strong><span style={{ textDecoration: "underline" }}>{recommendedQuote ? recommendedQuote.supplier?.name?.toUpperCase() : "___________________"}</span></strong> for items herein and respectively checked and articles/materials are hereby ACCEPTED AND AWARDED OF PRICE RECOMMENDATION. Recommending approval of the award in favor of the dealer quoted most advantageous offers indicating in the column above.
+                    </div>
+
+                    <div className="print:break-inside-avoid" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px", flexWrap: "nowrap", rowGap: "32px", padding: "0 24px" }}>
+                      {bacChairman && (
+                        <div
+                          onClick={() => { setEditingSigId(bacChairman.id); setShowAllSigs(false); }}
+                          style={{ flex: "1 1 auto", textAlign: "center", padding: "4px", cursor: "pointer", borderRadius: "6px", backgroundColor: editingSigId === bacChairman.id ? "rgba(37,99,235,0.08)" : "transparent" }}
+                          title="Click to edit"
+                        >
+                          <div style={{ fontWeight: "900", fontSize: "11px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{bacChairman.name}</div>
+                          <div style={{ fontSize: "10px" }}>{bacChairman.position}</div>
+                          <div style={{ fontSize: "10px", fontWeight: "700" }}>BAC Chairman</div>
+                        </div>
+                      )}
+                      {bacMembers.map((m: any) => (
+                        <div
+                          key={m.id}
+                          onClick={() => { setEditingSigId(m.id); setShowAllSigs(false); }}
+                          style={{ flex: "1 1 auto", textAlign: "center", padding: "4px", cursor: "pointer", borderRadius: "6px", backgroundColor: editingSigId === m.id ? "rgba(37,99,235,0.08)" : "transparent" }}
+                          title="Click to edit"
+                        >
+                          <div style={{ fontWeight: "900", fontSize: "11px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{m.name}</div>
+                          <div style={{ fontSize: "10px" }}>{m.position}</div>
+                          <div style={{ fontSize: "10px", fontWeight: "700" }}>{m.label || "BAC Member"}</div>
+                        </div>
                       ))}
-                    </tr>
-                  ))}
+                      <div
+                        onClick={() => { setEditingSigId("req"); setShowAllSigs(false); }}
+                        style={{ flex: "1 1 auto", textAlign: "center", padding: "4px", cursor: "pointer", borderRadius: "6px", backgroundColor: editingSigId === "req" ? "rgba(37,99,235,0.08)" : "transparent" }}
+                        title="Click to edit"
+                      >
+                        <div style={{ fontWeight: "900", fontSize: "11px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{reqOfficerName || "___________________"}</div>
+                        <div style={{ fontSize: "10px", fontWeight: "700", marginTop: "4px" }}>Requisitioning Officer</div>
+                      </div>
+                    </div>
 
-                  {/* TOTAL row */}
-                  <tr>
-                    <td style={{ ...headerCell, borderTop: "2px solid #000", textAlign: "center" }} colSpan={4}>TOTAL AMOUNT</td>
-                    {displayQuotes.map((q: any, qi: number) => {
-                      const isWinner = q && recommendedQuote && q.id === recommendedQuote.id;
-                      return (
-                        <React.Fragment key={qi}>
-                          <td key={`tot-up-${qi}`} style={{ ...cell, borderTop: "2px solid #000" }}></td>
-                          <td key={`tot-tp-${qi}`} style={{ ...cell, borderTop: "2px solid #000", textAlign: "right", fontWeight: "700", fontSize: isWinner ? "10px" : "9px" }}>
-                            {q && q.totalAmount > 0 ? fmt2(q.totalAmount) : ""}
-                          </td>
-                        </React.Fragment>
-                      );
-                    })}
-                  </tr>
-                </tbody>
-              </table>
+                    {/* Approved by */}
+                    <div className="print:break-inside-avoid" style={{ display: "flex", justifyContent: "flex-end", marginTop: "6px", padding: "0 24px", marginBottom: "20px" }}>
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+                        <div style={{ fontSize: "11px", marginBottom: "20px" }}>Approved:</div>
+                        {hope ? (
+                          <div style={{ textAlign: "center", minWidth: "180px" }}>
+                            <div style={{ fontWeight: "900", fontSize: "12px", textTransform: "uppercase" }}>{hope.name}</div>
+                            <div style={{ fontSize: "11px" }}>{hope.position}</div>
+                          </div>
+                        ) : (
+                          <div style={{ textAlign: "center", minWidth: "180px" }}>
+                            <div style={{ borderBottom: "1px solid #000", width: "180px", marginBottom: "2px" }}></div>
+                            <div style={{ fontSize: "11px" }}>Municipal Mayor</div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
 
-              {/* BAC Res No */}
-              <div style={{ fontSize: "9px", marginBottom: "8px", padding: "0 24px" }}>
-                BAC Resolution No.:&nbsp;
-                <span style={{ borderBottom: "1px solid #000", display: "inline-block", minWidth: "100px" }}>
-                  &nbsp;{bacResNo}&nbsp;
-                </span>
-              </div>
-
-              {/* Certification Paragraph */}
-              <div style={{ fontSize: "9px", lineHeight: "1.6", marginBottom: "50px", textAlign: "justify", padding: "0 24px" }}>
-                &nbsp;&nbsp;&nbsp;&nbsp;We, the undersigned the BAC Chairman, Members and Requisitioning Officer, do hereby certify that the foregoing is the true and correct ABSTRACT OF CANVASS of the Request for Quotation received on <strong>{fmtDate(dateReceived)}</strong> by BAC Secretariat and was opened by Bids and Awards Committee of Pandan, Antique on <strong>{fmtDate(dateAwarded)}</strong> for&nbsp;
-                <span style={{ borderBottom: "1px solid #000" }}><strong>&nbsp;{pr?.purpose}&nbsp;</strong></span>
-                &nbsp;needed for use in the Office of the <strong>{reqOfficerOffice || "___________________"}</strong>, Pandan, Antique.
-                The offer <strong><span style={{ textDecoration: "underline" }}>{recommendedQuote ? recommendedQuote.supplier?.name?.toUpperCase() : "___________________"}</span></strong> for items herein and respectively checked and articles/materials are hereby ACCEPTED AND AWARDED OF PRICE RECOMMENDATION. Recommending approval of the award in favor of the dealer quoted most advantageous offers indicating in the column above.
-              </div>
-
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px", flexWrap: "wrap", rowGap: "32px", padding: "0 24px" }}>
-                {bacChairman && (
-                  <div
-                    onClick={() => { setEditingSigId(bacChairman.id); setShowAllSigs(false); }}
-                    style={{ flex: "1 1 auto", textAlign: "center", padding: "4px", cursor: "pointer", borderRadius: "6px", backgroundColor: editingSigId === bacChairman.id ? "rgba(37,99,235,0.08)" : "transparent" }}
-                    title="Click to edit"
-                  >
-                    <div style={{ fontWeight: "900", fontSize: "9px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{bacChairman.name}</div>
-                    <div style={{ fontSize: "8px" }}>{bacChairman.position}</div>
-                    <div style={{ fontSize: "8px", fontWeight: "700" }}>BAC Chairman</div>
                   </div>
-                )}
-                {bacMembers.map((m: any) => (
-                  <div
-                    key={m.id}
-                    onClick={() => { setEditingSigId(m.id); setShowAllSigs(false); }}
-                    style={{ flex: "1 1 auto", textAlign: "center", padding: "4px", cursor: "pointer", borderRadius: "6px", backgroundColor: editingSigId === m.id ? "rgba(37,99,235,0.08)" : "transparent" }}
-                    title="Click to edit"
-                  >
-                    <div style={{ fontWeight: "900", fontSize: "9px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{m.name}</div>
-                    <div style={{ fontSize: "8px" }}>{m.position}</div>
-                    <div style={{ fontSize: "8px", fontWeight: "700" }}>{m.label || "BAC Member"}</div>
-                  </div>
-                ))}
-                <div
-                  onClick={() => { setEditingSigId("req"); setShowAllSigs(false); }}
-                  style={{ flex: "1 1 auto", textAlign: "center", padding: "4px", cursor: "pointer", borderRadius: "6px", backgroundColor: editingSigId === "req" ? "rgba(37,99,235,0.08)" : "transparent" }}
-                  title="Click to edit"
-                >
-                  <div style={{ fontWeight: "900", fontSize: "9px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{reqOfficerName || "___________________"}</div>
-                  <div style={{ fontSize: "8px", fontWeight: "700", marginTop: "4px" }}>Requisitioning Officer</div>
                 </div>
               </div>
-
-              {/* Approved by */}
-              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "6px", padding: "0 24px", marginBottom: "20px" }}>
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
-                  <div style={{ fontSize: "9px", marginBottom: "20px" }}>Approved:</div>
-                  {hope ? (
-                    <div style={{ textAlign: "center", minWidth: "180px" }}>
-                      <div style={{ fontWeight: "900", fontSize: "10px", textTransform: "uppercase" }}>{hope.name}</div>
-                      <div style={{ fontSize: "9px" }}>{hope.position}</div>
-                    </div>
-                  ) : (
-                    <div style={{ textAlign: "center", minWidth: "180px" }}>
-                      <div style={{ borderBottom: "1px solid #000", width: "180px", marginBottom: "2px" }}></div>
-                      <div style={{ fontSize: "9px" }}>Municipal Mayor</div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
             </div>
           </div>
         </div>
@@ -545,7 +565,7 @@ export default function AbstractLivePreviewPage() {
         @media print {
           .no-print { display: none !important; }
           body { background: white !important; }
-          @page { size: 13in 8.5in; margin: 0.5cm; }
+          @page { size: 13in 8.5in; }
         }
       `}</style>
     </div>
