@@ -251,7 +251,7 @@ export default function PurchaseRequestEditor() {
     window.print();
   };
 
-  const isReadOnly = isViewMode || (prData && prData.status !== "DRAFT" && prData.status !== "SUBMITTED" && prData.status !== "REJECTED" && !(prData.status === "FOR_RFQ" && isUnlocked));
+  const isReadOnly = isViewMode || (!isNew && !isUnlocked);
 
   if (loading) return <div className="p-8 flex justify-center"><Loader2 className="animate-spin text-blue-500" /></div>;
 
@@ -267,7 +267,6 @@ export default function PurchaseRequestEditor() {
             <h1 className="text-lg font-bold text-slate-800">
               {isNew ? "New Purchase Request" : `PR: ${prData?.prNumber}`}
             </h1>
-            <p className="text-xs text-slate-500 font-medium">{prData?.status || "DRAFT"}</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -276,7 +275,7 @@ export default function PurchaseRequestEditor() {
               <Printer size={16} /> Print
             </button>
           )}
-          {!isViewMode && !isNew && prData?.status === "FOR_RFQ" && (
+          {!isViewMode && !isNew && (
             <button type="button" onClick={() => setIsUnlocked(!isUnlocked)} className={`btn ${isUnlocked ? 'btn-secondary' : 'btn-primary'}`}>
               {isUnlocked ? <><Lock size={16} /> Lock</> : <><Unlock size={16} /> Unlock</>}
             </button>
@@ -284,16 +283,6 @@ export default function PurchaseRequestEditor() {
           {!isReadOnly && (
             <button onClick={handleSubmit(onSubmit)} disabled={submitting} className="btn btn-primary">
               <Save size={16} /> Save
-            </button>
-          )}
-          {!isViewMode && !isNew && prData?.status === "DRAFT" && (
-            <button onClick={() => updateStatus("SUBMITTED")} className="btn btn-primary">
-              <Send size={16} /> Submit
-            </button>
-          )}
-          {!isViewMode && !isNew && prData?.status === "SUBMITTED" && (user?.role === "BAC_SECRETARIAT" || user?.role === "ADMIN") && (
-            <button onClick={() => updateStatus("FOR_RFQ")} className="btn" style={{ color: "#ea580c" }}>
-              Create RFQ
             </button>
           )}
         </div>

@@ -59,7 +59,7 @@ export default function PurchaseRequestsPage() {
       render: (row: PR) => (
         <div style={{
           fontSize: "0.875rem", color: "#334155",
-          maxWidth: "300px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", margin: "0 auto"
+          maxWidth: "500px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", margin: "0 auto"
         }}>
           {row.purpose}
         </div>
@@ -68,7 +68,7 @@ export default function PurchaseRequestsPage() {
     {
       key: "totalAmount",
       label: "Total Amount",
-      align: "right",
+      align: "center",
       render: (row: PR) => (
         <div style={{ fontWeight: "700", color: "#059669" }}>
           {formatCurrency(row.totalAmount)}
@@ -76,20 +76,7 @@ export default function PurchaseRequestsPage() {
       ),
       width: "140px",
     },
-    {
-      key: "status",
-      label: "Status",
-      align: "center",
-      render: (row: PR) => {
-        const conf = STATUS_COLORS[row.status] || STATUS_COLORS.DRAFT;
-        return (
-          <span className="badge" style={{ background: conf.bg, color: conf.color, display: "inline-flex", alignItems: "center", gap: "0.25rem" }}>
-            {conf.icon} {PR_STATUS_LABELS[row.status] || row.status}
-          </span>
-        );
-      },
-      width: "140px",
-    },
+
     {
       key: "createdAt",
       label: "Date",

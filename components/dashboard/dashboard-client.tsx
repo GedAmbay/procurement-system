@@ -15,12 +15,10 @@ import { formatCurrency, PR_STATUS_COLORS, PR_STATUS_LABELS } from "@/lib/utils"
 interface DashboardClientProps {
   data: {
     stats: {
-      prPending: number;
-      rfqActive: number;
-      poForSig: number;
-      poReleased: number;
-      prDraft: number;
-      prForRfq: number;
+      totalPrs: number;
+      rfqForSigning: number;
+      aoqForSigning: number;
+      poForSigning: number;
     };
     recentPRs: {
       id: string;
@@ -39,40 +37,40 @@ interface DashboardClientProps {
 
 const statCards = (stats: DashboardClientProps["data"]["stats"]) => [
   {
-    label: "PRs Awaiting Action",
-    value: stats.prPending,
+    label: "Total PRs Encoded",
+    value: stats.totalPrs,
     icon: ShoppingCart,
     color: "#64748b",
     bg: "#eff6ff",
-    subtext: `${stats.prDraft} draft • ${stats.prPending} submitted/approved`,
+    subtext: "Purchase Requests logged in the system",
     href: "/purchase-requests",
   },
   {
-    label: "Active RFQs",
-    value: stats.rfqActive,
+    label: "RFQs For Signing",
+    value: stats.rfqForSigning,
     icon: FileText,
     color: "#64748b",
     bg: "#ecfeff",
-    subtext: "Awaiting supplier quotations",
+    subtext: "Routing for physical signatures",
     href: "/rfqs",
   },
   {
-    label: "POs for Signature",
-    value: stats.poForSig,
-    icon: Package,
-    color: "#64748b",
-    bg: "#fffbeb",
-    subtext: "Pending release to suppliers",
-    href: "/purchase-orders",
-  },
-  {
-    label: "PRs Ready for RFQ",
-    value: stats.prForRfq,
+    label: "AOQs For Signing",
+    value: stats.aoqForSigning,
     icon: ClipboardList,
     color: "#64748b",
     bg: "#f0fdf4",
-    subtext: "Approved, awaiting canvass",
-    href: "/purchase-requests",
+    subtext: "Routing for physical signatures",
+    href: "/abstract",
+  },
+  {
+    label: "POs For Signing",
+    value: stats.poForSigning,
+    icon: Package,
+    color: "#64748b",
+    bg: "#fffbeb",
+    subtext: "Routing for physical signatures",
+    href: "/purchase-orders",
   },
 ];
 
@@ -272,8 +270,8 @@ export default function DashboardClient({ data, user }: DashboardClientProps) {
                       {formatCurrency(pr.totalAmount)}
                     </td>
                     <td>
-                      <span className={`badge ${PR_STATUS_COLORS[pr.status] ?? "bg-gray-100 text-gray-600"}`}>
-                        {PR_STATUS_LABELS[pr.status] ?? pr.status}
+                      <span className="badge" style={{ background: "#f8fafc", color: "#64748b" }}>
+                        Logged
                       </span>
                     </td>
                     <td style={{ color: "#94a3b8", fontSize: "0.8125rem" }}>

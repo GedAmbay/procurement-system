@@ -134,7 +134,7 @@ export default function AbstractLivePreviewPage() {
             <ArrowLeft size={16} />
           </Link>
           <div>
-            <div style={{ fontWeight: "700", fontSize: "0.9375rem", color: "#0f172a" }}>Abstract of Canvass — Live Preview</div>
+            <div style={{ fontWeight: "700", fontSize: "0.9375rem", color: "#0f172a" }}>Abstract of Canvas — Live Preview</div>
             <div style={{ fontSize: "0.75rem", color: "#64748b" }}>{data.aoqNumber}</div>
           </div>
         </div>

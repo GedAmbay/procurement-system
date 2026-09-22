@@ -53,29 +53,29 @@ export async function PATCH(
       if (!parseResult.success) {
         return NextResponse.json({ error: "Invalid status data", details: parseResult.error.format() }, { status: 400 });
       }
-      
+
       const updatedPR = await prisma.$transaction(async (tx) => {
         const prUpdate = await tx.purchaseRequest.update({
           where: { id },
           data: { status: body.status },
           include: { fundSource: true, lineItems: true }
         });
-        
+
         // Automatic generation of RFQ, AOQ, PO when FOR_RFQ
         if (body.status === "FOR_RFQ") {
           const existingRfq = await tx.rfq.findFirst({ where: { prId: id } });
-          
+
           if (!existingRfq) {
             let fundPrefix = "GF";
             if (prUpdate.fundSource && prUpdate.fundSource.code.toUpperCase().startsWith("TF")) {
               fundPrefix = "TF";
             }
-            
+
             const yy = String(prUpdate.fiscalYear).slice(-2) || String(new Date().getFullYear()).slice(-2);
             const prParts = prUpdate.prNumber.split("-");
-            const xxxx = prParts[prParts.length - 1]; 
+            const xxxx = prParts[prParts.length - 1];
             const rfqNumber = `${fundPrefix}-${yy}-${xxxx}`;
-            
+
             const rfq = await tx.rfq.create({
               data: {
                 rfqNumber,
@@ -94,15 +94,15 @@ export async function PATCH(
                 }
               }
             });
-            
+
             const aoqNumber = `${rfqNumber}-AOQ`;
-            
+
             const aoq = await tx.abstractOfQuotation.create({
               data: {
                 aoqNumber,
                 rfqId: rfq.id,
                 fiscalYear: prUpdate.fiscalYear,
-                totalAmount: prUpdate.totalAmount, 
+                totalAmount: prUpdate.totalAmount,
                 status: "DRAFT",
                 lineItems: {
                   create: prUpdate.lineItems.map(li => ({
@@ -116,9 +116,9 @@ export async function PATCH(
                 }
               }
             });
-            
+
             const poNumber = `${rfqNumber}-PO`;
-            
+
             await tx.purchaseOrder.create({
               data: {
                 poNumber,
@@ -140,17 +140,14 @@ export async function PATCH(
             });
           }
         }
-        
+
         return prUpdate;
       });
 
       return NextResponse.json(updatedPR);
     }
 
-    // Otherwise, full update (only allowed if DRAFT, SUBMITTED, REJECTED, or FOR_RFQ)
-    if (pr.status !== "DRAFT" && pr.status !== "REJECTED" && pr.status !== "SUBMITTED" && pr.status !== "FOR_RFQ") {
-      return NextResponse.json({ error: "Cannot edit approved or processed PR" }, { status: 400 });
-    }
+    // Full update is allowed indefinitely (unlocked in UI)
 
     const parseResult = purchaseRequestSchema.safeParse(body);
     if (!parseResult.success) {

@@ -58,7 +58,7 @@ export default function AOQPage() {
       render: (row: AOQ) => (
         <div style={{
           fontSize: "0.875rem", color: "#334155",
-          maxWidth: "300px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+          maxWidth: "500px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
           margin: "0 auto", textAlign: "center"
         }}>
           {row.rfq.pr.purpose}
@@ -68,13 +68,13 @@ export default function AOQPage() {
     {
       key: "abc",
       label: "Approved Budget",
-      align: "right",
+      align: "center",
       render: (row: AOQ) => (
         <div style={{ fontWeight: "700", color: "#059669" }}>
           {formatCurrency(row.rfq.pr.totalAmount)}
         </div>
       ),
-      width: "140px",
+      width: "160px",
     },
     {
       key: "status",
@@ -88,7 +88,7 @@ export default function AOQPage() {
           </span>
         );
       },
-      width: "140px",
+      width: "160px",
     },
     {
       key: "createdAt",

@@ -9,24 +9,18 @@ type MonthlyPR = { createdAt: Date; totalAmount: number; status: string };
 
 async function getDashboardData() {
   const [
-    prDraft,
-    prSubmitted,
-    prApproved,
-    prForRfq,
-    rfqCount,
-    poForSig,
-    poReleased,
+    totalPrs,
+    rfqForSigning,
+    aoqForSigning,
+    poForSigning,
     recentPRs,
     monthlyData,
     fundSources,
   ] = await Promise.all([
-    prisma.purchaseRequest.count({ where: { status: "DRAFT" } }),
-    prisma.purchaseRequest.count({ where: { status: "SUBMITTED" } }),
-    prisma.purchaseRequest.count({ where: { status: "APPROVED" } }),
-    prisma.purchaseRequest.count({ where: { status: "FOR_RFQ" } }),
-    prisma.rfq.count({ where: { status: "ISSUED" } }),
-    prisma.purchaseOrder.count({ where: { status: "FOR_SIGNATURE" } }),
-    prisma.purchaseOrder.count({ where: { status: "RELEASED" } }),
+    prisma.purchaseRequest.count(),
+    prisma.rfq.count({ where: { status: "FOR_SIGNING" } }),
+    prisma.abstractOfQuotation.count({ where: { status: "FOR_SIGNING" } }),
+    prisma.purchaseOrder.count({ where: { status: "FOR_SIGNING" } }),
     prisma.purchaseRequest.findMany({
       take: 5,
       orderBy: { createdAt: "desc" },
@@ -56,12 +50,10 @@ async function getDashboardData() {
 
   return {
     stats: {
-      prPending: prSubmitted + prApproved,
-      rfqActive: rfqCount,
-      poForSig,
-      poReleased,
-      prDraft,
-      prForRfq,
+      totalPrs,
+      rfqForSigning,
+      aoqForSigning,
+      poForSigning,
     },
     recentPRs: recentPRs.map((pr: typeof recentPRs[number]) => ({
       id: pr.id,

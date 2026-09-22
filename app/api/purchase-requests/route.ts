@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const search = url.searchParams.get("search") || "";
   const status = url.searchParams.get("status") || "";
-  
+
   const user = session.user as any;
   const whereClause: any = {};
 
@@ -42,12 +42,19 @@ export async function GET(req: NextRequest) {
     whereClause.OR = [
       { prNumber: { contains: search } },
       { purpose: { contains: search } },
+      { office: { name: { contains: search } } },
+      { office: { code: { contains: search } } },
     ];
+
+    const parsedAmount = parseFloat(search.replace(/,/g, ''));
+    if (!isNaN(parsedAmount)) {
+      whereClause.OR.push({ totalAmount: { equals: parsedAmount } });
+    }
   }
   if (status) {
     whereClause.status = status;
   }
-  
+
   // If End User, only show their office's PRs
   if (user.role === "END_USER" && user.officeId) {
     whereClause.officeId = user.officeId;
@@ -84,31 +91,108 @@ export async function POST(req: NextRequest) {
     const totalAmount = lineItems.reduce((sum: number, item: any) => sum + (item.quantity * item.unitCost), 0);
     const fiscalYear = new Date().getFullYear();
 
-    const pr = await prisma.purchaseRequest.create({
-      data: {
-        prNumber,
-        officeId,
-        requestedById: user.id,
-        requestedBySignatoryId: requestedBySignatoryId || null,
-        purpose,
-        fundSourceId: fundSourceId || null,
-        chargeToAccount,
-        totalAmount,
-        fiscalYear,
-        status: "DRAFT",
-        lineItems: {
-          create: lineItems.map((item: any, idx: number) => ({
-            itemId: item.itemId || null,
-            description: item.description,
-            unit: item.unit,
-            quantity: item.quantity,
-            unitCost: item.unitCost,
-            totalCost: item.quantity * item.unitCost,
-            sortOrder: idx,
-          })),
+    const pr = await prisma.$transaction(async (tx) => {
+      const createdPr = await tx.purchaseRequest.create({
+        data: {
+          prNumber,
+          officeId,
+          requestedById: user.id,
+          requestedBySignatoryId: requestedBySignatoryId || null,
+          purpose,
+          fundSourceId: fundSourceId || null,
+          chargeToAccount,
+          totalAmount,
+          fiscalYear,
+          status: "COMPLETED",
+          lineItems: {
+            create: lineItems.map((item: any, idx: number) => ({
+              itemId: item.itemId || null,
+              description: item.description,
+              unit: item.unit,
+              quantity: item.quantity,
+              unitCost: item.unitCost,
+              totalCost: item.quantity * item.unitCost,
+              sortOrder: idx,
+            })),
+          },
         },
-      },
-      include: { lineItems: true },
+        include: { lineItems: true, fundSource: true },
+      });
+
+      let fundPrefix = "GF";
+      if (createdPr.fundSource && createdPr.fundSource.code.toUpperCase().startsWith("TF")) {
+        fundPrefix = "TF";
+      }
+      
+      const yy = String(createdPr.fiscalYear).slice(-2) || String(new Date().getFullYear()).slice(-2);
+      const prParts = createdPr.prNumber.split("-");
+      const xxxx = prParts[prParts.length - 1]; 
+      const rfqNumber = `${fundPrefix}-${yy}-${xxxx}`;
+      
+      const rfq = await tx.rfq.create({
+        data: {
+          rfqNumber,
+          prId: createdPr.id,
+          fiscalYear: createdPr.fiscalYear,
+          status: "DRAFT",
+          lineItems: {
+            create: createdPr.lineItems.map(li => ({
+              description: li.description,
+              unit: li.unit,
+              quantity: li.quantity,
+              unitCost: li.unitCost,
+              totalCost: li.totalCost,
+              sortOrder: li.sortOrder
+            }))
+          }
+        }
+      });
+      
+      const aoqNumber = `${rfqNumber}-AOQ`;
+      
+      const aoq = await tx.abstractOfQuotation.create({
+        data: {
+          aoqNumber,
+          rfqId: rfq.id,
+          fiscalYear: createdPr.fiscalYear,
+          totalAmount: createdPr.totalAmount, 
+          status: "DRAFT",
+          lineItems: {
+            create: createdPr.lineItems.map(li => ({
+              description: li.description,
+              unit: li.unit,
+              quantity: li.quantity,
+              lowestUnitPrice: 0,
+              totalPrice: 0,
+              sortOrder: li.sortOrder
+            }))
+          }
+        }
+      });
+      
+      const poNumber = `${rfqNumber}-PO`;
+      
+      await tx.purchaseOrder.create({
+        data: {
+          poNumber,
+          aoqId: aoq.id,
+          fiscalYear: createdPr.fiscalYear,
+          totalAmount: createdPr.totalAmount,
+          status: "DRAFT",
+          lineItems: {
+            create: createdPr.lineItems.map(li => ({
+              description: li.description,
+              unit: li.unit,
+              quantity: li.quantity,
+              unitPrice: li.unitCost,
+              totalPrice: li.totalCost,
+              sortOrder: li.sortOrder
+            }))
+          }
+        }
+      });
+
+      return createdPr;
     });
 
     return NextResponse.json(pr, { status: 201 });

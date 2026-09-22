@@ -16,7 +16,14 @@ export async function GET(req: NextRequest) {
     whereClause.OR = [
       { rfqNumber: { contains: search } },
       { pr: { purpose: { contains: search } } },
+      { pr: { office: { name: { contains: search } } } },
+      { pr: { office: { code: { contains: search } } } },
     ];
+
+    const parsedAmount = parseFloat(search.replace(/,/g, ''));
+    if (!isNaN(parsedAmount)) {
+      whereClause.OR.push({ pr: { totalAmount: { equals: parsedAmount } } });
+    }
   }
   if (status) {
     whereClause.status = status;

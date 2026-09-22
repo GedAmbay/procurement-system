@@ -57,7 +57,7 @@ export default function RFQPage() {
       render: (row: RFQ) => (
         <div style={{
           fontSize: "0.875rem", color: "#334155",
-          maxWidth: "300px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+          maxWidth: "500px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
           textAlign: "center", width: "100%", margin: "0 auto"
         }}>
           {row.pr.purpose}
@@ -67,13 +67,13 @@ export default function RFQPage() {
     {
       key: "abc",
       label: "Approved Budget",
-      align: "right",
+      align: "center",
       render: (row: RFQ) => (
         <div style={{ fontWeight: "700", color: "#059669" }}>
           {formatCurrency(row.pr.totalAmount)}
         </div>
       ),
-      width: "140px",
+      width: "160px",
     },
     {
       key: "status",
@@ -87,7 +87,7 @@ export default function RFQPage() {
           </span>
         );
       },
-      width: "140px",
+      width: "160px",
     },
     {
       key: "createdAt",
