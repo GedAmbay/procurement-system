@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { Printer, Save, ArrowLeft, Loader2, ZoomIn, ZoomOut, Send, Clock, CheckCircle2, Lock, Unlock } from "lucide-react";
+import { Printer, Save, ArrowLeft, Loader2, ZoomIn, ZoomOut, Send, Clock, CheckCircle2, Lock, Unlock, Minus, Plus } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -18,6 +18,7 @@ export default function RfqLivePreviewPage() {
   const [signatories, setSignatories] = useState<any[]>([]);
   const [zoom, setZoom] = useState(1);
   const [isUnlocked, setIsUnlocked] = useState(false);
+  const [targetRows, setTargetRows] = useState(15);
 
   const { register, handleSubmit, reset, watch } = useForm({
     defaultValues: {
@@ -149,11 +150,15 @@ export default function RfqLivePreviewPage() {
       </div>
 
       <div className="flex flex-1 overflow-hidden relative print:block print:!h-auto print:!overflow-visible">
-        {/* Zoom Controls */}
+        {/* View Controls */}
         <div className="no-print absolute bottom-6 left-6 flex items-center gap-1 bg-white p-1 rounded-full shadow-md border border-slate-200 z-10 text-slate-600">
           <button type="button" onClick={() => setZoom(z => Math.max(z - 0.1, 0.5))} className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Zoom Out"><ZoomOut size={18} /></button>
           <button type="button" onClick={() => setZoom(1)} className="px-3 hover:bg-slate-100 rounded-full font-bold text-xs h-full transition-colors" title="Reset Zoom">{Math.round(zoom * 100)}%</button>
           <button type="button" onClick={() => setZoom(z => Math.min(z + 0.1, 2))} className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Zoom In"><ZoomIn size={18} /></button>
+          <div className="w-[1px] h-6 bg-slate-300 mx-1"></div>
+          <button type="button" onClick={() => setTargetRows(r => Math.max(r - 1, 0))} className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Remove Row"><Minus size={18} /></button>
+          <div className="px-2 font-bold text-xs flex flex-col items-center justify-center h-full" title="Target Table Rows"><span className="leading-none">{targetRows}</span><span className="text-[9px] leading-none text-slate-400">Rows</span></div>
+          <button type="button" onClick={() => setTargetRows(r => r + 1)} className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Add Row"><Plus size={18} /></button>
         </div>
 
         {/* Left Side: Live Print Preview */}
@@ -219,37 +224,47 @@ export default function RfqLivePreviewPage() {
                 </div>
               </div>
 
-              <table className="w-full border-collapse border-2 border-black mb-1">
+              <table className="w-full border-collapse border-[3px] border-black mb-1 table-fixed">
                 <thead>
                   <tr>
-                    <th className="border border-black p-1 w-10">ITEM<br />NO.</th>
-                    <th className="border border-black p-1 text-center">ITEM & DESCRIPTION</th>
-                    <th className="border border-black p-1 w-12">QTY</th>
-                    <th className="border border-black p-1 w-18">UNIT</th>
-                    <th className="border border-black p-1 w-28">UNIT<br />PRICE</th>
-                    <th className="border border-black p-1 w-28">TOTAL<br />COST</th>
+                    <th className="border-x-[3px] border-b-[3px] border-black p-1 w-12 text-center align-middle">Item<br />No</th>
+                    <th className="border-x-[3px] border-b-[3px] border-black p-1 text-center align-middle">ITEM & DESCRIPTION</th>
+                    <th className="border-x-[3px] border-b-[3px] border-black p-1 w-14 text-center align-middle">QTY</th>
+                    <th className="border-x-[3px] border-b-[3px] border-black p-1 w-20 text-center align-middle">Unit</th>
+                    <th className="border-x-[3px] border-b-[3px] border-black p-1 w-32 text-center align-middle">Unit<br />Price</th>
+                    <th className="border-x-[3px] border-b-[3px] border-black p-1 w-32 text-center align-middle">TOTAL<br />COST</th>
                   </tr>
                 </thead>
                 <tbody>
                   {rfq.lineItems.map((item: any, idx: number) => (
-                    <tr key={idx} className="h-6">
-                      <td className="border border-black p-0 text-center">{idx + 1}</td>
-                      <td className="border border-black p-0 pl-2">{item.description}</td>
-                      <td className="border border-black p-0 text-center">{item.quantity}</td>
-                      <td className="border border-black p-0 text-center">{item.unit}</td>
-                      <td className="border border-black p-0 pr-2 text-right"></td>
-                      <td className="border border-black p-0 pr-2 text-right font-semibold"></td>
+                    <tr key={idx} className="h-8">
+                      <td className="border-x-[3px] border-black px-1 py-2 text-center align-top">{idx + 1}</td>
+                      <td className="border-x-[3px] border-black px-2 py-2 align-top">{item.description}</td>
+                      <td className="border-x-[3px] border-black px-1 py-2 text-center align-top">{item.quantity}</td>
+                      <td className="border-x-[3px] border-black px-1 py-2 text-center align-top">{item.unit}</td>
+                      <td className="border-x-[3px] border-black px-2 py-2 align-top">
+                        <div className="flex items-end">
+                          <span className="mr-1">P</span>
+                          <span className="flex-1 border-b border-black pb-4"></span>
+                        </div>
+                      </td>
+                      <td className="border-x-[3px] border-black px-2 py-2 align-top">
+                        <div className="flex items-end">
+                          <span className="mr-1">P</span>
+                          <span className="flex-1 border-b border-black pb-4"></span>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                   {/* Empty rows filler */}
-                  {Array.from({ length: Math.max(0, 15 - rfq.lineItems.length) }).map((_, i) => (
+                  {Array.from({ length: Math.max(0, targetRows - rfq.lineItems.length) }).map((_, i) => (
                     <tr key={`empty-${i}`} className="h-6">
-                      <td className="border border-black p-0"></td>
-                      <td className="border border-black p-0"></td>
-                      <td className="border border-black p-0"></td>
-                      <td className="border border-black p-0"></td>
-                      <td className="border border-black p-0"></td>
-                      <td className="border border-black p-0"></td>
+                      <td className="border-x-[3px] border-black p-0"></td>
+                      <td className="border-x-[3px] border-black p-0"></td>
+                      <td className="border-x-[3px] border-black p-0"></td>
+                      <td className="border-x-[3px] border-black p-0"></td>
+                      <td className="border-x-[3px] border-black p-0"></td>
+                      <td className="border-x-[3px] border-black p-0"></td>
                     </tr>
                   ))}
                 </tbody>
