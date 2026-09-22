@@ -66,7 +66,7 @@ export default function OfficesPage() {
         description="Manage the list of municipal offices and requesting departments"
         apiPath="/api/offices"
         columns={columns}
-        searchPlaceholder="Search by name or code..."
+        searchPlaceholder="Search..."
         onAdd={() => { setEditTarget(null); setShowModal(true); }}
         onEdit={(row) => { setEditTarget(row); setShowModal(true); }}
         emptyIcon={<Building2 size={40} style={{ opacity: 0.3 }} />}

@@ -130,7 +130,7 @@ export default function AOQPage() {
         description="Consolidate supplier bids and recommend the lowest calculated responsive quotation."
         apiPath="/api/abstract"
         columns={columns}
-        searchPlaceholder="Search by AOQ Number..."
+        searchPlaceholder="Search..."
         onView={(row) => router.push(`/abstract/${row.id}?mode=view`)}
         onEdit={handleEdit}
         onDuplicate={handleDuplicate}

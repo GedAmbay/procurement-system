@@ -135,7 +135,7 @@ export default function SignatoriesPage() {
         description="Manage authorized signatories for PR, RFQ, AOQ, and PO documents"
         apiPath="/api/signatories"
         columns={columns}
-        searchPlaceholder="Search by name, position, role..."
+        searchPlaceholder="Search..."
         onAdd={() => { setEditTarget(null); setShowModal(true); }}
         onEdit={(row) => { setEditTarget(row); setShowModal(true); }}
         onDelete={handleDelete}

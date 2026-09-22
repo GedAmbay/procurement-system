@@ -129,7 +129,7 @@ export default function RFQPage() {
         description="Manage generated RFQs and Supplier Distributions"
         apiPath="/api/rfqs"
         columns={columns}
-        searchPlaceholder="Search by Quotation Number..."
+        searchPlaceholder="Search..."
         onView={(row) => router.push(`/rfqs/${row.id}?mode=view`)}
         onEdit={handleEdit}
         onDuplicate={handleDuplicate}

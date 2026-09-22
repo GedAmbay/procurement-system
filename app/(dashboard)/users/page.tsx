@@ -131,7 +131,7 @@ export default function UsersPage() {
         description="Manage system user accounts and role assignments (Admin only)"
         apiPath="/api/users"
         columns={columns}
-        searchPlaceholder="Search users..."
+        searchPlaceholder="Search..."
         onAdd={() => setShowModal(true)}
         emptyIcon={<Users size={40} style={{ opacity: 0.3 }} />}
         emptyText="No users found"

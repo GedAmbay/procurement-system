@@ -92,7 +92,13 @@ export default function AbstractLivePreviewPage() {
     return li ? { unitPrice: li.unitPrice || 0, totalPrice: li.totalPrice || 0 } : { unitPrice: 0, totalPrice: 0 };
   };
 
-  const displayQuotes = [...quotations];
+  const sortedQuotations = [...quotations].sort((a, b) => {
+    if (a.totalAmount === 0 && b.totalAmount > 0) return 1;
+    if (b.totalAmount === 0 && a.totalAmount > 0) return -1;
+    return (a.totalAmount || 0) - (b.totalAmount || 0);
+  });
+
+  const displayQuotes = [...sortedQuotations];
   const MAX_SUPPLIERS = 3;
   while (displayQuotes.length < MAX_SUPPLIERS) displayQuotes.push(null);
 

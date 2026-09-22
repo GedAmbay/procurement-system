@@ -131,7 +131,7 @@ export default function FundSourcesPage() {
         description="Manage budget appropriations and fund sources for procurement transactions"
         apiPath="/api/fund-sources"
         columns={columns}
-        searchPlaceholder="Search by name or code..."
+        searchPlaceholder="Search..."
         onAdd={() => { setEditTarget(null); setShowModal(true); }}
         onEdit={(row) => { setEditTarget(row); setShowModal(true); }}
         onDelete={handleDelete}

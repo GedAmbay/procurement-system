@@ -119,7 +119,7 @@ export default function SuppliersPage() {
         description="Manage accredited suppliers and vendors for procurement canvassing"
         apiPath="/api/suppliers"
         columns={columns}
-        searchPlaceholder="Search by name, PhilGEPS no., TIN..."
+        searchPlaceholder="Search..."
         onAdd={handleAdd}
         onEdit={handleEdit}
         onDelete={handleDelete}

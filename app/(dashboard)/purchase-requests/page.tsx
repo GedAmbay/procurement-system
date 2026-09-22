@@ -118,7 +118,7 @@ export default function PurchaseRequestsPage() {
         description="Manage departmental purchase requests and routing"
         apiPath="/api/purchase-requests"
         columns={columns}
-        searchPlaceholder="Search by PR number or purpose..."
+        searchPlaceholder="Search..."
         onAdd={() => router.push("/purchase-requests/new")}
         onView={(row) => router.push(`/purchase-requests/${row.id}?mode=view`)}
         onEdit={handleEdit}

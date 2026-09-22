@@ -124,7 +124,7 @@ export default function ItemsPage() {
         description="Manage the standard items catalog with unit costs for procurement"
         apiPath="/api/items"
         columns={columns}
-        searchPlaceholder="Search by description, code, unit..."
+        searchPlaceholder="Search..."
         onAdd={() => { setEditTarget(null); setShowModal(true); }}
         onEdit={(row) => { setEditTarget(row); setShowModal(true); }}
         onDelete={handleDelete}

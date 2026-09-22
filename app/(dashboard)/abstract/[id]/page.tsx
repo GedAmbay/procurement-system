@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft, Plus, Building2, FileCheck2, Loader2, Send,
   CheckCircle2, Clock, AlertCircle, Printer, ChevronRight, X, Calendar
@@ -13,8 +13,6 @@ import { toast } from "sonner";
 export default function AoqSupplierHub() {
   const params = useParams();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const isViewMode = searchParams.get("mode") === "view";
   const [aoq, setAoq] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [allSuppliers, setAllSuppliers] = useState<any[]>([]);
@@ -147,27 +145,17 @@ export default function AoqSupplierHub() {
         </div>
 
         <div style={{ display: "flex", gap: "0.5rem" }}>
-          <button className="btn btn-secondary" style={{ display: "flex", alignItems: "center", gap: "0.375rem" }} onClick={() => router.push(`/abstract/${params.id}/print`)}>
+          <button className="btn btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.375rem" }} onClick={() => router.push(`/abstract/${params.id}/print`)}>
             <Printer size={14} /> Open Abstract
           </button>
-          {!isViewMode && aoq.status === "DRAFT" && quotations.length > 0 && completedCount > 0 && (
-            <button onClick={() => updateStatus("FOR_SIGNING")} className="btn btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
-              <Send size={15} /> Route for Signing
+          {aoq.status === "DRAFT" && quotations.length > 0 && completedCount > 0 && (
+            <button onClick={() => updateStatus("RECOMMENDED")} className="btn btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
+              <Send size={15} /> Recommend
             </button>
           )}
-          {!isViewMode && aoq.status === "FOR_SIGNING" && (
-            <>
-              <button onClick={() => updateStatus("RETURNED")} className="btn text-white" style={{ display: "flex", alignItems: "center", gap: "0.375rem", background: "#dc2626" }}>
-                Mark as Returned
-              </button>
-              <button onClick={() => updateStatus("COMPLETED")} className="btn text-white" style={{ display: "flex", alignItems: "center", gap: "0.375rem", background: "#16a34a" }}>
-                <CheckCircle2 size={15} /> Mark as Completed
-              </button>
-            </>
-          )}
-          {!isViewMode && aoq.status === "RETURNED" && (
-            <button onClick={() => updateStatus("FOR_SIGNING")} className="btn btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
-              <Send size={15} /> Re-route for Signing
+          {aoq.status === "RECOMMENDED" && (
+            <button onClick={() => updateStatus("APPROVED")} className="btn btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.375rem", background: "#16a34a" }}>
+              <FileCheck2 size={15} /> Approve
             </button>
           )}
         </div>
@@ -202,7 +190,7 @@ export default function AoqSupplierHub() {
         <h2 style={{ fontSize: "1rem", fontWeight: "700", color: "#334155", margin: 0 }}>
           Supplier Quotations {quotations.length >= 3 && <span style={{ fontSize: "0.75rem", color: "#94a3b8", fontWeight: "400", marginLeft: "0.5rem" }}>(Max 3 reached)</span>}
         </h2>
-        {!isViewMode && aoq.status === "DRAFT" && quotations.length < 3 && (
+        {aoq.status === "DRAFT" && quotations.length < 3 && (
           <button
             className="btn btn-primary"
             style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}
