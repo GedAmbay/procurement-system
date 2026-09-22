@@ -93,3 +93,29 @@ export const LGU_INFO = {
   logoUrl: "/lgu-seal.png",
   mayorRole: "Municipal Mayor",
 } as const;
+
+// Extremely basic number to words for the PO. Max 99,999,999 for simplicity.
+export function numberToWords(num: number): string {
+  if (num === 0) return "Zero";
+  
+  const a = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
+  const b = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+  
+  const toWords = (n: number): string => {
+    if (n < 20) return a[n];
+    if (n < 100) return b[Math.floor(n / 10)] + (n % 10 !== 0 ? "-" + a[n % 10] : "");
+    if (n < 1000) return a[Math.floor(n / 100)] + " Hundred" + (n % 100 !== 0 ? " " + toWords(n % 100) : "");
+    if (n < 1000000) return toWords(Math.floor(n / 1000)) + " Thousand" + (n % 1000 !== 0 ? " " + toWords(n % 1000) : "");
+    if (n < 1000000000) return toWords(Math.floor(n / 1000000)) + " Million" + (n % 1000000 !== 0 ? " " + toWords(n % 1000000) : "");
+    return String(n);
+  };
+  
+  const dollars = Math.floor(num);
+  const cents = Math.round((num - dollars) * 100);
+  
+  let str = toWords(dollars) + " Pesos";
+  if (cents > 0) {
+    str += " and " + cents + "/100";
+  }
+  return str + " Only";
+}

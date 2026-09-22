@@ -259,7 +259,7 @@ export default function PurchaseRequestEditor() {
   return (
     <div className="flex flex-col overflow-hidden print:block print:!h-auto print:!overflow-visible" style={{ height: 'calc(var(--full-vh) - 128px)' }}>
       {/* Header (No Print) */}
-      <div className="no-print flex items-center justify-between p-4 border-b border-slate-300 shadow-sm z-10" style={{ background: 'var(--color-page-bg)' }}>
+      <div className="no-print flex items-center justify-between p-4 bg-white border-b border-slate-200 shadow-sm z-10">
         <div className="flex items-center gap-3">
           <Link href="/purchase-requests" className="p-2 rounded-md hover:bg-slate-100 text-slate-500 transition-colors">
             <ArrowLeft size={18} />
