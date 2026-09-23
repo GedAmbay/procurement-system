@@ -176,13 +176,13 @@ export default function PurchaseOrderEditor() {
 
         {/* Left Side: Live Print Preview */}
         <div className="flex-1 overflow-auto bg-slate-200 print:p-0 print:bg-white print:block print:!overflow-visible print:!h-auto">
-          <div className="p-8 print:p-0 w-max mx-auto min-w-full flex justify-center origin-top print:block print:w-full print:min-w-0 print:!transform-none print:!mb-0" style={{ transform: `scale(${zoom})`, marginBottom: `${(zoom - 1) * 1056}px`, transition: "transform 0.2s ease" }}>
+          <div className="p-8 print:p-0 w-max mx-auto min-w-full flex justify-center origin-top print:block print:w-full print:min-w-0 print:!transform-none print:!mb-0" style={{ transform: `scale(${zoom})`, marginBottom: `${(zoom - 1) * 1123}px`, transition: "transform 0.2s ease" }}>
             <style>{`
               @media print { 
                 @page { margin-top: 10mm !important; margin-bottom: 10mm !important; }
               }
             `}</style>
-            <div className="print-area shadow-xl text-[14px] leading-tight print:shadow-none print:max-w-none print:m-0 [&_td]:!font-['Times_New_Roman',_Times,_serif] [&_td]:!text-[14px] w-[800px] min-h-[1056px] bg-white px-12 py-10 print:w-full print:min-h-0 print:p-0" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+            <div className="print-area text-black shadow-xl text-[14px] leading-tight print:shadow-none print:max-w-none print:m-0 [&_td]:!font-['Times_New_Roman',_Times,_serif] [&_td]:!text-[14px] w-[794px] min-h-[1123px] bg-white px-12 py-10 print:w-full print:min-h-0 print:p-0" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
 
               <div className="border-[3px] border-black">
                 <div className="text-right italic pt-2 pr-2 text-sm">Appendix 49</div>
@@ -267,8 +267,10 @@ export default function PurchaseOrderEditor() {
                       <td></td>
                     </tr>
 
-                    <tr className="h-[3px] bg-black">
-                      <td colSpan={6} className="p-0 border-0"></td>
+                    <tr>
+                      <td colSpan={6} className="p-0 border-0">
+                        <div className="border-t-[3px] border-black w-full"></div>
+                      </td>
                     </tr>
                     <tr className="font-bold">
                       <td colSpan={2} className="p-1 px-1 text-left whitespace-nowrap text-[12px] tracking-tight">(Total Amount in Words)</td>
@@ -299,9 +301,9 @@ export default function PurchaseOrderEditor() {
                         HON. TOMAS U. ESTOPEREZ, JR.
                         <div className="font-normal">Municipal Mayor</div>
                       </div>
-                      <div className="flex items-end justify-end pr-8 mt-6">
+                      <div className="flex items-end justify-start pl-12 mt-6">
                         <span className="mr-2">Resolution No:</span>
-                        <span className="border-b border-black w-24"></span>
+                        <span className="border-b border-black w-40"></span>
                       </div>
                     </div>
                   </div>

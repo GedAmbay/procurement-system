@@ -57,7 +57,7 @@ export default function PurchaseOrdersPage() {
       render: (row: PO) => (
         <div style={{
           fontSize: "0.875rem", color: "#334155",
-          maxWidth: "300px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis"
+          maxWidth: "600px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis"
         }}>
           {row.aoq?.rfq?.pr?.purpose || "N/A"}
         </div>

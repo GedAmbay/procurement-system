@@ -54,12 +54,12 @@ export default function AOQPage() {
     {
       key: "purpose",
       label: "Purpose",
-      align: "center",
+      align: "left",
       render: (row: AOQ) => (
         <div style={{
           fontSize: "0.875rem", color: "#334155",
-          maxWidth: "500px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-          margin: "0 auto", textAlign: "center"
+          maxWidth: "600px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+          textAlign: "left"
         }}>
           {row.rfq.pr.purpose}
         </div>

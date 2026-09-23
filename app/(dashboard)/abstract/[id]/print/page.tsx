@@ -29,6 +29,11 @@ export default function AbstractLivePreviewPage() {
   const [showAllSigs, setShowAllSigs] = useState(false);
   const [reqOfficerName, setReqOfficerName] = useState("");
   const [reqOfficerOffice, setReqOfficerOffice] = useState("");
+  const [pageBreaks, setPageBreaks] = useState<(number | string)[]>([]);
+
+  const togglePageBreak = (idx: number | string) => {
+    setPageBreaks(prev => prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]);
+  };
 
   useEffect(() => {
     async function load() {
@@ -171,22 +176,22 @@ export default function AbstractLivePreviewPage() {
               @media print { 
                 .print-zoom-reset { zoom: 1 !important; } 
                 @page { margin-top: 20mm !important; }
-                @page :first { margin-top: 10mm !important; }
+                @page :first { margin-top: 5mm !important; }
               }
             `}</style>
             <div className="w-max mx-auto min-w-full flex justify-center print:block print:w-full print:min-w-0">
               <div className="p-8 print:p-0 origin-top print:!transform-none print:!m-0"
                 style={{
                   transform: `scale(${zoom})`,
-                  marginBottom: `${(zoom - 1) * 1759}px`,
-                  marginLeft: `${(zoom - 1) * 1214 / 2}px`,
-                  marginRight: `${(zoom - 1) * 1214 / 2}px`
+                  marginBottom: `${(zoom - 1) * 816}px`,
+                  marginLeft: `${(zoom - 1) * 1248 / 2}px`,
+                  marginRight: `${(zoom - 1) * 1248 / 2}px`
                 }}>
                 <div style={{
                   background: "#fff",
                   color: "#000",
                   fontFamily: "Arial, sans-serif", fontSize: "11px",
-                }} className="w-[1759px] shadow-xl min-h-[1150px] p-[40px] print:!p-0 block print:shadow-none print:!w-full print:!max-w-none print:!m-0 print:!min-h-0">
+                }} className="w-[1348px] shadow-xl min-h-[816px] p-[40px] print:!p-0 block print:shadow-none print:!w-full print:!max-w-none print:!m-0 print:!min-h-0">
                   <div style={{ border: "1px solid #000", padding: "20px 0" }}>
 
                     {/* Doc Header */}
@@ -244,9 +249,20 @@ export default function AbstractLivePreviewPage() {
                       <tbody>
                         {lineItems.map((item: any, idx: number) => {
                           const isRec = recommendedQuote !== undefined;
+                          const hasBreak = pageBreaks.includes(idx);
                           return (
-                            <tr key={item.id}>
-                              <td style={{ ...cell, textAlign: "center", fontWeight: "700", verticalAlign: "top" }}>{idx + 1}</td>
+                            <tr key={item.id} className={`group ${hasBreak ? 'break-before-page' : ''}`} style={hasBreak ? { pageBreakBefore: 'always', breakBefore: 'page' } : {}}>
+                              <td style={{ ...cell, textAlign: "center", fontWeight: "700", verticalAlign: "top", position: "relative" }}>
+                                <div className="absolute top-0 left-[-24px] h-[24px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer no-print z-50 -translate-y-1/2" onClick={() => togglePageBreak(idx)}>
+                                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white shadow-sm ${hasBreak ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'}`} title={hasBreak ? "Remove Page Break" : "Insert Page Break Above"}>
+                                    {hasBreak ? <Minus size={12} /> : <Plus size={12} />}
+                                  </div>
+                                </div>
+                                {hasBreak && (
+                                  <div className="absolute top-0 left-0 w-[1168px] h-0 border-t-[3px] border-dashed border-red-400 z-40 no-print" style={{ pointerEvents: 'none' }}></div>
+                                )}
+                                {idx + 1}
+                              </td>
                               <td style={{ ...cell }}>{item.description}</td>
                               <td style={{ ...cell, textAlign: "center" }}>{item.quantity}</td>
                               <td style={{ ...cell, textAlign: "center" }}>{item.unit}</td>
@@ -268,22 +284,46 @@ export default function AbstractLivePreviewPage() {
                           );
                         })}
 
-                        {Array.from({ length: Math.max(0, targetRows - lineItems.length) }).map((_, i) => (
-                          <tr key={`fill-${i}`} style={{ height: "24px" }}>
-                            <td style={cell}></td><td style={cell}></td><td style={cell}></td><td style={cell}></td>
-                            {displayQuotes.map((_: any, qi: number) => (
-                              <React.Fragment key={qi}><td key={`fu-${qi}`} style={cell}></td><td key={`ft-${qi}`} style={cell}></td></React.Fragment>
-                            ))}
-                          </tr>
-                        ))}
+                        {Array.from({ length: Math.max(0, targetRows - lineItems.length) }).map((_, i) => {
+                          const idx = `fill-${i}`;
+                          const hasBreak = pageBreaks.includes(idx);
+                          return (
+                            <tr key={idx} className={`group ${hasBreak ? 'break-before-page' : ''}`} style={hasBreak ? { pageBreakBefore: 'always', breakBefore: 'page', height: "24px" } : { height: "24px" }}>
+                              <td style={{ ...cell, position: "relative" }}>
+                                <div className="absolute top-0 left-[-24px] h-[24px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer no-print z-50 -translate-y-1/2" onClick={() => togglePageBreak(idx)}>
+                                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white shadow-sm ${hasBreak ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'}`} title={hasBreak ? "Remove Page Break" : "Insert Page Break Above"}>
+                                    {hasBreak ? <Minus size={12} /> : <Plus size={12} />}
+                                  </div>
+                                </div>
+                                {hasBreak && (
+                                  <div className="absolute top-0 left-0 w-[1168px] h-0 border-t-[3px] border-dashed border-red-400 z-40 no-print" style={{ pointerEvents: 'none' }}></div>
+                                )}
+                              </td>
+                              <td style={cell}></td><td style={cell}></td><td style={cell}></td>
+                              {displayQuotes.map((_: any, qi: number) => (
+                                <React.Fragment key={qi}><td key={`fu-${qi}`} style={cell}></td><td key={`ft-${qi}`} style={cell}></td></React.Fragment>
+                              ))}
+                            </tr>
+                          );
+                        })}
 
                         {/* TOTAL row */}
-                        <tr>
-                          <td style={{ ...headerCell, borderTop: "2px solid #000", textAlign: "center" }} colSpan={4}>TOTAL AMOUNT</td>
+                        <tr className={`group ${pageBreaks.includes('total') ? 'break-before-page' : ''}`} style={pageBreaks.includes('total') ? { pageBreakBefore: 'always', breakBefore: 'page' } : {}}>
+                          <td style={{ ...headerCell, borderTop: "2px solid #000", textAlign: "center", position: "relative" }} colSpan={4}>
+                            <div className="absolute top-0 left-[-24px] h-[24px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer no-print z-50 -translate-y-1/2" onClick={() => togglePageBreak('total')}>
+                              <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white shadow-sm ${pageBreaks.includes('total') ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'}`} title={pageBreaks.includes('total') ? "Remove Page Break" : "Insert Page Break Above"}>
+                                {pageBreaks.includes('total') ? <Minus size={12} /> : <Plus size={12} />}
+                              </div>
+                            </div>
+                            {pageBreaks.includes('total') && (
+                              <div className="absolute top-0 left-0 w-[1168px] h-0 border-t-[3px] border-dashed border-red-400 z-40 no-print" style={{ pointerEvents: 'none' }}></div>
+                            )}
+                            TOTAL AMOUNT
+                          </td>
                           {displayQuotes.map((q: any, qi: number) => {
                             const isWinner = q && recommendedQuote && q.id === recommendedQuote.id;
                             return (
-                              <td key={`tot-${qi}`} colSpan={2} style={{ ...cell, borderTop: "2px solid #000", textAlign: "right", fontWeight: "700", fontSize: isWinner ? "12px" : "11px" }}>
+                              <td key={`tot-${qi}`} colSpan={2} style={{ ...cell, borderTop: "2px solid #000", textAlign: "right", fontWeight: "700", fontSize: isWinner ? "14px" : "13px" }}>
                                 {q && q.totalAmount > 0 ? fmt2(q.totalAmount) : ""}
                               </td>
                             );
@@ -293,11 +333,21 @@ export default function AbstractLivePreviewPage() {
                     </table>
 
                     {/* BAC Res No */}
-                    <div className="print:break-inside-avoid" style={{ fontSize: "11px", marginBottom: "8px", padding: "0 24px" }}>
-                      BAC Resolution No.:&nbsp;
-                      <span style={{ borderBottom: "1px solid #000", display: "inline-block", minWidth: "100px" }}>
-                        &nbsp;{bacResNo}&nbsp;
-                      </span>
+                    <div className={`print:break-inside-avoid group ${pageBreaks.includes('signatures') ? 'break-before-page' : ''}`} style={pageBreaks.includes('signatures') ? { pageBreakBefore: 'always', breakBefore: 'page', position: 'relative' } : { position: 'relative' }}>
+                      <div className="absolute top-0 left-[-24px] h-[24px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer no-print z-50 -translate-y-1/2" onClick={() => togglePageBreak('signatures')}>
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white shadow-sm ${pageBreaks.includes('signatures') ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'}`} title={pageBreaks.includes('signatures') ? "Remove Page Break" : "Insert Page Break Above"}>
+                          {pageBreaks.includes('signatures') ? <Minus size={12} /> : <Plus size={12} />}
+                        </div>
+                      </div>
+                      {pageBreaks.includes('signatures') && (
+                        <div className="absolute top-0 left-0 w-[1168px] h-0 border-t-[3px] border-dashed border-red-400 z-40 no-print" style={{ pointerEvents: 'none' }}></div>
+                      )}
+                      <div style={{ fontSize: "13px", marginBottom: "8px", padding: "0 24px" }}>
+                        BAC Resolution No.:&nbsp;
+                        <span style={{ borderBottom: "1px solid #000", display: "inline-block", minWidth: "100px" }}>
+                          &nbsp;{bacResNo}&nbsp;
+                        </span>
+                      </div>
                     </div>
 
                     {/* Certification Paragraph */}
@@ -315,9 +365,9 @@ export default function AbstractLivePreviewPage() {
                           style={{ flex: "1 1 auto", textAlign: "center", padding: "4px", cursor: "pointer", borderRadius: "6px", backgroundColor: editingSigId === bacChairman.id ? "rgba(37,99,235,0.08)" : "transparent" }}
                           title="Click to edit"
                         >
-                          <div style={{ fontWeight: "900", fontSize: "11px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{bacChairman.name}</div>
+                          <div style={{ fontWeight: "800", fontSize: "11px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{bacChairman.name}</div>
                           <div style={{ fontSize: "10px" }}>{bacChairman.position}</div>
-                          <div style={{ fontSize: "10px", fontWeight: "700" }}>BAC Chairman</div>
+                          <div style={{ fontSize: "10px" }}>BAC Chairman</div>
                         </div>
                       )}
                       {bacMembers.map((m: any) => (
@@ -329,7 +379,7 @@ export default function AbstractLivePreviewPage() {
                         >
                           <div style={{ fontWeight: "900", fontSize: "11px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{m.name}</div>
                           <div style={{ fontSize: "10px" }}>{m.position}</div>
-                          <div style={{ fontSize: "10px", fontWeight: "700" }}>{m.label || "BAC Member"}</div>
+                          <div style={{ fontSize: "10px" }}>{m.label || "BAC Member"}</div>
                         </div>
                       ))}
                       <div
@@ -348,7 +398,7 @@ export default function AbstractLivePreviewPage() {
                         <div style={{ fontSize: "11px", marginBottom: "20px" }}>Approved:</div>
                         {hope ? (
                           <div style={{ textAlign: "center", minWidth: "180px" }}>
-                            <div style={{ fontWeight: "900", fontSize: "12px", textTransform: "uppercase" }}>{hope.name}</div>
+                            <div style={{ fontWeight: "900", fontSize: "11px", textTransform: "uppercase" }}>{hope.name}</div>
                             <div style={{ fontSize: "11px" }}>{hope.position}</div>
                           </div>
                         ) : (
@@ -464,7 +514,7 @@ export default function AbstractLivePreviewPage() {
                 <button
                   type="button"
                   onClick={() => { setShowAllSigs(!showAllSigs); setEditingSigId(null); }}
-                  style={{ fontSize: "0.7rem", color: "#2563eb", background: "none", border: "none", cursor: "pointer", fontWeight: "700" }}
+                  style={{ fontSize: "0.6875rem", color: "#2563eb", background: "none", border: "none", cursor: "pointer", fontWeight: "700" }}
                 >
                   {showAllSigs ? "Hide List" : "Add / Remove"}
                 </button>

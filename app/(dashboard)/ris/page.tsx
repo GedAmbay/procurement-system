@@ -7,7 +7,7 @@ export default function RisPage() {
     <div className="p-8">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Requisition and Issue Slip (RIS)</h1>
+          <h1 className="text-2xl font-bold text-slate-800">Requisition and Issue Slip</h1>
           <p className="text-slate-500 mt-1">Manage physical Requisition and Issue Slips</p>
         </div>
       </div>

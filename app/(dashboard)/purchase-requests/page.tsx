@@ -55,11 +55,11 @@ export default function PurchaseRequestsPage() {
     {
       key: "purpose",
       label: "Purpose",
-      align: "center",
+      align: "left",
       render: (row: PR) => (
         <div style={{
           fontSize: "0.875rem", color: "#334155",
-          maxWidth: "500px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", margin: "0 auto"
+          maxWidth: "600px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis"
         }}>
           {row.purpose}
         </div>
