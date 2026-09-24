@@ -18,7 +18,7 @@ export default function RfqLivePreviewPage() {
   const [signatories, setSignatories] = useState<any[]>([]);
   const [zoom, setZoom] = useState(1);
   const [isUnlocked, setIsUnlocked] = useState(false);
-  const [targetRows, setTargetRows] = useState(15);
+  const [targetRows, setTargetRows] = useState(8);
 
   const { register, handleSubmit, reset, watch } = useForm({
     defaultValues: {
@@ -164,7 +164,7 @@ export default function RfqLivePreviewPage() {
         {/* Left Side: Live Print Preview */}
         <div className="flex-1 overflow-auto bg-slate-200 print:p-0 print:bg-white print:block print:!overflow-visible print:!h-auto">
           <div className="p-8 print:p-0 w-max mx-auto min-w-full flex justify-center origin-top print:block print:w-full print:min-w-0 print:!transform-none print:!mb-0" style={{ transform: `scale(${zoom})`, marginBottom: `${(zoom - 1) * 1123}px` }}>
-            <div className="print-area w-[794px] bg-white shadow-xl min-h-[1123px] p-10 print:shadow-none print:w-full print:max-w-none print:p-8 print:m-0 print:min-h-0 font-sans text-[11px]">
+            <div className="print-area text-black w-[800px] bg-white shadow-xl min-h-[1123px] p-10 print:shadow-none print:w-full print:max-w-none print:p-8 print:m-0 print:min-h-0 font-sans text-[11px]">
 
               {/* Header Layout per Template */}
               <div className="flex justify-between items-start mb-6">
@@ -196,7 +196,8 @@ export default function RfqLivePreviewPage() {
 
               <div className="mb-8 indent-[28px] text-[13px]">
                 Please quote your lowest price on the item(s) listed below, subject to the General Conditions on the last page, <br />
-                stating the shortest time of the delivery and submit your quotation duly signed by your representative not later than ___________________________ in the return envelope attached herewith. <br />
+                stating the shortest time of the delivery and submit your quotation duly signed by your representative not later <br />
+                than ___________________________ in the return envelope attached herewith. <br />
               </div>
 
               <div className="flex justify-end mb-6 text-center">
@@ -227,12 +228,12 @@ export default function RfqLivePreviewPage() {
               <table className="w-full border-collapse border-[3px] border-black mb-1 table-fixed">
                 <thead>
                   <tr>
-                    <th className="border-x-[3px] border-b-[3px] border-black p-1 w-12 text-center align-middle">Item<br />No</th>
+                    <th className="border-x-[3px] border-b-[3px] border-black p-1 w-[5%] text-center align-middle">ITEM <br />NO</th>
                     <th className="border-x-[3px] border-b-[3px] border-black p-1 text-center align-middle">ITEM & DESCRIPTION</th>
-                    <th className="border-x-[3px] border-b-[3px] border-black p-1 w-14 text-center align-middle">QTY</th>
-                    <th className="border-x-[3px] border-b-[3px] border-black p-1 w-20 text-center align-middle">Unit</th>
-                    <th className="border-x-[3px] border-b-[3px] border-black p-1 w-32 text-center align-middle">Unit<br />Price</th>
-                    <th className="border-x-[3px] border-b-[3px] border-black p-1 w-32 text-center align-middle">TOTAL<br />COST</th>
+                    <th className="border-x-[3px] border-b-[3px] border-black p-1 w-[6%] text-center align-middle">QTY</th>
+                    <th className="border-x-[3px] border-b-[3px] border-black p-1 w-[8%] text-center align-middle">UNIT</th>
+                    <th className="border-x-[3px] border-b-[3px] border-black p-1 w-[13%] text-center align-middle">UNIT<br />PRICE</th>
+                    <th className="border-x-[3px] border-b-[3px] border-black p-1 w-[13%] text-center align-middle">TOTAL<br />COST</th>
                   </tr>
                 </thead>
                 <tbody>

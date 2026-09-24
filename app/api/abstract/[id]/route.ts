@@ -57,6 +57,25 @@ export async function PATCH(
 
     // Handle Status Update
     if (body.status && Object.keys(body).length === 1) {
+      if (body.status === "APPROVED") {
+        const aoqToApprove = await prisma.abstractOfQuotation.findUnique({
+          where: { id },
+          include: { rfq: { include: { quotations: true } } }
+        });
+        
+        if (aoqToApprove && aoqToApprove.rfq.quotations.length > 0) {
+          const validBids = aoqToApprove.rfq.quotations.filter((q: any) => q.totalAmount > 0);
+          if (validBids.length > 0) {
+            const lowestBid = validBids.reduce((prev: any, current: any) => (prev.totalAmount < current.totalAmount) ? prev : current);
+            
+            await prisma.purchaseOrder.updateMany({
+              where: { aoqId: id },
+              data: { supplierId: lowestBid.supplierId }
+            });
+          }
+        }
+      }
+
       const updatedAoq = await prisma.abstractOfQuotation.update({
         where: { id },
         data: { status: body.status },

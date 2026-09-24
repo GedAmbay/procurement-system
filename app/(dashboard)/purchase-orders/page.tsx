@@ -39,7 +39,7 @@ export default function PurchaseOrdersPage() {
           {row.poNumber}
         </div>
       ),
-      width: "150px",
+      width: "160px",
     },
     {
       key: "supplier",
@@ -49,7 +49,7 @@ export default function PurchaseOrdersPage() {
           {row.supplier ? row.supplier.name : <span className="text-amber-600 italic text-xs">Pending Award</span>}
         </div>
       ),
-      width: "200px",
+      width: "250px",
     },
     {
       key: "purpose",
@@ -98,8 +98,19 @@ export default function PurchaseOrdersPage() {
     }
   ];
 
-  const handleRowClick = (row: PO) => {
+  const handleEdit = (row: PO) => {
     router.push(`/purchase-orders/${row.id}`);
+  };
+
+  const handleDelete = async (row: PO) => {
+    if (!confirm("Are you sure you want to delete this Purchase Order?")) return;
+    try {
+      const res = await fetch(`/api/purchase-orders/${row.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      setRefreshKey(k => k + 1);
+    } catch {
+      alert("Failed to delete Purchase Order");
+    }
   };
 
   return (
@@ -110,8 +121,10 @@ export default function PurchaseOrdersPage() {
         description="Manage official purchase orders and supplier awards"
         apiPath="/api/purchase-orders"
         columns={columns}
-        searchPlaceholder="Search by PO Number or Supplier..."
-        onEdit={handleRowClick}
+        searchPlaceholder="Search..."
+        onView={(row) => router.push(`/purchase-orders/${row.id}?mode=view`)}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
         emptyIcon={<Truck size={40} style={{ opacity: 0.3 }} />}
         emptyText="No Purchase Orders found."
       />

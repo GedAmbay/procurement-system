@@ -182,7 +182,7 @@ export default function PurchaseOrderEditor() {
                 @page { margin-top: 10mm !important; margin-bottom: 10mm !important; }
               }
             `}</style>
-            <div className="print-area text-black shadow-xl text-[14px] leading-tight print:shadow-none print:max-w-none print:m-0 [&_td]:!font-['Times_New_Roman',_Times,_serif] [&_td]:!text-[14px] w-[794px] min-h-[1123px] bg-white px-12 py-10 print:w-full print:min-h-0 print:p-0" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+            <div className="print-area text-black shadow-xl text-[14px] leading-tight print:shadow-none print:max-w-none print:m-0 [&_td]:!font-['Times_New_Roman',_Times,_serif] [&_td]:!text-[14px] [&_th]:!font-['Times_New_Roman',_Times,_serif] [&_th]:!text-[14px] [&_th]:!text-black [&_th]:!normal-case [&_th]:!tracking-normal [&_th]:!font-bold w-[980px] min-h-[1123px] bg-white p-10 print:w-full print:min-h-0 print:p-0" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
 
               <div className="border-[3px] border-black">
                 <div className="text-right italic pt-2 pr-2 text-sm">Appendix 49</div>
@@ -193,17 +193,17 @@ export default function PurchaseOrderEditor() {
                   <div className="text-[15px]">LGU</div>
                 </div>
 
-                <div className="border-t-[3px] border-black grid text-[15px]" style={{ gridTemplateColumns: '5rem 4rem minmax(0, 1fr) 5rem 7rem 8rem' }}>
+                <div className="border-t-[3px] border-black grid text-[15px]" style={{ gridTemplateColumns: '10% 8% minmax(0, 1fr) 12% 16% 18%' }}>
                   <div className="col-span-3 border-r-[3px] border-black p-1 px-2 flex flex-col justify-between">
-                    <div className="flex items-end"><span className="w-24 font-bold">Supplier :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{selectedSupplier?.name || ""}</span></div>
-                    <div className="flex items-end mt-1"><span className="w-24 font-bold">Address :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{selectedSupplier?.address || ""}</span></div>
-                    <div className="flex items-end mt-1"><span className="w-24 font-bold">TIN :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{selectedSupplier?.tin || ""}</span></div>
+                    <div className="flex items-end"><span className="font-bold whitespace-nowrap mr-2">Supplier :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{selectedSupplier?.name || ""}</span></div>
+                    <div className="flex items-end mt-1"><span className="font-bold whitespace-nowrap mr-2">Address :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{selectedSupplier?.address || ""}</span></div>
+                    <div className="flex items-end mt-1"><span className="font-bold whitespace-nowrap mr-2">TIN :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight"></span></div>
                   </div>
                   <div className="col-span-3 p-1 px-2 flex flex-col justify-between">
-                    <div className="flex items-end"><span className="w-44 font-bold">P.O. No. :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{poData.poNumber}</span></div>
-                    <div className="flex items-end mt-1"><span className="w-44 font-bold">Date :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{watchAll.deliveryDate ? new Date(watchAll.deliveryDate).toLocaleDateString('en-PH') : ""}</span></div>
-                    <div className="flex items-end mt-1"><span className="w-44 font-bold">Mode of Procurement :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{watchAll.modeOfProcurement}</span></div>
-                    <div className="flex items-end mt-1"><span className="w-44 font-bold">PR No./s :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{linkedPrNumber}</span></div>
+                    <div className="flex items-end"><span className="font-bold whitespace-nowrap mr-2">P.O. No. :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{poData.poNumber}</span></div>
+                    <div className="flex items-end mt-1"><span className="font-bold whitespace-nowrap mr-2">Date :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{watchAll.deliveryDate ? new Date(watchAll.deliveryDate).toLocaleDateString('en-PH') : ""}</span></div>
+                    <div className="flex items-end mt-1"><span className="font-bold whitespace-nowrap mr-2">Mode of Procurement :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{watchAll.modeOfProcurement}</span></div>
+                    <div className="flex items-end mt-1"><span className="font-bold whitespace-nowrap mr-2">PR No./s :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{linkedPrNumber}</span></div>
                   </div>
                 </div>
 
@@ -212,7 +212,7 @@ export default function PurchaseOrderEditor() {
                   <div className="pl-8">Please furnish this Office the following articles subject to the terms and conditions contained herein:</div>
                 </div>
 
-                <div className="border-t-[3px] border-black grid text-[15px]" style={{ gridTemplateColumns: '5rem 4rem minmax(0, 1fr) 5rem 7rem 8rem' }}>
+                <div className="border-t-[3px] border-black grid text-[15px]" style={{ gridTemplateColumns: '10% 8% minmax(0, 1fr) 12% 16% 18%' }}>
                   <div className="col-span-3 border-r-[3px] border-black p-1 px-2">
                     <div className="flex"><span className="font-bold w-36">Place of Delivery :</span> <span className="font-bold flex-1">{watchAll.placeOfDelivery}</span></div>
                     <div className="flex mt-1"><span className="font-bold w-36">Date of Delivery :</span> <span className="font-bold flex-1">{watchAll.deliveryDate ? new Date(watchAll.deliveryDate).toLocaleDateString('en-PH') : ""}</span></div>
@@ -226,12 +226,12 @@ export default function PurchaseOrderEditor() {
                 <table className="w-full border-collapse border-t-[3px] border-black">
                   <thead>
                     <tr className="border-b-[3px] border-black text-[14px]">
-                      <th className="border-r border-black p-1 w-20">Stock/<br />Property No.</th>
-                      <th className="border-r border-black p-1 w-16">Unit</th>
+                      <th className="border-r border-black p-1 w-[10%]">Stock/<br />Property No.</th>
+                      <th className="border-r border-black p-1 w-[8%]">Unit</th>
                       <th className="border-r border-black p-1">Description</th>
-                      <th className="border-r border-black p-1 w-20">Quantity</th>
-                      <th className="border-r border-black p-1 w-28">Unit Cost</th>
-                      <th className="p-1 w-32">Amount</th>
+                      <th className="border-r border-black p-1 w-[12%]">Quantity</th>
+                      <th className="border-r border-black p-1 w-[16%]">Unit Cost</th>
+                      <th className="p-1 w-[18%]">Amount</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -407,10 +407,10 @@ export default function PurchaseOrderEditor() {
             </form>
           </div>
 
-          <div style={{ padding: "1.25rem", background: "var(--color-page-bg)", borderTop: "1px solid #e2e8f0", position: "sticky", bottom: 0 }}>
-            <div className="flex justify-between items-center text-lg font-bold text-slate-800">
+          <div style={{ padding: "1rem", background: "var(--color-page-bg)", borderTop: "1px solid #e2e8f0", position: "sticky", bottom: 0, boxShadow: "0 -2px 8px rgba(163,177,198,0.2)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontWeight: "800", fontSize: "1rem", color: "#0f172a" }}>
               <span>PO Total:</span>
-              <span className="text-emerald-600">{formatCurrency(poData.totalAmount)}</span>
+              <span style={{ color: "#059669" }}>{formatCurrency(poData.totalAmount)}</span>
             </div>
           </div>
         </div>

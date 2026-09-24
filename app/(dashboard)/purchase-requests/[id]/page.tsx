@@ -305,7 +305,7 @@ export default function PurchaseRequestEditor() {
         <div className="flex-1 overflow-auto bg-slate-200 print:p-0 print:bg-white print:block print:!overflow-visible print:!h-auto">
 
           <div className="p-8 print:p-0 w-max mx-auto min-w-full flex justify-center origin-top print:block print:w-full print:min-w-0 print:!transform-none print:!mb-0" style={{ transform: `scale(${zoom})`, marginBottom: `${(zoom - 1) * 1123}px` }}>
-            <div className="print-area w-[794px] bg-white shadow-xl min-h-[1123px] p-10 print:shadow-none print:w-full print:max-w-none print:p-8 print:m-0 print:min-h-0">
+            <div className="print-area text-black w-[980px] bg-white shadow-xl min-h-[1123px] p-10 print:shadow-none print:w-full print:max-w-none print:p-8 print:m-0 print:min-h-0">
               {/* PR Standard Form Layout */}
               <div className="text-right font-bold text-lg mb-2">Annex 30</div>
 
@@ -370,8 +370,8 @@ export default function PurchaseRequestEditor() {
                       </tr>
                     ))}
                     <tr className="h-6">
-                      <td colSpan={5} className="border border-black border-l-0 border-b-0 p-0"></td>
-                      <td className="border border-black border-r-0 border-b-0 p-0 text-right pr-1">-</td>
+                      <td colSpan={5} className="border border-black border-l-0 border-b-0 p-0 font-bold text-right pr-2">TOTAL</td>
+                      <td className="border border-black border-r-0 border-b-0 p-0 text-right pr-1 font-bold">{totalAmount > 0 ? formatCurrency(totalAmount).replace('₱', '') : '-'}</td>
                     </tr>
                   </tbody>
                 </table>

@@ -154,7 +154,7 @@ export default function AoqSupplierHub() {
             </button>
           )}
           {aoq.status === "RECOMMENDED" && (
-            <button onClick={() => updateStatus("APPROVED")} className="btn btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.375rem", background: "#16a34a" }}>
+            <button onClick={() => updateStatus("APPROVED")} className="btn btn-success" style={{ display: "flex", alignItems: "center", gap: "0.375rem", background: "#16a34a" }}>
               <FileCheck2 size={15} /> Approve
             </button>
           )}
