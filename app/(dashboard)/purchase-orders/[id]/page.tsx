@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
-import { Printer, Save, ArrowLeft, Loader2, Send, ZoomIn, ZoomOut, Minus, Plus } from "lucide-react";
+import { Printer, Save, ArrowLeft, Loader2, Send, ZoomIn, ZoomOut, Minus, Plus, Package } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { formatCurrency, numberToWords } from "@/lib/utils";
@@ -122,6 +122,21 @@ export default function PurchaseOrderEditor() {
     }
   };
 
+  const handleCreateAcceptance = async () => {
+    try {
+      const res = await fetch("/api/acceptances", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ poId: params.id })
+      });
+      if (!res.ok) throw new Error("Failed to create acceptance report");
+      const acceptance = await res.json();
+      router.push(`/acceptances/${acceptance.id}`);
+    } catch (e) {
+      toast.error("Error creating acceptance");
+    }
+  };
+
   if (loading) return <div className="p-8 flex justify-center"><Loader2 className="animate-spin text-blue-500" /></div>;
   if (!poData) return <div className="p-8 text-center text-slate-500">PO not found</div>;
 
@@ -157,6 +172,11 @@ export default function PurchaseOrderEditor() {
           {poData.status === "DRAFT" && (
             <button onClick={() => updateStatus("ISSUED")} className="btn btn-primary bg-blue-600 hover:bg-blue-700 flex items-center gap-2">
               <Send size={16} /> Mark Issued
+            </button>
+          )}
+          {(poData.status === "ISSUED" || poData.status === "PARTIALLY_DELIVERED") && (
+            <button onClick={handleCreateAcceptance} className="btn btn-success   btn-deliver flex items-center gap-2">
+              <Package size={16} /> Receive Delivery
             </button>
           )}
         </div>

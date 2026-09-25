@@ -275,6 +275,11 @@
   font-size: 0.8125rem;
 }
 
+.btn-deliver {
+  background-color: #10b981;
+
+}
+
 /* ─── Form Elements ────────────────────────────────────────────────────────── */
 .form-label {
   display: block;
@@ -628,7 +633,7 @@ tbody td {
 
   @page {
     margin-top: 0.5in;
-    margin-bottom: 0.5in;
+    margin-bottom: 0.10in;
     margin-left: 0.10in;
     margin-right: 0.10in;
   }

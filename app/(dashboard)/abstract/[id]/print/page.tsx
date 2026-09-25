@@ -53,9 +53,10 @@ export default function AbstractLivePreviewPage() {
         if (sigRes.ok) {
           const sigs = await sigRes.json();
           setAllSignatories(sigs);
-          // Pre-select all active signatories
-          const active = sigs.filter((s: any) => s.isActive);
-          setSelectedSigIds(active.map((s: any) => s.id));
+          // Pre-select only relevant roles (preventing accidental additions like viewers or end users)
+          const defaultRoles = ["HOPE", "BAC_CHAIRMAN", "BAC_VICE_CHAIRMAN", "BAC_MEMBER", "APPROVING_OFFICIAL"];
+          const activeAndRelevant = sigs.filter((s: any) => s.isActive && defaultRoles.includes(s.role));
+          setSelectedSigIds(activeAndRelevant.map((s: any) => s.id));
           // Init overrides
           const overrides: Record<string, { name: string; position: string; label: string }> = {};
           sigs.forEach((s: any) => {
@@ -119,7 +120,7 @@ export default function AbstractLivePreviewPage() {
   const bacChairman = selectedSigs.find(s => s.role === "BAC_CHAIRMAN");
   const bacMembers = selectedSigs.filter(s => s.id !== hope?.id && s.id !== bacChairman?.id);
 
-  const cell: React.CSSProperties = { border: "1px solid #000", padding: "2px 2px", fontSize: "11px", verticalAlign: "middle" };
+  const cell: React.CSSProperties = { border: "1px solid #000", padding: "2px 2px", fontSize: "13px", verticalAlign: "middle" };
   const headerCell: React.CSSProperties = { ...cell, fontWeight: "700", textAlign: "center", background: "#fff", padding: 0 };
 
   return (
@@ -145,7 +146,7 @@ export default function AbstractLivePreviewPage() {
             <ArrowLeft size={16} />
           </Link>
           <div>
-            <div style={{ fontWeight: "700", fontSize: "0.9375rem", color: "#0f172a" }}>Abstract of Canvas — Live Preview</div>
+            <div style={{ fontWeight: "700", fontSize: "0.9375rem", color: "#0f172a" }}>Live Preview</div>
             <div style={{ fontSize: "0.75rem", color: "#64748b" }}>{data.aoqNumber}</div>
           </div>
         </div>
@@ -190,8 +191,8 @@ export default function AbstractLivePreviewPage() {
                 <div style={{
                   background: "#fff",
                   color: "#000",
-                  fontFamily: "Arial, sans-serif", fontSize: "11px",
-                }} className="w-[1348px] shadow-xl min-h-[816px] p-[40px] print:!p-0 block print:shadow-none print:!w-full print:!max-w-none print:!m-0 print:!min-h-0">
+                  fontFamily: "Arial, sans-serif", fontSize: "13px",
+                }} className="w-[1448px] shadow-xl min-h-[816px] p-[40px] print:!p-0 block print:shadow-none print:!w-full print:!max-w-none print:!m-0 print:!min-h-0">
                   <div style={{ border: "1px solid #000", padding: "20px 0" }}>
 
                     {/* Doc Header */}
@@ -205,7 +206,7 @@ export default function AbstractLivePreviewPage() {
                     </div>
 
                     {/* PR No & Date */}
-                    <div style={{ display: "flex", justifyContent: "center", gap: "48px", marginBottom: "8px", fontSize: "11px" }}>
+                    <div style={{ display: "flex", justifyContent: "center", gap: "48px", marginBottom: "8px", fontSize: "13px" }}>
                       <div>
                         Purchase Request No.:&nbsp;
                         <span style={{ borderBottom: "1px solid #000", display: "inline-block", minWidth: "80px", paddingBottom: "1px" }}>
@@ -232,7 +233,7 @@ export default function AbstractLivePreviewPage() {
                         </tr>
                         <tr>
                           {displayQuotes.map((q: any, i: number) => (
-                            <th key={i} style={{ ...headerCell, fontSize: "10px" }} colSpan={2}>
+                            <th key={i} style={{ ...headerCell, fontSize: "13px" }} colSpan={2}>
                               {q ? q.supplier?.name?.toUpperCase() : `SUPPLIER ${i + 1}`}
                             </th>
                           ))}
@@ -240,8 +241,8 @@ export default function AbstractLivePreviewPage() {
                         <tr>
                           {displayQuotes.map((_: any, i: number) => (
                             <React.Fragment key={i}>
-                              <th key={`up-${i}`} style={{ ...headerCell, width: "8%", fontSize: "10px" }}>UNIT PRICE</th>
-                              <th key={`tp-${i}`} style={{ ...headerCell, width: "8%", fontSize: "10px" }}>TOTAL PRICE</th>
+                              <th key={`up-${i}`} style={{ ...headerCell, width: "8%", fontSize: "13px" }}>UNIT PRICE</th>
+                              <th key={`tp-${i}`} style={{ ...headerCell, width: "8%", fontSize: "13px" }}>TOTAL PRICE</th>
                             </React.Fragment>
                           ))}
                         </tr>
@@ -351,7 +352,7 @@ export default function AbstractLivePreviewPage() {
                     </div>
 
                     {/* Certification Paragraph */}
-                    <div className="print:break-inside-avoid" style={{ fontSize: "11px", lineHeight: "1.6", marginBottom: "40px", textAlign: "justify", padding: "0 24px" }}>
+                    <div className="print:break-inside-avoid" style={{ fontSize: "13px", lineHeight: "1.6", marginBottom: "40px", textAlign: "justify", padding: "0 24px" }}>
                       &nbsp;&nbsp;&nbsp;&nbsp;We, the undersigned the BAC Chairman, Members and Requisitioning Officer, do hereby certify that the foregoing is the true and correct ABSTRACT OF CANVASS of the Request for Quotation received on <strong>{fmtDate(dateReceived)}</strong> by BAC Secretariat and was opened by Bids and Awards Committee of Pandan, Antique on <strong>{fmtDate(dateAwarded)}</strong> for&nbsp;
                       <span style={{ borderBottom: "1px solid #000" }}><strong>&nbsp;{pr?.purpose}&nbsp;</strong></span>
                       &nbsp;needed for use in the Office of the <strong>{reqOfficerOffice || "___________________"}</strong>, Pandan, Antique.
@@ -365,9 +366,9 @@ export default function AbstractLivePreviewPage() {
                           style={{ flex: "1 1 auto", textAlign: "center", padding: "4px", cursor: "pointer", borderRadius: "6px", backgroundColor: editingSigId === bacChairman.id ? "rgba(37,99,235,0.08)" : "transparent" }}
                           title="Click to edit"
                         >
-                          <div style={{ fontWeight: "800", fontSize: "11px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{bacChairman.name}</div>
-                          <div style={{ fontSize: "10px" }}>{bacChairman.position}</div>
-                          <div style={{ fontSize: "10px" }}>BAC Chairman</div>
+                          <div style={{ fontWeight: "800", fontSize: "13px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{bacChairman.name}</div>
+                          <div style={{ fontSize: "12px" }}>{bacChairman.position}</div>
+                          <div style={{ fontSize: "12px" }}>BAC Chairman</div>
                         </div>
                       )}
                       {bacMembers.map((m: any) => (
@@ -377,9 +378,9 @@ export default function AbstractLivePreviewPage() {
                           style={{ flex: "1 1 auto", textAlign: "center", padding: "4px", cursor: "pointer", borderRadius: "6px", backgroundColor: editingSigId === m.id ? "rgba(37,99,235,0.08)" : "transparent" }}
                           title="Click to edit"
                         >
-                          <div style={{ fontWeight: "900", fontSize: "11px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{m.name}</div>
-                          <div style={{ fontSize: "10px" }}>{m.position}</div>
-                          <div style={{ fontSize: "10px" }}>{m.label || "BAC Member"}</div>
+                          <div style={{ fontWeight: "900", fontSize: "13px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{m.name}</div>
+                          <div style={{ fontSize: "12px" }}>{m.position}</div>
+                          <div style={{ fontSize: "12px" }}>{m.label || "BAC Member"}</div>
                         </div>
                       ))}
                       <div
@@ -387,24 +388,24 @@ export default function AbstractLivePreviewPage() {
                         style={{ flex: "1 1 auto", textAlign: "center", padding: "4px", cursor: "pointer", borderRadius: "6px", backgroundColor: editingSigId === "req" ? "rgba(37,99,235,0.08)" : "transparent" }}
                         title="Click to edit"
                       >
-                        <div style={{ fontWeight: "900", fontSize: "11px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{reqOfficerName || "___________________"}</div>
-                        <div style={{ fontSize: "10px", fontWeight: "700", marginTop: "4px" }}>Requisitioning Officer</div>
+                        <div style={{ fontWeight: "900", fontSize: "13px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{reqOfficerName || "___________________"}</div>
+                        <div style={{ fontSize: "12px", fontWeight: "700", marginTop: "4px" }}>Requisitioning Officer</div>
                       </div>
                     </div>
 
                     {/* Approved by */}
                     <div className="print:break-inside-avoid" style={{ display: "flex", justifyContent: "flex-end", marginTop: "6px", padding: "0 24px", marginBottom: "20px" }}>
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
-                        <div style={{ fontSize: "11px", marginBottom: "20px" }}>Approved:</div>
+                        <div style={{ fontSize: "13px", marginBottom: "20px" }}>Approved:</div>
                         {hope ? (
                           <div style={{ textAlign: "center", minWidth: "180px" }}>
-                            <div style={{ fontWeight: "900", fontSize: "11px", textTransform: "uppercase" }}>{hope.name}</div>
-                            <div style={{ fontSize: "11px" }}>{hope.position}</div>
+                            <div style={{ fontWeight: "900", fontSize: "13px", textTransform: "uppercase" }}>{hope.name}</div>
+                            <div style={{ fontSize: "13px" }}>{hope.position}</div>
                           </div>
                         ) : (
                           <div style={{ textAlign: "center", minWidth: "180px" }}>
                             <div style={{ borderBottom: "1px solid #000", width: "180px", marginBottom: "2px" }}></div>
-                            <div style={{ fontSize: "11px" }}>Municipal Mayor</div>
+                            <div style={{ fontSize: "13px" }}>Municipal Mayor</div>
                           </div>
                         )}
                       </div>

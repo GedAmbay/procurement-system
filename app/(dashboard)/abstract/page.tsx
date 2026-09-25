@@ -126,7 +126,7 @@ export default function AOQPage() {
     <div>
       <DataTable<AOQ>
         key={refreshKey}
-        title="Abstract of Quotation"
+        title="Abstract of Canvass"
         description="Consolidate supplier bids and recommend the lowest calculated responsive quotation."
         apiPath="/api/abstract"
         columns={columns}

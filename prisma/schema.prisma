@@ -280,6 +280,7 @@ model PurchaseOrder {
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt
   lineItems       PoLineItem[]
+  acceptances     Acceptance[]
   supplier        Supplier?            @relation(fields: [supplierId], references: [id])
   aoq             AbstractOfQuotation? @relation(fields: [aoqId], references: [id])
 
@@ -292,10 +293,11 @@ model PoLineItem {
   description String
   unit        String
   quantity    Float
-  unitPrice   Float
-  totalPrice  Float
-  sortOrder   Int           @default(0)
-  po          PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
+  unitPrice       Float
+  totalPrice      Float
+  sortOrder       Int                  @default(0)
+  po              PurchaseOrder        @relation(fields: [poId], references: [id], onDelete: Cascade)
+  acceptanceItems AcceptanceLineItem[]
 
   @@map("po_line_items")
 }
@@ -314,4 +316,36 @@ model DocumentAuditLog {
   @@index([documentType, documentId])
   @@index([userId])
   @@map("document_audit_log")
+}
+
+model Acceptance {
+  id              String               @id @default(cuid())
+  iarNumber       String               @unique
+  poId            String
+  invoiceNumber   String?
+  invoiceDate     DateTime?
+  dateReceived    DateTime?
+  dateInspected   DateTime?
+  status          String               @default("DRAFT")
+  printCount      Int                  @default(0)
+  fiscalYear      Int
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  
+  po              PurchaseOrder        @relation(fields: [poId], references: [id])
+  lineItems       AcceptanceLineItem[]
+
+  @@map("acceptances")
+}
+
+model AcceptanceLineItem {
+  id              String        @id @default(cuid())
+  acceptanceId    String
+  poLineItemId    String
+  quantityDelivered Float       @default(0)
+  
+  acceptance      Acceptance    @relation(fields: [acceptanceId], references: [id], onDelete: Cascade)
+  poLineItem      PoLineItem    @relation(fields: [poLineItemId], references: [id])
+
+  @@map("acceptance_line_items")
 }

@@ -32,7 +32,7 @@ const navItems = [
       { label: "Requests for Quotation", href: "/rfqs", icon: FileText, roles: [] },
       { label: "Abstract", href: "/abstract", icon: ClipboardList, roles: [] },
       { label: "Purchase Orders", href: "/purchase-orders", icon: Package, roles: [] },
-      { label: "Acceptance", href: "/acceptance", icon: CheckSquare, roles: [] },
+      { label: "Acceptance", href: "/acceptances", icon: CheckSquare, roles: [] },
       { label: "Requisition & Issue", href: "/ris", icon: ClipboardCheck, roles: [] },
     ],
   },
