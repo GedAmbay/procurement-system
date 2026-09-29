@@ -22,6 +22,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
                   }
                 }
               }
+            },
+            acceptances: {
+              include: {
+                lineItems: true
+              }
             }
           }
         },
@@ -70,6 +75,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       }
     }
 
+    if (updatePromises.length > 0) {
+      await Promise.all(updatePromises);
+    }
+
     // Update main acceptance record
     const updatedAcceptance = await prisma.acceptance.update({
       where: { id },
@@ -97,10 +106,6 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         }
       }
     });
-
-    if (updatePromises.length > 0) {
-      await Promise.all(updatePromises);
-    }
 
     // Check if PO should be marked as completed
     if (status === "ISSUED" || status === "COMPLETED") {

@@ -48,9 +48,16 @@ export async function POST(req: Request) {
     });
     const iarNumber = `AIR-${yearPrefix}-${(count + 1).toString().padStart(4, "0")}`;
 
-    // Get PO line items
+    // Get PO line items and past deliveries
     const poLineItems = await prisma.poLineItem.findMany({
       where: { poId },
+      include: {
+        acceptanceItems: {
+          include: {
+            acceptance: true
+          }
+        }
+      }
     });
 
     const acceptance = await prisma.acceptance.create({
@@ -59,10 +66,16 @@ export async function POST(req: Request) {
         poId,
         fiscalYear: fiscalYear || new Date().getFullYear(),
         lineItems: {
-          create: poLineItems.map(item => ({
-            poLineItemId: item.id,
-            quantityDelivered: 0, // initially 0
-          }))
+          create: poLineItems.map(item => {
+            // Calculate previously delivered (only from non-DRAFT or all, let's say all for simplicity, or just ISSUED/COMPLETED)
+            const delivered = item.acceptanceItems.reduce((acc, curr) => acc + curr.quantityDelivered, 0);
+            const remaining = Math.max(0, item.quantity - delivered);
+            
+            return {
+              poLineItemId: item.id,
+              quantityDelivered: remaining, // default to remaining
+            };
+          })
         }
       },
       include: {

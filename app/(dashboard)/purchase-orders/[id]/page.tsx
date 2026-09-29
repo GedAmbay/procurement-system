@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
-import { Printer, Save, ArrowLeft, Loader2, Send, ZoomIn, ZoomOut, Minus, Plus, Package } from "lucide-react";
+import { Printer, Save, ArrowLeft, Loader2, Send, ZoomIn, ZoomOut, Minus, Plus, Package, FileText, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { formatCurrency, numberToWords } from "@/lib/utils";
@@ -146,6 +146,7 @@ export default function PurchaseOrderEditor() {
   // Calculate exact PR number and ABC from nested relation if available
   const linkedPrNumber = poData.aoq?.rfq?.pr?.prNumber || "PENDING";
   const lineItems = poData.lineItems || [];
+  const acceptances = poData.acceptances || [];
 
   return (
     <div className="flex flex-col h-screen max-h-[100vh] overflow-hidden bg-[var(--color-page-bg)] print:block print:!h-auto print:!overflow-visible">
@@ -174,9 +175,9 @@ export default function PurchaseOrderEditor() {
               <Send size={16} /> Mark Issued
             </button>
           )}
-          {(poData.status === "ISSUED" || poData.status === "PARTIALLY_DELIVERED") && (
-            <button onClick={handleCreateAcceptance} className="btn btn-success   btn-deliver flex items-center gap-2">
-              <Package size={16} /> Receive Delivery
+          {(poData.status === "ISSUED" || poData.status === "PARTIALLY_DELIVERED" || poData.status === "COMPLETED") && (
+            <button onClick={() => router.push(`/acceptances/hub/${poData.id}`)} className="btn btn-success   btn-deliver flex items-center gap-2">
+              <Package size={16} /> Delivery Hub
             </button>
           )}
         </div>

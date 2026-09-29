@@ -76,6 +76,7 @@ export default function PurchaseOrdersPage() {
     {
       key: "status",
       label: "Status",
+      align: "center",
       render: (row: PO) => {
         const conf = STATUS_COLORS[row.status] || STATUS_COLORS.DRAFT;
         return (
@@ -89,6 +90,7 @@ export default function PurchaseOrdersPage() {
     {
       key: "createdAt",
       label: "Date",
+      align: "center",
       render: (row: PO) => (
         <span style={{ fontSize: "0.8125rem", color: "#64748b" }}>
           {new Date(row.createdAt).toLocaleDateString("en-PH")}

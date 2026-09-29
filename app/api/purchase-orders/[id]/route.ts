@@ -27,6 +27,11 @@ export async function GET(
               }
             }
           }
+        },
+        acceptances: {
+          include: {
+            lineItems: true
+          }
         }
       },
     });

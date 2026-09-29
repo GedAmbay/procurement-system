@@ -20,6 +20,7 @@ interface AcceptanceFormValues {
     unit: string;
     unitPrice: number;
     poQuantity: number;
+    previouslyDelivered: number;
   }[];
 }
 
@@ -60,14 +61,26 @@ export default function AcceptanceEditor() {
         invoiceDate: data.invoiceDate ? new Date(data.invoiceDate).toISOString().split('T')[0] : "",
         dateReceived: data.dateReceived ? new Date(data.dateReceived).toISOString().split('T')[0] : "",
         dateInspected: data.dateInspected ? new Date(data.dateInspected).toISOString().split('T')[0] : "",
-        lineItems: data.lineItems.map((item: any) => ({
-          id: item.id,
-          description: item.poLineItem.description,
-          unit: item.poLineItem.unit,
-          unitPrice: item.poLineItem.unitPrice,
-          poQuantity: item.poLineItem.quantity,
-          quantityDelivered: item.quantityDelivered,
-        }))
+        lineItems: data.lineItems.map((item: any) => {
+          let previouslyDelivered = 0;
+          if (data.po?.acceptances) {
+            const otherAcceptances = data.po.acceptances.filter((a: any) => a.id !== data.id && a.status !== "DRAFT");
+            for (const oa of otherAcceptances) {
+              const match = oa.lineItems.find((oli: any) => oli.poLineItemId === item.poLineItemId);
+              if (match) previouslyDelivered += match.quantityDelivered;
+            }
+          }
+
+          return {
+            id: item.id,
+            description: item.poLineItem.description,
+            unit: item.poLineItem.unit,
+            unitPrice: item.poLineItem.unitPrice,
+            poQuantity: item.poLineItem.quantity,
+            quantityDelivered: item.quantityDelivered,
+            previouslyDelivered
+          };
+        })
       });
       setLoading(false);
     } catch (e) {
@@ -131,7 +144,7 @@ export default function AcceptanceEditor() {
       {/* Header */}
       <div className="no-print flex items-center justify-between p-4 bg-white border-b border-slate-200 shadow-sm z-10">
         <div className="flex items-center gap-3">
-          <Link href="/purchase-orders" className="p-2 rounded-md hover:bg-slate-100 text-slate-500 transition-colors">
+          <Link href={`/acceptances/hub/${acceptance.po.id}`} className="p-2 rounded-md hover:bg-slate-100 text-slate-500 transition-colors">
             <ArrowLeft size={18} />
           </Link>
           <div>
@@ -183,7 +196,7 @@ export default function AcceptanceEditor() {
         {/* Left Side: Live Print Preview */}
         <div className="flex-1 overflow-auto bg-slate-200 print:p-0 print:bg-white print:block print:!overflow-visible print:!h-auto">
           <div className="p-8 print:p-0 w-max mx-auto min-w-full flex justify-center origin-top print:block print:w-full print:min-w-0 print:!transform-none print:!mb-0" style={{ transform: `scale(${zoom})`, marginBottom: `${(zoom - 1) * 1123}px`, transition: "transform 0.2s ease" }}>
-            <div className="print-area shadow-xl text-[12px] leading-tight print:shadow-none print:max-w-none print:m-0 [&_td]:!font-['Times_New_Roman',_Times,_serif] [&_th]:!font-['Times_New_Roman',_Times,_serif]" style={{ width: "980px", minHeight: "1123px", background: "white", padding: "3rem", fontFamily: "'Times New Roman', Times, serif" }}>
+            <div className="print-area shadow-xl text-[14px] leading-tight print:shadow-none print:max-w-none print:m-0 [&_td]:!font-['Times_New_Roman',_Times,_serif] [&_th]:!font-['Times_New_Roman',_Times,_serif]" style={{ width: "980px", minHeight: "1123px", background: "white", padding: "3rem", fontFamily: "'Times New Roman', Times, serif" }}>
 
 
               <div className="border-2 border-black flex flex-col">
@@ -207,7 +220,7 @@ export default function AcceptanceEditor() {
                   <div className="w-3/5 border-r-2 border-black p-2 flex flex-col gap-1 justify-center">
                     <div className="flex font-bold"><span className="w-44">Supplier :</span> <span className="flex-1 border-b border-black">{acceptance.po?.supplier?.name}</span></div>
                     <div className="flex font-bold"><span className="w-44">PO No. /Date:</span> <span className="flex-1 border-b border-black">{acceptance.po?.poNumber} / {acceptance.po?.createdAt ? new Date(acceptance.po.createdAt).toLocaleDateString() : ""}</span></div>
-                    <div className="flex font-bold"><span className="w-44">Req. Office/Department:</span> <span className="flex-1 border-b border-black text-center">{acceptance.po?.aoq?.rfq?.pr?.office?.name}</span></div>
+                    <div className="flex font-bold"><span className="w-44">Req. Office/Department:</span> <span className="flex-1 border-b border-black ">{acceptance.po?.aoq?.rfq?.pr?.office?.name}</span></div>
                   </div>
                   <div className="w-2/5 p-2 flex flex-col gap-1 justify-center">
                     <div className="flex font-bold"><span className="w-28">AIR No. :</span> <span className="flex-1 border-b border-black">{acceptance.iarNumber}</span></div>
@@ -287,12 +300,12 @@ export default function AcceptanceEditor() {
                     <div className="mt-8 text-center flex flex-col gap-6">
                       <div className="relative">
                         <div className="font-bold underline uppercase">HON. TOMAS U. ESTOPEREZ JR.</div>
-                        <div className="text-xs">Requisitioning Officer</div>
+                        <div className="text-s">Requisitioning Officer</div>
                       </div>
-                      <div className="text-left text-xs">Received By:</div>
+                      <div className="text-left text-s">Received By:</div>
                       <div className="relative mt-4">
                         <div className="font-bold underline uppercase">FLORIME Y. OLANDRES</div>
-                        <div className="text-xs">Requisitioning Officer</div>
+                        <div className="text-s">Requisitioning Officer</div>
                       </div>
                     </div>
                   </div>
@@ -317,22 +330,22 @@ export default function AcceptanceEditor() {
                     <div className="mt-8 flex justify-between gap-2 text-center">
                       <div className="flex-1">
                         <div className="font-bold underline uppercase">EDSEL J. AMBUBUYOG</div>
-                        <div className="text-xs leading-tight">Chairman, Committee on<br />Inspection/Acting Mun. Treasurer</div>
+                        <div className="text-s leading-tight">Chairman, Committee on<br />Inspection/Acting Mun. Treasurer</div>
                       </div>
                       <div className="flex-1">
                         <div className="font-bold underline uppercase">HON. TOMAS U. ESTOPEREZ JR.</div>
-                        <div className="text-xs leading-tight">Requisitioning Officer</div>
+                        <div className="text-s leading-tight">Requisitioning Officer</div>
                       </div>
                     </div>
 
                     <div className="mt-8 flex justify-between gap-2 text-center">
                       <div className="flex-1">
                         <div className="font-bold underline uppercase">CARLOS O. SUAN JR.</div>
-                        <div className="text-xs leading-tight">Member/ PDO II</div>
+                        <div className="text-s leading-tight">Member/ PDO II</div>
                       </div>
                       <div className="flex-1">
                         <div className="font-bold underline uppercase">RUEL E. CASIDSID</div>
-                        <div className="text-xs leading-tight">Member/Draftsman III</div>
+                        <div className="text-s leading-tight">Member/Draftsman III</div>
                       </div>
                     </div>
                   </div>
@@ -382,17 +395,23 @@ export default function AcceptanceEditor() {
                   {fields.map((field, index) => {
                     const itemDesc = watchAll.lineItems?.[index]?.description;
                     const maxQty = watchAll.lineItems?.[index]?.poQuantity;
+                    const prevDelivered = watchAll.lineItems?.[index]?.previouslyDelivered || 0;
+                    const remainingQty = maxQty - prevDelivered;
                     return (
                       <div key={field.id} className="p-3 bg-white rounded-lg shadow-sm border border-slate-100 flex flex-col gap-2">
                         <div className="text-xs font-semibold text-slate-700">{itemDesc}</div>
                         <div className="flex items-center justify-between gap-2">
-                          <div className="text-xs text-slate-500">Ordered: {maxQty}</div>
+                          <div className="text-[11px] text-slate-500">
+                            Ordered: <span className="font-bold">{maxQty}</span>
+                            {prevDelivered > 0 && <span className="text-orange-500 ml-1">(Prev: {prevDelivered})</span>}
+                          </div>
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-medium">Delivered:</span>
                             <input
                               type="number"
                               step="1"
-                              max={maxQty}
+                              min="0"
+                              max={remainingQty}
                               {...register(`lineItems.${index}.quantityDelivered` as const, { valueAsNumber: true })}
                               disabled={isReadOnly}
                               className="form-input !py-1 !px-2 w-20 text-right"

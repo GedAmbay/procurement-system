@@ -29,13 +29,7 @@ const columns = [
         {row.philgepsNo && <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>PhilGEPS: {row.philgepsNo}</div>}
       </div>
     ),
-    width: "250px",
-  },
-  {
-    key: "tin",
-    label: "TIN",
-    render: (row: Supplier) => <span style={{ fontFamily: "monospace", fontSize: "0.8125rem" }}>{row.tin ?? "—"}</span>,
-    width: "120px"
+    width: "350px",
   },
   {
     key: "contactPerson",
@@ -47,27 +41,12 @@ const columns = [
         {row.email && <div style={{ fontSize: "0.75rem", color: "#64748b" }}>{row.email}</div>}
       </div>
     ),
-    width: "200px"
+    width: "250px"
   },
   {
     key: "address",
     label: "Address",
     render: (row: Supplier) => <span style={{ fontSize: "0.8125rem", color: "#64748b" }}>{row.address ?? "—"}</span>,
-  },
-  {
-    key: "isActive",
-    label: "Status",
-    align: "center",
-    render: (row: Supplier) => row.isActive ? (
-      <span className="badge" style={{ background: "#f0fdf4", color: "#16a34a" }}>
-        <CheckCircle2 size={11} style={{ marginRight: "3px" }} /> Active
-      </span>
-    ) : (
-      <span className="badge" style={{ background: "#fef2f2", color: "#dc2626" }}>
-        <XCircle size={11} style={{ marginRight: "3px" }} /> Inactive
-      </span>
-    ),
-    width: "140px",
   },
 ];
 

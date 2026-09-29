@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Printer, Loader2, ZoomIn, ZoomOut, Users, Edit3, Minus, Plus } from "lucide-react";
+import { ArrowLeft, Printer, Loader2, ZoomIn, ZoomOut, Users, Edit3, Minus, Plus, Save, CheckCircle2, Lock, Unlock } from "lucide-react";
 import Link from "next/link";
 import { formatCurrency, LGU_INFO } from "@/lib/utils";
 import { toast } from "sonner";
@@ -12,6 +12,8 @@ export default function AbstractLivePreviewPage() {
   const [data, setData] = useState<any>(null);
   const [allSignatories, setAllSignatories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [isUnlocked, setIsUnlocked] = useState(false);
   const [zoom, setZoom] = useState(0.75);
   const [targetRows, setTargetRows] = useState(15);
 
@@ -42,31 +44,44 @@ export default function AbstractLivePreviewPage() {
           fetch(`/api/abstract/${params.id}`),
           fetch("/api/signatories"),
         ]);
+        let aoqResData: any = null;
         if (aoqRes.ok) {
           const d = await aoqRes.json();
+          aoqResData = d;
           setData(d);
           if (d.rfq?.pr) {
-            setReqOfficerName(d.rfq.pr.requestedBy || "");
-            setReqOfficerOffice(d.rfq.pr.office?.name || "");
+            setReqOfficerName(d.reqOfficerName || d.rfq.pr.requestedBy || "");
+            setReqOfficerOffice(d.reqOfficerOffice || d.rfq.pr.office?.name || "");
           }
+          if (d.docDate) setDocDate(new Date(d.docDate).toISOString().split('T')[0]);
+          if (d.bacResNo) setBacResNo(d.bacResNo);
+          if (d.dateReceived) setDateReceived(new Date(d.dateReceived).toISOString().split('T')[0]);
+          if (d.dateAwarded) setDateAwarded(new Date(d.dateAwarded).toISOString().split('T')[0]);
         }
         if (sigRes.ok) {
           const sigs = await sigRes.json();
           setAllSignatories(sigs);
-          // Pre-select only relevant roles (preventing accidental additions like viewers or end users)
-          const defaultRoles = ["HOPE", "BAC_CHAIRMAN", "BAC_VICE_CHAIRMAN", "BAC_MEMBER", "APPROVING_OFFICIAL"];
-          const activeAndRelevant = sigs.filter((s: any) => s.isActive && defaultRoles.includes(s.role));
-          setSelectedSigIds(activeAndRelevant.map((s: any) => s.id));
-          // Init overrides
-          const overrides: Record<string, { name: string; position: string; label: string }> = {};
-          sigs.forEach((s: any) => {
-            overrides[s.id] = {
-              name: s.name,
-              position: s.position,
-              label: getRoleLabel(s.role),
-            };
-          });
-          setSigOverrides(overrides);
+          
+          if (aoqRes.ok && aoqResData && aoqResData.signatoriesData) {
+            const savedSigs = aoqResData.signatoriesData as any;
+            setSelectedSigIds(savedSigs.selectedSigIds || []);
+            setSigOverrides(savedSigs.sigOverrides || {});
+          } else {
+            // Pre-select only relevant roles (preventing accidental additions like viewers or end users)
+            const defaultRoles = ["HOPE", "BAC_CHAIRMAN", "BAC_VICE_CHAIRMAN", "BAC_MEMBER", "APPROVING_OFFICIAL"];
+            const activeAndRelevant = sigs.filter((s: any) => s.isActive && defaultRoles.includes(s.role));
+            setSelectedSigIds(activeAndRelevant.map((s: any) => s.id));
+            // Init overrides
+            const overrides: Record<string, { name: string; position: string; label: string }> = {};
+            sigs.forEach((s: any) => {
+              overrides[s.id] = {
+                name: s.name,
+                position: s.position,
+                label: getRoleLabel(s.role),
+              };
+            });
+            setSigOverrides(overrides);
+          }
         }
       } catch {
         toast.error("Failed to load data");
@@ -76,6 +91,39 @@ export default function AbstractLivePreviewPage() {
     }
     load();
   }, [params.id]);
+
+  const saveChanges = async (newStatus?: string) => {
+    try {
+      setSubmitting(true);
+      const payload: any = {
+        docDate,
+        bacResNo,
+        dateReceived,
+        dateAwarded,
+        reqOfficerName,
+        reqOfficerOffice,
+        signatoriesData: { selectedSigIds, sigOverrides },
+      };
+      if (newStatus) payload.status = newStatus;
+
+      const res = await fetch(`/api/abstract/${params.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error("Failed to save");
+      
+      const updated = await res.json();
+      setData((prev: any) => ({ ...prev, ...updated }));
+      toast.success(newStatus ? `Abstract ${newStatus.toLowerCase()} successfully!` : "Changes saved");
+      if (newStatus) setIsUnlocked(false);
+    } catch (error) {
+      toast.error("An error occurred while saving.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   if (loading) return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "calc(100vh - 80px)" }}>
@@ -123,6 +171,8 @@ export default function AbstractLivePreviewPage() {
   const cell: React.CSSProperties = { border: "1px solid #000", padding: "2px 2px", fontSize: "13px", verticalAlign: "middle" };
   const headerCell: React.CSSProperties = { ...cell, fontWeight: "700", textAlign: "center", background: "#fff", padding: 0 };
 
+  const isReadOnly = data.status !== "DRAFT" && !isUnlocked;
+
   return (
     <div className="flex flex-col w-full min-w-0 max-w-full overflow-hidden print:block print:!h-auto print:!overflow-visible"
       style={{ height: "calc(var(--full-vh, 100vh) - 170px)" }}>
@@ -154,6 +204,28 @@ export default function AbstractLivePreviewPage() {
           <button onClick={() => window.print()} className="btn flex items-center gap-2 border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 shadow-sm">
             <Printer size={14} /> Print
           </button>
+          
+          {data.status === "DRAFT" && (
+            <>
+              <button onClick={() => saveChanges()} disabled={submitting} className="btn btn-primary flex items-center gap-2">
+                <Save size={14} /> Save
+              </button>
+              <button onClick={() => saveChanges("APPROVED")} disabled={submitting} className="btn btn-primary bg-blue-600 hover:bg-blue-700 flex items-center gap-2">
+                <CheckCircle2 size={14} /> Finalize
+              </button>
+            </>
+          )}
+
+          {data.status !== "DRAFT" && (
+            <button type="button" onClick={() => setIsUnlocked(!isUnlocked)} className={`btn ${isUnlocked ? 'btn-secondary' : 'btn-primary'} flex items-center gap-2`}>
+              {isUnlocked ? <><Lock size={14} /> Lock</> : <><Unlock size={14} /> Unlock</>}
+            </button>
+          )}
+          {isUnlocked && (
+            <button onClick={() => saveChanges()} disabled={submitting} className="btn btn-primary flex items-center gap-2">
+              <Save size={14} /> Save Changes
+            </button>
+          )}
         </div>
       </div>
 
@@ -352,7 +424,7 @@ export default function AbstractLivePreviewPage() {
                     </div>
 
                     {/* Certification Paragraph */}
-                    <div className="print:break-inside-avoid" style={{ fontSize: "13px", lineHeight: "1.6", marginBottom: "40px", textAlign: "justify", padding: "0 24px" }}>
+                    <div className="print:break-inside-avoid" style={{ fontSize: "14px", lineHeight: "1.6", marginBottom: "40px", textAlign: "justify", padding: "0 24px" }}>
                       &nbsp;&nbsp;&nbsp;&nbsp;We, the undersigned the BAC Chairman, Members and Requisitioning Officer, do hereby certify that the foregoing is the true and correct ABSTRACT OF CANVASS of the Request for Quotation received on <strong>{fmtDate(dateReceived)}</strong> by BAC Secretariat and was opened by Bids and Awards Committee of Pandan, Antique on <strong>{fmtDate(dateAwarded)}</strong> for&nbsp;
                       <span style={{ borderBottom: "1px solid #000" }}><strong>&nbsp;{pr?.purpose}&nbsp;</strong></span>
                       &nbsp;needed for use in the Office of the <strong>{reqOfficerOffice || "___________________"}</strong>, Pandan, Antique.
@@ -425,7 +497,7 @@ export default function AbstractLivePreviewPage() {
           background: "var(--color-page-bg)",
           overflowY: "auto", display: "flex", flexDirection: "column",
         }}>
-          <div style={{ padding: "2.25rem", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+          <div style={{ padding: "2.25rem", display: "flex", flexDirection: "column", gap: "1.5rem", pointerEvents: isReadOnly ? "none" : "auto", opacity: isReadOnly ? 0.7 : 1 }}>
 
             {/* ── Document Details ── */}
             <section>
