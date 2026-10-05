@@ -137,6 +137,12 @@ export default function AOQPage() {
         onDelete={handleDelete}
         emptyIcon={<ClipboardList size={40} style={{ opacity: 0.3 }} />}
         emptyText="No AOQs generated yet. Close an RFQ first."
+        filterKey="status"
+        filterTabs={[
+          { label: "All", value: null },
+          { label: "Draft", value: "DRAFT" },
+          { label: "Approved", value: "APPROVED" },
+        ]}
       />
     </div>
   );

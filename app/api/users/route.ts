@@ -3,8 +3,12 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import bcrypt from "bcryptjs";
 import { userCreateSchema } from "@/lib/zod-schemas";
+import { requireRole } from "@/lib/auth-utils";
 
 export async function GET(req: NextRequest) {
+  const roleCheck = await requireRole(["ANY"]);
+  if (!roleCheck.authorized) return roleCheck.response;
+
   const session = await auth();
   if (!session || (session.user as any).role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -23,6 +27,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const roleCheck = await requireRole(["ADMIN"]);
+  if (!roleCheck.authorized) return roleCheck.response;
+
   const session = await auth();
   if (!session || (session.user as any).role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

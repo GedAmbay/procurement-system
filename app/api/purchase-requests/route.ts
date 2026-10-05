@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { purchaseRequestSchema } from "@/lib/zod-schemas";
+import { requireRole } from "@/lib/auth-utils";
 // Function to generate the next PR Number in YY-MM-XXXX format
 async function generatePRNumber() {
   const now = new Date();
@@ -28,6 +29,9 @@ async function generatePRNumber() {
 }
 
 export async function GET(req: NextRequest) {
+  const roleCheck = await requireRole(["ANY"]);
+  if (!roleCheck.authorized) return roleCheck.response;
+
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -74,6 +78,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const roleCheck = await requireRole(["ADMIN", "BAC_SECRETARIAT", "END_USER"]);
+  if (!roleCheck.authorized) return roleCheck.response;
+
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const user = session.user as any;

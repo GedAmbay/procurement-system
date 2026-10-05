@@ -25,6 +25,6 @@ export const userCreateSchema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.string().email("Invalid email"),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  role: z.enum(["ADMIN", "BAC_SECRETARIAT", "END_USER", "BUDGET_OFFICER", "SUPPLY_OFFICER", "APPROVING_OFFICIAL", "VIEWER"]),
+  role: z.enum(["ADMIN", "BAC_SECRETARIAT", "END_USER"]),
   officeId: z.string().nullable().optional(),
 });

@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireRole } from "@/lib/auth-utils";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const roleCheck = await requireRole(["ANY"]);
+  if (!roleCheck.authorized) return roleCheck.response;
   try {
     const { id } = await params;
     const acceptance = await prisma.acceptance.findUnique({
@@ -49,6 +52,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const roleCheck = await requireRole(["ADMIN", "BAC_SECRETARIAT"]);
+  if (!roleCheck.authorized) return roleCheck.response;
+
   try {
     const { id } = await params;
     const body = await req.json();

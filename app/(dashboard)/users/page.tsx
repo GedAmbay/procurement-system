@@ -21,10 +21,6 @@ const ROLE_COLORS: Record<string, { bg: string; color: string }> = {
   ADMIN: { bg: "#fdf4ff", color: "#7c3aed" },
   BAC_SECRETARIAT: { bg: "#eff6ff", color: "#1d4ed8" },
   END_USER: { bg: "#f0fdf4", color: "#16a34a" },
-  BUDGET_OFFICER: { bg: "#fff7ed", color: "#c2410c" },
-  SUPPLY_OFFICER: { bg: "#ecfeff", color: "#0891b2" },
-  APPROVING_OFFICIAL: { bg: "#fef2f2", color: "#dc2626" },
-  VIEWER: { bg: "#f8fafc", color: "#475569" },
 };
 
 const columns = [

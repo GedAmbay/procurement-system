@@ -46,10 +46,7 @@ export const ROLES = {
   ADMIN: "ADMIN",
   BAC_SECRETARIAT: "BAC_SECRETARIAT",
   END_USER: "END_USER",
-  BUDGET_OFFICER: "BUDGET_OFFICER",
-  SUPPLY_OFFICER: "SUPPLY_OFFICER",
-  APPROVING_OFFICIAL: "APPROVING_OFFICIAL",
-  VIEWER: "VIEWER",
+
 } as const;
 
 export type Role = keyof typeof ROLES;
@@ -57,11 +54,7 @@ export type Role = keyof typeof ROLES;
 export const ROLE_LABELS: Record<string, string> = {
   ADMIN: "System Administrator",
   BAC_SECRETARIAT: "BAC Secretariat",
-  END_USER: "End User / Requesting Office",
-  BUDGET_OFFICER: "Budget Officer",
-  SUPPLY_OFFICER: "Supply / Property Officer",
-  APPROVING_OFFICIAL: "Approving Official",
-  VIEWER: "Viewer (Read-only)",
+  END_USER: "End User (BAC Secretariat Staff)",
 };
 
 export const PR_STATUS_LABELS: Record<string, string> = {

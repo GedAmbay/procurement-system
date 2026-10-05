@@ -130,6 +130,13 @@ export default function AcceptancesPage() {
         onEdit={(row) => router.push(`/acceptances/hub/${row.poId}`)}
         emptyIcon={<CheckSquare size={40} style={{ opacity: 0.3 }} />}
         emptyText="No Acceptance Reports found"
+        filterKey="status"
+        filterTabs={[
+          { label: "All", value: null },
+          { label: "Draft", value: "DRAFT" },
+          { label: "Issued", value: "ISSUED" },
+          { label: "Completed", value: "COMPLETED" },
+        ]}
       />
       {showModal && (
         <FormModal

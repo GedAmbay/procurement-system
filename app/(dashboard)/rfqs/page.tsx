@@ -136,6 +136,14 @@ export default function RFQPage() {
         onDelete={handleDelete}
         emptyIcon={<PackageSearch size={40} style={{ opacity: 0.3 }} />}
         emptyText="No RFQs generated yet. Approve a PR first."
+        filterKey="status"
+        filterTabs={[
+          { label: "All", value: null },
+          { label: "Draft", value: "DRAFT" },
+          { label: "Published", value: "PUBLISHED" },
+          { label: "Closed", value: "CLOSED" },
+          { label: "Awarded", value: "AWARDED" },
+        ]}
       />
     </div>
   );

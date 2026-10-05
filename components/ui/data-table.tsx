@@ -27,6 +27,8 @@ interface DataTableProps<T extends { id: string; isActive?: boolean }> {
   emptyIcon?: React.ReactNode;
   emptyText?: string;
   queryParams?: Record<string, string>;
+  filterKey?: keyof T;
+  filterTabs?: { label: string; value: string | null }[];
 }
 
 export default function DataTable<T extends { id: string; isActive?: boolean }>({
@@ -44,6 +46,8 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
   emptyIcon,
   emptyText,
   queryParams = {},
+  filterKey,
+  filterTabs,
 }: DataTableProps<T>) {
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,6 +59,7 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
   const [showActionBar, setShowActionBar] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const actionBarRef = useRef<HTMLDivElement>(null);
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -106,10 +111,14 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search]);
+  }, [search, activeFilter]);
 
-  const totalPages = Math.max(1, Math.ceil(data.length / itemsPerPage));
-  const paginatedData = data.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const filteredData = filterKey && activeFilter 
+    ? data.filter(row => row[filterKey] === activeFilter) 
+    : data;
+
+  const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
+  const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const handleDelete = async (row: T) => {
     if (!onDelete) return;
@@ -156,10 +165,42 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
         </div>
         {!loading && (
           <div style={{ display: "flex", alignItems: "center", height: "36px", color: "#64748b", fontSize: "0.875rem", fontWeight: "500" }}>
-            {data.length} record{data.length !== 1 ? "s" : ""} {search ? `matching "${search}"` : "total"}
+            {filteredData.length} record{filteredData.length !== 1 ? "s" : ""} {search ? `matching "${search}"` : "total"}
           </div>
         )}
       </div>
+
+      {/* Filter Tabs */}
+      {filterTabs && filterKey && (
+        <div style={{ display: "flex", gap: "1.5rem", marginBottom: "1rem", borderBottom: "1px solid #e2e8f0" }}>
+          {filterTabs.map((tab) => {
+            const count = tab.value === null 
+              ? data.length 
+              : data.filter(row => row[filterKey] === tab.value).length;
+            const isActive = activeFilter === tab.value;
+            
+            return (
+              <button
+                key={tab.label}
+                onClick={() => setActiveFilter(tab.value)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  padding: "0.75rem 0.25rem",
+                  fontSize: "0.875rem",
+                  fontWeight: isActive ? "600" : "500",
+                  color: isActive ? "#334155" : "#94a3b8",
+                  borderBottom: isActive ? "2px solid #475569" : "2px solid transparent",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                }}
+              >
+                {tab.label} ({count})
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Table */}
       <div className="table-container">

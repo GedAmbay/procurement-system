@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireRole } from "@/lib/auth-utils";
 
 export async function GET() {
+  const roleCheck = await requireRole(["ANY"]);
+  if (!roleCheck.authorized) return roleCheck.response;
   try {
     const acceptances = await prisma.acceptance.findMany({
       include: {
@@ -33,6 +36,9 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const roleCheck = await requireRole(["ADMIN", "BAC_SECRETARIAT"]);
+  if (!roleCheck.authorized) return roleCheck.response;
+
   try {
     const body = await req.json();
     const { poId, fiscalYear } = body;

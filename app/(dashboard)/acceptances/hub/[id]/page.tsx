@@ -132,7 +132,7 @@ export default function AcceptancesHub() {
 
         {/* Left Column: Progress Bars */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+          <div className="table-container" style={{ padding: "1.5rem" }}>
             <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2">
               <Package size={16} className="text-slate-500" /> Item Delivery Progress
             </h2>
@@ -163,14 +163,14 @@ export default function AcceptancesHub() {
 
         {/* Right Column: Timeline/Grid */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+          <div className="table-container" style={{ padding: "1.5rem" }}>
             <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2">
               <Truck size={16} className="text-slate-500" /> Delivery Timeline
             </h2>
 
             {acceptances.length === 0 ? (
               <div className="py-12 text-center flex flex-col items-center">
-                <Truck size={48} className="text-slate-200 mb-3" />
+                <Truck size={48} className="text-slate-300 mb-3" />
                 <p className="text-slate-500 font-medium">No deliveries have been recorded yet.</p>
                 <p className="text-sm text-slate-400 mt-1">Click "New Delivery (IAR)" to start receiving items.</p>
               </div>
@@ -186,7 +186,12 @@ export default function AcceptancesHub() {
                       {/* Card */}
                       <div
                         onClick={() => router.push(`/acceptances/${acc.id}`)}
-                        className={`block bg-white border ${isDraft ? 'border-amber-200 hover:border-amber-400' : 'border-slate-200 hover:border-blue-400'} rounded-lg p-4 shadow-sm hover:shadow-md transition-all cursor-pointer`}
+                        className={`block p-5 transition-all cursor-pointer rounded-xl`}
+                        style={{
+                           background: "var(--color-page-bg)",
+                           boxShadow: "var(--shadow-neu-drop)",
+                           border: isDraft ? '1px solid rgba(251, 191, 36, 0.3)' : '1px solid rgba(255,255,255,0.4)',
+                        }}
                       >
                         <div className="flex justify-between items-start mb-3">
                           <div>
@@ -214,13 +219,13 @@ export default function AcceptancesHub() {
                         </div>
 
                         {/* Quick summary of items in this delivery */}
-                        <div className="bg-slate-50 rounded p-2.5 border border-slate-100">
-                          <div className="text-[10px] font-bold text-slate-500 uppercase mb-1.5">Items in this batch:</div>
+                        <div style={{ background: "var(--color-page-bg)", boxShadow: "var(--shadow-neu-inset)", padding: "0.75rem", borderRadius: "0.5rem", marginTop: "1rem" }}>
+                          <div className="text-[10px] font-bold text-slate-500 uppercase mb-2">Items in this batch:</div>
                           <div className="flex flex-wrap gap-2">
                             {acc.lineItems?.filter((li: any) => li.quantityDelivered > 0).map((li: any) => {
                               const pItem = po.lineItems?.find((pi: any) => pi.id === li.poLineItemId);
                               return (
-                                <span key={li.id} className="inline-flex items-center gap-1 bg-white border border-slate-200 px-2 py-1 rounded text-[11px] text-slate-700">
+                                <span key={li.id} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] text-slate-700" style={{ background: "var(--color-page-bg)", boxShadow: "var(--shadow-neu-drop)" }}>
                                   <span className="font-bold">{li.quantityDelivered}x</span>
                                   <span className="truncate max-w-[120px]">{pItem?.description || "Item"}</span>
                                 </span>

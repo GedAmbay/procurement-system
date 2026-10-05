@@ -61,7 +61,7 @@ export default function AbstractLivePreviewPage() {
         if (sigRes.ok) {
           const sigs = await sigRes.json();
           setAllSignatories(sigs);
-          
+
           if (aoqRes.ok && aoqResData && aoqResData.signatoriesData) {
             const savedSigs = aoqResData.signatoriesData as any;
             setSelectedSigIds(savedSigs.selectedSigIds || []);
@@ -113,7 +113,7 @@ export default function AbstractLivePreviewPage() {
       });
 
       if (!res.ok) throw new Error("Failed to save");
-      
+
       const updated = await res.json();
       setData((prev: any) => ({ ...prev, ...updated }));
       toast.success(newStatus ? `Abstract ${newStatus.toLowerCase()} successfully!` : "Changes saved");
@@ -174,8 +174,7 @@ export default function AbstractLivePreviewPage() {
   const isReadOnly = data.status !== "DRAFT" && !isUnlocked;
 
   return (
-    <div className="flex flex-col w-full min-w-0 max-w-full overflow-hidden print:block print:!h-auto print:!overflow-visible"
-      style={{ height: "calc(var(--full-vh, 100vh) - 170px)" }}>
+    <div className="flex flex-col overflow-hidden print:block print:!h-auto print:!overflow-visible" style={{ height: 'calc(var(--full-vh) - 152px)' }}>
 
       {/* ─── Header Bar ─── */}
       <div className="no-print" style={{
@@ -204,7 +203,7 @@ export default function AbstractLivePreviewPage() {
           <button onClick={() => window.print()} className="btn flex items-center gap-2 border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 shadow-sm">
             <Printer size={14} /> Print
           </button>
-          
+
           {data.status === "DRAFT" && (
             <>
               <button onClick={() => saveChanges()} disabled={submitting} className="btn btn-primary flex items-center gap-2">
