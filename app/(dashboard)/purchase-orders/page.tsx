@@ -133,8 +133,6 @@ export default function PurchaseOrdersPage() {
         filterTabs={[
           { label: "All", value: null },
           { label: "Draft", value: "DRAFT" },
-          { label: "For Approval", value: "FOR_APPROVAL" },
-          { label: "Approved", value: "APPROVED" },
           { label: "Issued", value: "ISSUED" },
           { label: "Partially Delivered", value: "PARTIALLY_DELIVERED" },
           { label: "Completed", value: "COMPLETED" },

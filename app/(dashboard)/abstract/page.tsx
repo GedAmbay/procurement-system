@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import DataTable from "@/components/ui/data-table";
 import { formatCurrency } from "@/lib/utils";
-import { Send, Clock, CheckCircle2, ClipboardList } from "lucide-react";
+import { Send, Clock, CheckCircle2, ClipboardList, XCircle } from "lucide-react";
 
 interface AOQ {
   id: string;
@@ -22,8 +22,8 @@ interface AOQ {
 
 const STATUS_COLORS: Record<string, { bg: string; color: string; icon: React.ReactNode }> = {
   DRAFT: { bg: "#fef3c7", color: "#b45309", icon: <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "currentColor" }} /> },
-  RECOMMENDED: { bg: "#eff6ff", color: "#2563eb", icon: <Send size={11} /> },
-  APPROVED: { bg: "#f0fdf4", color: "#16a34a", icon: <CheckCircle2 size={11} /> },
+  ISSUED: { bg: "#eff6ff", color: "#2563eb", icon: <Send size={11} /> },
+  SIGNED: { bg: "#f0fdf4", color: "#16a34a", icon: <CheckCircle2 size={11} /> },
 };
 
 export default function AOQPage() {
@@ -136,12 +136,13 @@ export default function AOQPage() {
         onDuplicate={handleDuplicate}
         onDelete={handleDelete}
         emptyIcon={<ClipboardList size={40} style={{ opacity: 0.3 }} />}
-        emptyText="No AOQs generated yet. Close an RFQ first."
+        emptyText="No AOQs generated yet."
         filterKey="status"
         filterTabs={[
           { label: "All", value: null },
           { label: "Draft", value: "DRAFT" },
-          { label: "Approved", value: "APPROVED" },
+          { label: "Issued", value: "ISSUED" },
+          { label: "Signed", value: "SIGNED" },
         ]}
       />
     </div>

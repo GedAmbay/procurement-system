@@ -164,6 +164,16 @@ export default function RfqLivePreviewPage() {
         {/* Left Side: Live Print Preview */}
         <div className="flex-1 overflow-auto bg-slate-200 print:p-0 print:bg-white print:block print:!overflow-visible print:!h-auto">
           <div className="p-8 print:p-0 w-max mx-auto min-w-full flex justify-center origin-top print:block print:w-full print:min-w-0 print:!transform-none print:!mb-0" style={{ transform: `scale(${zoom})`, marginBottom: `${(zoom - 1) * 1123}px` }}>
+            <style>{`
+              @media print { 
+                .print-zoom-reset { zoom: 1 !important; } 
+                @page { margin-top: 20mm !important; }
+                @page :first { margin-top: 5mm !important; }
+                @page {margin-right:10mm}
+                @page {margin-left:10mm}
+              }
+            `}</style>
+
             <div className="print-area text-black w-[800px] bg-white shadow-xl min-h-[1123px] p-10 print:shadow-none print:w-full print:max-w-none print:p-8 print:m-0 print:min-h-0 font-sans text-[11px]">
 
               {/* Header Layout per Template */}
@@ -237,26 +247,44 @@ export default function RfqLivePreviewPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rfq.lineItems.map((item: any, idx: number) => (
-                    <tr key={idx} className="h-8">
-                      <td className="border-x-[3px] border-black px-1 py-2 text-center align-top">{idx + 1}</td>
-                      <td className="border-x-[3px] border-black px-2 py-2 align-top">{item.description}</td>
-                      <td className="border-x-[3px] border-black px-1 py-2 text-center align-top">{item.quantity}</td>
-                      <td className="border-x-[3px] border-black px-1 py-2 text-center align-top">{item.unit}</td>
-                      <td className="border-x-[3px] border-black px-2 py-2 align-top">
-                        <div className="flex items-end">
-                          <span className="mr-1">P</span>
-                          <span className="flex-1 border-b border-black pb-4"></span>
-                        </div>
-                      </td>
-                      <td className="border-x-[3px] border-black px-2 py-2 align-top">
-                        <div className="flex items-end">
-                          <span className="mr-1">P</span>
-                          <span className="flex-1 border-b border-black pb-4"></span>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {rfq.lineItems.map((item: any, idx: number) => {
+                    const isSpec = !item.quantity || item.quantity === 0;
+                    
+                    // Calculate item number dynamically
+                    let displayNo = "";
+                    if (!isSpec) {
+                      let count = 0;
+                      for (let i = 0; i <= idx; i++) {
+                        if (rfq.lineItems[i].quantity > 0) count++;
+                      }
+                      displayNo = count.toString();
+                    }
+
+                    return (
+                      <tr key={idx} className="h-8">
+                        <td className="border-x-[3px] border-black px-1 py-2 text-center align-top">{displayNo}</td>
+                        <td className="border-x-[3px] border-black px-2 py-2 align-top font-bold">{item.description}</td>
+                        <td className="border-x-[3px] border-black px-1 py-2 text-center align-top">{isSpec ? "" : item.quantity}</td>
+                        <td className="border-x-[3px] border-black px-1 py-2 text-center align-top">{isSpec ? "" : item.unit}</td>
+                        <td className="border-x-[3px] border-black px-2 py-2 align-top">
+                          {!isSpec && (
+                            <div className="flex items-end">
+                              <span className="mr-1">P</span>
+                              <span className="flex-1 border-b border-black pb-4"></span>
+                            </div>
+                          )}
+                        </td>
+                        <td className="border-x-[3px] border-black px-2 py-2 align-top">
+                          {!isSpec && (
+                            <div className="flex items-end">
+                              <span className="mr-1">P</span>
+                              <span className="flex-1 border-b border-black pb-4"></span>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                   {/* Empty rows filler */}
                   {Array.from({ length: Math.max(0, targetRows - rfq.lineItems.length) }).map((_, i) => (
                     <tr key={`empty-${i}`} className="h-6">

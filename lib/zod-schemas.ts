@@ -3,8 +3,8 @@ import { z } from "zod";
 export const prLineItemSchema = z.object({
   itemId: z.string().nullable().optional(),
   description: z.string().min(1, "Description is required"),
-  unit: z.string().min(1, "Unit is required"),
-  quantity: z.number().positive("Quantity must be positive"),
+  unit: z.string().nullable().optional().or(z.literal("")),
+  quantity: z.number().nonnegative("Quantity must not be negative"),
   unitCost: z.number().nonnegative("Unit cost must not be negative"),
 });
 

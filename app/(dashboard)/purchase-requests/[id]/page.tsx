@@ -13,8 +13,8 @@ interface PrLineItem {
   itemId: string | null;
   description: string;
   unit: string;
-  quantity: number;
-  unitCost: number;
+  quantity: number | "";
+  unitCost: number | "";
 }
 
 interface PRFormValues {
@@ -70,9 +70,9 @@ export default function PurchaseRequestEditor() {
   const [draftItem, setDraftItem] = useState<PrLineItem>({
     itemId: "",
     description: "",
-    unit: "Piece",
-    quantity: 1,
-    unitCost: 0,
+    unit: "",
+    quantity: "",
+    unitCost: "",
   });
 
   const totalAmount = watchLineItems.reduce((sum, item) => sum + (Number(item.quantity) * Number(item.unitCost) || 0), 0);
@@ -151,7 +151,14 @@ export default function PurchaseRequestEditor() {
   const handleItemSelect = (itemId: string) => {
     const item = items.find(i => i.id === itemId);
     if (item) {
-      setDraftItem({ ...draftItem, itemId, description: item.description, unit: item.unit, unitCost: item.standardCost });
+      setDraftItem({ 
+        ...draftItem, 
+        itemId, 
+        description: item.description, 
+        unit: item.unit, 
+        unitCost: item.standardCost,
+        quantity: draftItem.quantity === "" ? 1 : draftItem.quantity 
+      });
     } else {
       setDraftItem({ ...draftItem, itemId: "" });
     }
@@ -168,16 +175,22 @@ export default function PurchaseRequestEditor() {
       toast.error("Description is required");
       return;
     }
-    if (draftItem.quantity <= 0) {
-      toast.error("Quantity must be greater than 0");
+    if (Number(draftItem.quantity) < 0) {
+      toast.error("Quantity cannot be negative");
       return;
     }
 
+    const itemToAdd = {
+      ...draftItem,
+      quantity: Number(draftItem.quantity) || 0,
+      unitCost: Number(draftItem.unitCost) || 0,
+    };
+
     if (activeItemIndex !== null) {
-      update(activeItemIndex, draftItem);
+      update(activeItemIndex, itemToAdd);
       toast.success("Item updated");
     } else {
-      append(draftItem);
+      append(itemToAdd);
       toast.success("Item added");
     }
     handleClearDraft();
@@ -185,7 +198,7 @@ export default function PurchaseRequestEditor() {
 
   const handleClearDraft = () => {
     setActiveItemIndex(null);
-    setDraftItem({ itemId: "", description: "", unit: "Piece", quantity: 1, unitCost: 0 });
+    setDraftItem({ itemId: "", description: "", unit: "", quantity: "", unitCost: "" });
   };
 
   const handleDeleteItem = () => {
@@ -348,16 +361,28 @@ export default function PurchaseRequestEditor() {
                   </thead>
 
                   <tbody>
-                    {watchLineItems.length > 0 ? watchLineItems.map((item, idx) => (
-                      <tr key={idx} onClick={() => handleRowClick(idx)} className={`h-6 ${!isReadOnly ? `cursor-pointer transition-colors ${activeItemIndex === idx ? "bg-blue-100 hover:bg-blue-200" : "hover:bg-blue-50"}` : ""}`}>
-                        <td className="border border-black border-l-0 p-0 leading-tight text-center align-top">{idx + 1}</td>
-                        <td className="border border-black p-0 leading-tight text-center align-top">{item.quantity}</td>
-                        <td className="border border-black p-0 leading-tight text-center align-top">{item.unit}</td>
-                        <td className="border border-black p-0 pl-1 leading-tight whitespace-normal break-words align-top">{item.description}</td>
-                        <td className="border border-black p-0 leading-tight text-right align-top pr-1">{item.unitCost ? formatCurrency(item.unitCost).replace('₱', '') : '0.00'}</td>
-                        <td className="border border-black border-r-0 p-0 leading-tight text-right align-top pr-1">{(item.quantity && item.unitCost) ? formatCurrency(item.quantity * item.unitCost).replace('₱', '') : '0.00'}</td>
-                      </tr>
-                    )) : null}
+                    {watchLineItems.length > 0 ? watchLineItems.map((item, idx) => {
+                      const isSpec = !item.quantity || item.quantity === 0;
+                      let displayNo = "";
+                      if (!isSpec) {
+                        let count = 0;
+                        for (let i = 0; i <= idx; i++) {
+                          if (Number(watchLineItems[i].quantity) > 0) count++;
+                        }
+                        displayNo = count.toString();
+                      }
+
+                      return (
+                        <tr key={idx} onClick={() => handleRowClick(idx)} className={`h-6 ${!isReadOnly ? `cursor-pointer transition-colors ${activeItemIndex === idx ? "bg-blue-100 hover:bg-blue-200" : "hover:bg-blue-50"}` : ""}`}>
+                          <td className="border border-black border-l-0 p-0 leading-tight text-center align-top">{displayNo}</td>
+                          <td className="border border-black p-0 leading-tight text-center align-top">{isSpec ? "" : item.quantity}</td>
+                          <td className="border border-black p-0 leading-tight text-center align-top">{isSpec ? "" : item.unit}</td>
+                          <td className={`border border-black p-0 px-1 leading-tight whitespace-normal break-words align-top ${isSpec ? "pl-4 text-sm" : "font-bold"}`}>{item.description}</td>
+                          <td className="border border-black p-0 leading-tight text-right align-top pr-1">{isSpec ? "" : (item.unitCost ? formatCurrency(item.unitCost).replace('₱', '') : '0.00')}</td>
+                          <td className="border border-black border-r-0 p-0 leading-tight text-right align-top pr-1">{isSpec ? "" : ((item.quantity && item.unitCost) ? formatCurrency(item.quantity * item.unitCost).replace('₱', '') : '0.00')}</td>
+                        </tr>
+                      );
+                    }) : null}
                     {/* Empty rows filler */}
                     {Array.from({ length: Math.max(0, targetRows - watchLineItems.length) }).map((_, i) => (
                       <tr key={`empty-${i}`} className="h-6">
@@ -549,10 +574,12 @@ export default function PurchaseRequestEditor() {
                           <input
                             type="number"
                             step="1"
+                            min="0"
                             value={draftItem.quantity}
-                            onChange={(e) => setDraftItem({ ...draftItem, quantity: Number(e.target.value) })}
+                            onChange={(e) => setDraftItem({ ...draftItem, quantity: e.target.value === "" ? "" : Number(e.target.value) })}
                             className="form-input"
                             style={{ textAlign: "right" }}
+                            placeholder="0"
                           />
                         </div>
 
@@ -561,10 +588,12 @@ export default function PurchaseRequestEditor() {
                           <input
                             type="number"
                             step="0.25"
+                            min="0"
                             value={draftItem.unitCost}
-                            onChange={(e) => setDraftItem({ ...draftItem, unitCost: Number(e.target.value) })}
+                            onChange={(e) => setDraftItem({ ...draftItem, unitCost: e.target.value === "" ? "" : Number(e.target.value) })}
                             className="form-input"
                             style={{ textAlign: "right" }}
+                            placeholder="0.00"
                           />
                         </div>
                       </div>
@@ -572,10 +601,10 @@ export default function PurchaseRequestEditor() {
 
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid #e2e8f0", paddingTop: "0.75rem" }}>
                       <div style={{ fontSize: "0.875rem", fontWeight: "700", color: "#059669" }}>
-                        Est: {formatCurrency(draftItem.quantity * draftItem.unitCost)}
+                        Est: {formatCurrency(Number(draftItem.quantity) * Number(draftItem.unitCost))}
                       </div>
                       <div style={{ display: "flex", gap: "0.5rem" }}>
-                        {activeItemIndex !== null && (
+                        {activeItemIndex !== null ? (
                           <button
                             type="button"
                             onClick={handleDeleteItem}
@@ -583,6 +612,15 @@ export default function PurchaseRequestEditor() {
                             style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}
                           >
                             <Trash2 size={13} /> Delete
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={handleClearDraft}
+                            className="btn btn-secondary btn-sm"
+                            style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}
+                          >
+                            Clear
                           </button>
                         )}
                         <button

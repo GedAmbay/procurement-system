@@ -148,15 +148,19 @@ export default function AoqSupplierHub() {
           <button className="btn btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.375rem" }} onClick={() => router.push(`/abstract/${params.id}/print`)}>
             <Printer size={14} /> Open Abstract
           </button>
+          
           {aoq.status === "DRAFT" && quotations.length > 0 && completedCount > 0 && (
-            <button onClick={() => updateStatus("RECOMMENDED")} className="btn btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
-              <Send size={15} /> Recommend
+            <button onClick={() => updateStatus("ISSUED")} className="btn btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
+              <Send size={15} /> Finalize & Issue
             </button>
           )}
-          {aoq.status === "RECOMMENDED" && (
-            <button onClick={() => updateStatus("APPROVED")} className="btn btn-success" style={{ display: "flex", alignItems: "center", gap: "0.375rem", background: "#16a34a" }}>
-              <FileCheck2 size={15} /> Approve
-            </button>
+
+          {aoq.status === "ISSUED" && (
+            <>
+              <button onClick={() => updateStatus("SIGNED")} className="btn btn-success" style={{ display: "flex", alignItems: "center", gap: "0.375rem", background: "#16a34a" }}>
+                <CheckCircle2 size={15} /> Mark as Signed
+              </button>
+            </>
           )}
         </div>
       </div>

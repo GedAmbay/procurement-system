@@ -115,7 +115,7 @@ model PurchaseRequest {
   fundSourceId           String?
   chargeToAccount        String?
   totalAmount            Float        @default(0)
-  status                 String       @default("DRAFT")
+  status                 String       @default("APPROVED")
   remarks                String?
   printCount             Int          @default(0)
   lastPrintedAt          DateTime?

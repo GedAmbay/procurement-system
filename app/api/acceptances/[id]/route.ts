@@ -114,7 +114,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     });
 
     // Check if PO should be marked as completed
-    if (status === "ISSUED" || status === "COMPLETED") {
+    if (status === "ISSUED" || status === "COMPLETED" || status === "PARTIAL") {
       let isFullyDelivered = true;
       for (const poItem of updatedAcceptance.po.lineItems) {
         const totalDelivered = poItem.acceptanceItems.reduce((acc, curr) => acc + curr.quantityDelivered, 0);
@@ -122,6 +122,17 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           isFullyDelivered = false;
           break;
         }
+      }
+
+      const finalStatus = isFullyDelivered ? "COMPLETED" : "PARTIAL";
+
+      // If we are finalizing, auto-update the Acceptance to PARTIAL or COMPLETED
+      if (status === "ISSUED") {
+        await prisma.acceptance.update({
+          where: { id },
+          data: { status: finalStatus }
+        });
+        updatedAcceptance.status = finalStatus;
       }
 
       await prisma.purchaseOrder.update({

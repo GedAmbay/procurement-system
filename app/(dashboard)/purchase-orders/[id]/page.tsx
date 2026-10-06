@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
-import { Printer, Save, ArrowLeft, Loader2, Send, ZoomIn, ZoomOut, Minus, Plus, Package, FileText, ChevronRight } from "lucide-react";
+import { Printer, Save, ArrowLeft, Loader2, Send, ZoomIn, ZoomOut, Minus, Plus, Package, FileText, ChevronRight, CheckCircle2, XCircle } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { formatCurrency, numberToWords } from "@/lib/utils";
@@ -175,7 +175,14 @@ export default function PurchaseOrderEditor() {
               <Send size={16} /> Mark Issued
             </button>
           )}
-          {(poData.status === "ISSUED" || poData.status === "PARTIALLY_DELIVERED" || poData.status === "COMPLETED") && (
+          {poData.status === "ISSUED" && (
+            <>
+              <button onClick={() => updateStatus("SIGNED")} className="btn btn-success" style={{ display: "flex", alignItems: "center", gap: "0.375rem", background: "#16a34a" }}>
+                <CheckCircle2 size={15} /> Mark as Signed
+              </button>
+            </>
+          )}
+          {(poData.status === "SIGNED" || poData.status === "PARTIALLY_DELIVERED" || poData.status === "COMPLETED") && (
             <button onClick={() => router.push(`/acceptances/hub/${poData.id}`)} className="btn btn-success   btn-deliver flex items-center gap-2">
               <Package size={16} /> Delivery Hub
             </button>
@@ -256,16 +263,28 @@ export default function PurchaseOrderEditor() {
                     </tr>
                   </thead>
                   <tbody>
-                    {lineItems.map((item: any, idx: number) => (
-                      <tr key={idx}>
-                        <td className="border-r border-black p-1 text-center">{idx + 1}</td>
-                        <td className="border-r border-black p-1 text-center">{item.unit}</td>
-                        <td className="border-r border-black p-1">{item.description}</td>
-                        <td className="border-r border-black p-1 text-center">{item.quantity}</td>
-                        <td className="border-r border-black p-1 text-right">{formatCurrency(item.unitPrice).replace('₱', '')}</td>
-                        <td className="p-1 text-right font-bold">{formatCurrency(item.totalPrice).replace('₱', '')}</td>
-                      </tr>
-                    ))}
+                    {lineItems.map((item: any, idx: number) => {
+                      const isSpec = !item.quantity || item.quantity === 0;
+                      let displayNo = "";
+                      if (!isSpec) {
+                        let count = 0;
+                        for (let i = 0; i <= idx; i++) {
+                          if (lineItems[i].quantity > 0) count++;
+                        }
+                        displayNo = count.toString();
+                      }
+
+                      return (
+                        <tr key={idx}>
+                          <td className="border-r border-black p-1 text-center">{displayNo}</td>
+                          <td className="border-r border-black p-1 text-center">{isSpec ? "" : item.unit}</td>
+                          <td className={`border-r border-black p-1 ${isSpec ? "pl-4 text-sm" : "font-bold"}`}>{item.description}</td>
+                          <td className="border-r border-black p-1 text-center">{isSpec ? "" : item.quantity}</td>
+                          <td className="border-r border-black p-1 text-right">{isSpec ? "" : formatCurrency(item.unitPrice).replace('₱', '')}</td>
+                          <td className="p-1 text-right font-bold">{isSpec ? "" : formatCurrency(item.totalPrice).replace('₱', '')}</td>
+                        </tr>
+                      );
+                    })}
 
                     {Array.from({ length: Math.max(0, targetRows - lineItems.length) }).map((_, i) => (
                       <tr key={`empty-${i}`} className="h-6">

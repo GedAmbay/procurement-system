@@ -4,7 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import DataTable from "@/components/ui/data-table";
 import { formatCurrency } from "@/lib/utils";
-import { FileText, Send, Clock, CheckCircle2, PackageSearch } from "lucide-react";
+import { FileText, Send, Clock, CheckCircle2, PackageSearch, XCircle } from "lucide-react";
+import FormModal from "@/components/ui/form-modal";
+import { toast } from "sonner";
 
 interface RFQ {
   id: string;
@@ -21,13 +23,44 @@ interface RFQ {
 const STATUS_COLORS: Record<string, { bg: string; color: string; icon: React.ReactNode }> = {
   DRAFT: { bg: "#fef3c7", color: "#b45309", icon: <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "currentColor" }} /> },
   ISSUED: { bg: "#eff6ff", color: "#2563eb", icon: <Send size={11} /> },
-  WAITING_FOR_SUPPLIER: { bg: "#fef9c3", color: "#854d0e", icon: <Clock size={11} /> },
   COMPLETED: { bg: "#f0fdf4", color: "#16a34a", icon: <CheckCircle2 size={11} /> },
 };
 
 export default function RFQPage() {
   const router = useRouter();
   const [refreshKey, setRefreshKey] = useState(0);
+  const [showModal, setShowModal] = useState(false);
+  const [prs, setPrs] = useState<any[]>([]);
+
+  const openAddModal = async () => {
+    try {
+      const res = await fetch("/api/purchase-requests");
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      // Show all PRs that don't have an RFQ
+      setPrs(data.filter((pr: any) => !pr.rfqId && pr.status === "APPROVED"));
+      setShowModal(true);
+    } catch {
+      toast.error("Failed to fetch Purchase Requests");
+    }
+  };
+
+  const handleCreate = async (data: any) => {
+    try {
+      const res = await fetch("/api/rfqs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prId: data.prId })
+      });
+      if (!res.ok) throw new Error("Failed to create RFQ");
+      const rfq = await res.json();
+      toast.success("RFQ created successfully");
+      setShowModal(false);
+      router.push(`/rfqs/${rfq.id}`);
+    } catch {
+      toast.error("Error creating RFQ");
+    }
+  };
 
   const columns = [
     {
@@ -130,21 +163,42 @@ export default function RFQPage() {
         apiPath="/api/rfqs"
         columns={columns}
         searchPlaceholder="Search..."
+        onAdd={openAddModal}
         onView={(row) => router.push(`/rfqs/${row.id}?mode=view`)}
         onEdit={handleEdit}
         onDuplicate={handleDuplicate}
         onDelete={handleDelete}
         emptyIcon={<PackageSearch size={40} style={{ opacity: 0.3 }} />}
-        emptyText="No RFQs generated yet. Approve a PR first."
+        emptyText="No RFQs generated yet."
         filterKey="status"
         filterTabs={[
           { label: "All", value: null },
           { label: "Draft", value: "DRAFT" },
-          { label: "Published", value: "PUBLISHED" },
-          { label: "Closed", value: "CLOSED" },
-          { label: "Awarded", value: "AWARDED" },
+          { label: "Issued", value: "ISSUED" },
+          { label: "Completed", value: "COMPLETED" },
         ]}
       />
+
+      {showModal && (
+        <FormModal
+          onClose={() => setShowModal(false)}
+          title="Generate RFQ from PR"
+          submitLabel="Generate RFQ"
+          onSubmit={handleCreate}
+          fields={[
+            {
+              key: "prId",
+              label: "Select Purchase Request",
+              type: "select",
+              required: true,
+              options: prs.map((pr: any) => ({
+                label: `${pr.prNumber} - ${pr.purpose}`,
+                value: pr.id
+              }))
+            }
+          ]}
+        />
+      )}
     </div>
   );
 }

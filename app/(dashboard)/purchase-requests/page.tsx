@@ -126,18 +126,6 @@ export default function PurchaseRequestsPage() {
         onDelete={handleDelete}
         emptyIcon={<FileText size={40} style={{ opacity: 0.3 }} />}
         emptyText="No Purchase Requests found"
-        filterKey="status"
-        filterTabs={[
-          { label: "All", value: null },
-          { label: "Draft", value: "DRAFT" },
-          { label: "Pending", value: "PENDING" },
-          { label: "For Approval", value: "FOR_APPROVAL" },
-          { label: "Approved", value: "APPROVED" },
-          { label: "For RFQ", value: "FOR_RFQ" },
-          { label: "For PO", value: "FOR_PO" },
-          { label: "Completed", value: "COMPLETED" },
-          { label: "Cancelled", value: "CANCELLED" },
-        ]}
       />
     </div>
   );

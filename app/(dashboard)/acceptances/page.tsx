@@ -10,6 +10,7 @@ import { toast } from "sonner";
 const STATUS_COLORS: Record<string, { bg: string; color: string; icon: React.ReactNode }> = {
   DRAFT: { bg: "#fef3c7", color: "#b45309", icon: <Clock size={11} /> },
   ISSUED: { bg: "#eff6ff", color: "#2563eb", icon: <CheckCircle2 size={11} /> },
+  PARTIAL: { bg: "#fffbeb", color: "#b45309", icon: <Clock size={11} /> },
   COMPLETED: { bg: "#f0fdf4", color: "#16a34a", icon: <CheckCircle2 size={11} /> },
 };
 
@@ -134,7 +135,7 @@ export default function AcceptancesPage() {
         filterTabs={[
           { label: "All", value: null },
           { label: "Draft", value: "DRAFT" },
-          { label: "Issued", value: "ISSUED" },
+          { label: "Partial", value: "PARTIAL" },
           { label: "Completed", value: "COMPLETED" },
         ]}
       />

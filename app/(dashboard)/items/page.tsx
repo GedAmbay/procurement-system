@@ -39,20 +39,21 @@ const columns = [
         {row.code ?? "—"}
       </span>
     ),
-    width: "120px",
+    width: "12%",
   },
   {
     key: "description",
     label: "Description",
     render: (row: Item) => <span style={{ fontWeight: "500", color: "#0f172a" }}>{row.description}</span>,
+    width: "30%",
   },
-  { key: "unit", label: "Unit of Measure", width: "120px" },
+  { key: "unit", label: "Unit of Measure", width: "13%" },
   {
     key: "standardCost",
     label: "Standard Unit Cost",
     align: "right",
     render: (row: Item) => <span style={{ fontWeight: "600", color: "#059669" }}>{formatCurrency(row.standardCost)}</span>,
-    width: "160px",
+    width: "15%",
   },
   {
     key: "category",
@@ -61,17 +62,7 @@ const columns = [
     render: (row: Item) => row.category ? (
       <span className="badge" style={{ background: "#eff6ff", color: "#1d4ed8" }}>{row.category}</span>
     ) : "—",
-    width: "150px",
-  },
-  {
-    key: "isActive",
-    label: "Status",
-    render: (row: Item) => row.isActive ? (
-      <span className="badge" style={{ background: "#f0fdf4", color: "#16a34a" }}><CheckCircle2 size={11} style={{ marginRight: "3px" }} /> Active</span>
-    ) : (
-      <span className="badge" style={{ background: "#fef2f2", color: "#dc2626" }}><XCircle size={11} style={{ marginRight: "3px" }} /> Inactive</span>
-    ),
-    width: "80px",
+    width: "15%",
   },
 ];
 
