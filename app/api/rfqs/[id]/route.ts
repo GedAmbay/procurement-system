@@ -63,6 +63,12 @@ export async function PATCH(
       const updatedRfq = await prisma.rfq.update({
         where: { id },
         data: { status: body.status },
+        include: {
+          pr: { include: { office: true } },
+          signatory: true,
+          lineItems: { orderBy: { sortOrder: "asc" } },
+          quotations: { include: { supplier: true, lineItems: true } },
+        },
       });
       return NextResponse.json(updatedRfq);
     }
@@ -74,6 +80,12 @@ export async function PATCH(
         data: {
           deadline: body.deadline,
           signatoryId: body.signatoryId || null,
+        },
+        include: {
+          pr: { include: { office: true } },
+          signatory: true,
+          lineItems: { orderBy: { sortOrder: "asc" } },
+          quotations: { include: { supplier: true, lineItems: true } },
         },
       });
       return NextResponse.json(updatedRfq);

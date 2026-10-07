@@ -38,6 +38,8 @@ export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const search = url.searchParams.get("search") || "";
   const status = url.searchParams.get("status") || "";
+  const officeId = url.searchParams.get("officeId") || "";
+  const fiscalYear = url.searchParams.get("fiscalYear") || "";
 
   const user = session.user as any;
   const whereClause: any = {};
@@ -58,10 +60,14 @@ export async function GET(req: NextRequest) {
   if (status) {
     whereClause.status = status;
   }
-
-  // If End User, only show their office's PRs
-  if (user.role === "END_USER" && user.officeId) {
-    whereClause.officeId = user.officeId;
+  if (officeId) {
+    whereClause.officeId = officeId;
+  }
+  if (fiscalYear && fiscalYear !== "null") {
+    const parsedYear = parseInt(fiscalYear, 10);
+    if (!isNaN(parsedYear)) {
+      whereClause.fiscalYear = parsedYear;
+    }
   }
 
   const prs = await prisma.purchaseRequest.findMany({

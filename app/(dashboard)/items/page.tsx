@@ -60,7 +60,7 @@ const columns = [
     label: "Category",
     align: "center",
     render: (row: Item) => row.category ? (
-      <span className="badge" style={{ background: "#eff6ff", color: "#1d4ed8" }}>{row.category}</span>
+      <span className="badge" style={{ background: "#eff6ff", color: "#1d4ed8", boxShadow: "none" }}>{row.category}</span>
     ) : "—",
     width: "15%",
   },

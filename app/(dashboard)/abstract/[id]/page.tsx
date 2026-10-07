@@ -112,7 +112,7 @@ export default function AoqSupplierHub() {
   const lowestBid = validBids.length > 0 ? Math.min(...validBids.map((q: any) => q.totalAmount)) : null;
 
   return (
-    <div style={{ width: "100%", maxWidth: "100%", margin: "0 auto", padding: "2rem" }}>
+    <div style={{ width: "100%", maxWidth: "100%", margin: "0 auto", padding: "0.5rem" }}>
 
       {/* Top Bar */}
       <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "2rem", flexWrap: "wrap" }}>
@@ -148,7 +148,7 @@ export default function AoqSupplierHub() {
           <button className="btn btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.375rem" }} onClick={() => router.push(`/abstract/${params.id}/print`)}>
             <Printer size={14} /> Open Abstract
           </button>
-          
+
           {aoq.status === "DRAFT" && quotations.length > 0 && completedCount > 0 && (
             <button onClick={() => updateStatus("ISSUED")} className="btn btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
               <Send size={15} /> Finalize & Issue

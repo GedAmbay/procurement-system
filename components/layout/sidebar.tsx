@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, ShoppingCart, FileText, ClipboardList,
   Package, Users, Building2, Tag, Wallet,
-  BarChart3, History, Settings, ChevronRight, Shield, ClipboardCheck, CheckSquare
+  BarChart3, History, Settings, ChevronRight, Shield, ClipboardCheck, CheckSquare, Archive
 } from "lucide-react";
 import { ROLE_LABELS, LGU_INFO } from "@/lib/utils";
 
@@ -34,6 +34,7 @@ const navItems = [
       { label: "Purchase Orders", href: "/purchase-orders", icon: Package, roles: [] },
       { label: "Acceptance", href: "/acceptances", icon: CheckSquare, roles: [] },
       { label: "Requisition & Issue", href: "/ris", icon: ClipboardCheck, roles: [] },
+      { label: "Archives", href: "/archives", icon: Archive, roles: [] },
     ],
   },
   {

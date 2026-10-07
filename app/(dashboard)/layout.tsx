@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import Sidebar from "@/components/layout/sidebar";
 import Topbar from "@/components/layout/topbar";
 
+import Breadcrumb from "@/components/layout/breadcrumb";
+
 export default async function DashboardLayout({
   children,
 }: {
@@ -16,7 +18,12 @@ export default async function DashboardLayout({
       <Sidebar user={session.user as any} />
       <div className="main-content" style={{ flex: 1 }}>
         <Topbar user={session.user as any} />
-        <main className="page-content">{children}</main>
+        <main className="page-content" style={{ display: "flex", flexDirection: "column" }}>
+          <div style={{ padding: "0 1rem" }}>
+            <Breadcrumb />
+          </div>
+          {children}
+        </main>
       </div>
     </div>
   );

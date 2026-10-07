@@ -83,8 +83,8 @@ export default function RfqLivePreviewPage() {
   };
 
   const updateStatus = async (status: string) => {
-    if (status === "ISSUED" && !watchSignatoryId) {
-      toast.error("Please select a signatory and save before issuing");
+    if (status === "COMPLETED" && !watchSignatoryId) {
+      toast.error("Please select a signatory and save before finalizing");
       return;
     }
 
@@ -110,7 +110,7 @@ export default function RfqLivePreviewPage() {
   const isReadOnly = rfq.status !== "DRAFT" && !isUnlocked;
 
   return (
-    <div className="flex flex-col overflow-hidden print:block print:!h-auto print:!overflow-visible" style={{ height: 'calc(var(--full-vh) - 152px)' }}>
+    <div className="flex flex-col overflow-hidden print:block print:!h-auto print:!overflow-visible" style={{ height: 'calc(var(--full-vh) - 189px)' }}>
       {/* Header */}
       <div className="no-print flex items-center justify-between p-4 bg-white border-b border-slate-200 shadow-sm z-10">
         <div className="flex items-center gap-3">
@@ -118,25 +118,19 @@ export default function RfqLivePreviewPage() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-lg font-bold text-slate-800">Request for Quotation</h1>
-            <p className="text-xs text-slate-500 font-medium">{rfq.rfqNumber} • Status: <strong className="text-slate-700">{rfq.status.replace(/_/g, ' ')}</strong></p>
+            <h1 className="text-lg font-bold text-slate-800">{rfq.rfqNumber} • Status: <strong className="text-slate-700">{rfq.status.replace(/_/g, ' ')}</strong></h1>
           </div>
         </div>
         <div className="flex gap-2">
           {rfq.status === "DRAFT" && (
-            <button onClick={() => updateStatus("ISSUED")} className="btn btn-primary flex items-center gap-2">
-              <Send size={16} /> Mark as Issued
+            <button onClick={() => updateStatus("COMPLETED")} className="btn btn-primary flex items-center gap-2">
+              <CheckCircle2 size={16} /> Finalize RFQ
             </button>
           )}
-          {rfq.status === "ISSUED" && (
-            <>
-              <button type="button" onClick={() => setIsUnlocked(!isUnlocked)} className={`btn ${isUnlocked ? 'btn-secondary' : 'btn-primary'}`}>
-                {isUnlocked ? <><Lock size={16} /> Lock</> : <><Unlock size={16} /> Unlock</>}
-              </button>
-              <button onClick={() => updateStatus("CLOSED")} className="btn bg-success text-success flex items-center gap-2">
-                <CheckCircle2 size={16} /> Close RFQ
-              </button>
-            </>
+          {rfq.status === "COMPLETED" && (
+            <button type="button" onClick={() => setIsUnlocked(!isUnlocked)} className={`btn ${isUnlocked ? 'btn-secondary' : 'btn-primary'}`}>
+              {isUnlocked ? <><Lock size={16} /> Lock</> : <><Unlock size={16} /> Unlock</>}
+            </button>
           )}
           <button onClick={() => window.print()} className="btn flex items-center gap-2 border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 shadow-sm">
             <Printer size={16} /> Print
@@ -174,7 +168,7 @@ export default function RfqLivePreviewPage() {
               }
             `}</style>
 
-            <div className="print-area text-black w-[800px] bg-white shadow-xl min-h-[1123px] p-10 print:shadow-none print:w-full print:max-w-none print:p-8 print:m-0 print:min-h-0 font-sans text-[11px]">
+            <div className="print-area text-black w-[900px] bg-white shadow-xl min-h-[1123px] p-10 print:shadow-none print:w-full print:max-w-none print:p-8 print:m-0 print:min-h-0 font-sans text-[11px]">
 
               {/* Header Layout per Template */}
               <div className="flex justify-between items-start mb-6">
@@ -213,7 +207,7 @@ export default function RfqLivePreviewPage() {
               <div className="flex justify-end mb-6 text-center">
                 <div className="w-[250px]">
                   <div className="font-bold px-4 text-[16px] uppercase">{rfq.signatory?.name || "JEFFY S. CANGAYDA"}</div>
-                  <div>{rfq.signatory?.position || "BAC Chairman"}</div>
+                  <div>BAC Chairman</div>
                 </div>
               </div>
 
@@ -238,7 +232,7 @@ export default function RfqLivePreviewPage() {
               <table className="w-full border-collapse border-[3px] border-black mb-1 table-fixed">
                 <thead>
                   <tr>
-                    <th className="border-x-[3px] border-b-[3px] border-black p-1 w-[5%] text-center align-middle">ITEM <br />NO</th>
+                    <th className="border-x-[3px] border-b-[3px] border-black p-1 w-[8%] text-center align-middle">ITEM <br />NO</th>
                     <th className="border-x-[3px] border-b-[3px] border-black p-1 text-center align-middle">ITEM & DESCRIPTION</th>
                     <th className="border-x-[3px] border-b-[3px] border-black p-1 w-[6%] text-center align-middle">QTY</th>
                     <th className="border-x-[3px] border-b-[3px] border-black p-1 w-[8%] text-center align-middle">UNIT</th>
@@ -249,7 +243,7 @@ export default function RfqLivePreviewPage() {
                 <tbody>
                   {rfq.lineItems.map((item: any, idx: number) => {
                     const isSpec = !item.quantity || item.quantity === 0;
-                    
+
                     // Calculate item number dynamically
                     let displayNo = "";
                     if (!isSpec) {
@@ -344,7 +338,7 @@ export default function RfqLivePreviewPage() {
                 >
                   <option value="">Select Signatory...</option>
                   {signatories.map(s => (
-                    <option key={s.id} value={s.id}>{s.name} - {s.position}</option>
+                    <option key={s.id} value={s.id}>{s.name}</option>
                   ))}
                 </select>
               </div>

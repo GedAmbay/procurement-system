@@ -174,7 +174,7 @@ export default function AbstractLivePreviewPage() {
   const isReadOnly = data.status !== "DRAFT" && !isUnlocked;
 
   return (
-    <div className="flex flex-col overflow-hidden print:block print:!h-auto print:!overflow-visible" style={{ height: 'calc(var(--full-vh) - 152px)' }}>
+    <div className="flex flex-col overflow-hidden print:block print:!h-auto print:!overflow-visible" style={{ height: 'calc(var(--full-vh) - 189px)' }}>
 
       {/* ─── Header Bar ─── */}
       <div className="no-print" style={{

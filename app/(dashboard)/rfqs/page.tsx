@@ -101,6 +101,7 @@ export default function RFQPage() {
       key: "abc",
       label: "Approved Budget",
       align: "center",
+      sortable: true,
       render: (row: RFQ) => (
         <div style={{ fontWeight: "700", color: "#059669" }}>
           {formatCurrency(row.pr.totalAmount)}
@@ -126,6 +127,7 @@ export default function RFQPage() {
       key: "createdAt",
       label: "Date",
       align: "center",
+      sortable: true,
       render: (row: RFQ) => (
         <span style={{ fontSize: "0.8125rem", color: "#64748b" }}>
           {new Date(row.createdAt).toLocaleDateString("en-PH")}
@@ -177,6 +179,7 @@ export default function RFQPage() {
           { label: "Issued", value: "ISSUED" },
           { label: "Completed", value: "COMPLETED" },
         ]}
+        dateFilterKey="createdAt"
       />
 
       {showModal && (

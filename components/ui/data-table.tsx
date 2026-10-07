@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Search, Plus, Pencil, Trash2, CheckCircle, XCircle, Loader2, RefreshCw, Eye, Copy, X } from "lucide-react";
+import { Search, Plus, Pencil, Trash2, CheckCircle, XCircle, Loader2, RefreshCw, Eye, Copy, X, Calendar } from "lucide-react";
 import { toast } from "sonner";
 
 interface Column<T> {
@@ -10,6 +10,7 @@ interface Column<T> {
   render?: (row: T) => React.ReactNode;
   width?: string;
   align?: "left" | "center" | "right" | (string & {});
+  sortable?: boolean;
 }
 
 interface DataTableProps<T extends { id: string; isActive?: boolean }> {
@@ -23,12 +24,14 @@ interface DataTableProps<T extends { id: string; isActive?: boolean }> {
   onEdit?: (row: T) => void;
   onDuplicate?: (row: T) => void;
   onDelete?: (row: T) => Promise<void>;
+  customActions?: { label: string; icon: React.ReactNode; onClick: (row: T) => void }[];
   extraHeaderContent?: React.ReactNode;
   emptyIcon?: React.ReactNode;
   emptyText?: string;
   queryParams?: Record<string, string>;
   filterKey?: keyof T;
   filterTabs?: { label: string; value: string | null }[];
+  dateFilterKey?: keyof T;
 }
 
 export default function DataTable<T extends { id: string; isActive?: boolean }>({
@@ -42,12 +45,14 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
   onEdit,
   onDuplicate,
   onDelete,
+  customActions,
   extraHeaderContent,
   emptyIcon,
   emptyText,
   queryParams = {},
   filterKey,
   filterTabs,
+  dateFilterKey,
 }: DataTableProps<T>) {
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,6 +65,9 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
   const [isClosing, setIsClosing] = useState(false);
   const actionBarRef = useRef<HTMLDivElement>(null);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [sortConfig, setSortConfig] = useState<{ key: string, direction: "asc" | "desc" } | null>(null);
+  const [dateRange, setDateRange] = useState<{ start: string, end: string } | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -113,12 +121,44 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
     setCurrentPage(1);
   }, [search, activeFilter]);
 
-  const filteredData = filterKey && activeFilter 
-    ? data.filter(row => row[filterKey] === activeFilter) 
-    : data;
+  const filteredData = data.filter(row => {
+    // Tab Filter
+    if (filterKey && activeFilter && row[filterKey] !== activeFilter) return false;
+    
+    // Date Filter
+    if (dateFilterKey && dateRange && dateRange.start && dateRange.end) {
+      const rowDate = new Date(row[dateFilterKey] as any);
+      const startDate = new Date(dateRange.start);
+      startDate.setHours(0, 0, 0, 0);
+      const endDate = new Date(dateRange.end);
+      endDate.setHours(23, 59, 59, 999);
+      if (rowDate < startDate || rowDate > endDate) return false;
+    }
 
-  const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
-  const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+    return true;
+  });
+
+  const sortedData = [...filteredData].sort((a, b) => {
+    if (!sortConfig) return 0;
+    const aValue = a[sortConfig.key as keyof T];
+    const bValue = b[sortConfig.key as keyof T];
+    if (aValue === bValue) return 0;
+    if (aValue === null || aValue === undefined) return 1;
+    if (bValue === null || bValue === undefined) return -1;
+    
+    if (typeof aValue === 'string' && typeof bValue === 'string') {
+      return sortConfig.direction === 'asc' 
+        ? aValue.localeCompare(bValue) 
+        : bValue.localeCompare(aValue);
+    }
+    
+    if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(sortedData.length / itemsPerPage));
+  const paginatedData = sortedData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const handleDelete = async (row: T) => {
     if (!onDelete) return;
@@ -133,6 +173,70 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
     } finally {
       setDeleting(null);
     }
+  };
+
+  const renderDateFilter = () => {
+    if (!dateFilterKey) return null;
+    return (
+      <div style={{ position: "relative" }}>
+        <button
+          onClick={() => setShowDatePicker(!showDatePicker)}
+          style={{
+            display: "flex", alignItems: "center", gap: "0.5rem",
+            background: "#ffffff", border: "1px solid #e2e8f0", padding: "0.4rem 0.75rem",
+            borderRadius: "9999px", fontSize: "0.8125rem", color: "#334155", fontWeight: "600",
+            cursor: "pointer", boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+          }}
+        >
+          <Calendar size={14} color="#475569" />
+          {dateRange?.start && dateRange?.end ? (
+            `${new Date(dateRange.start).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} - ${new Date(dateRange.end).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
+          ) : (
+            "Filter by Date"
+          )}
+          {dateRange && (
+            <X size={12} style={{ marginLeft: "0.25rem", opacity: 0.5 }} onClick={(e) => { e.stopPropagation(); setDateRange(null); }} />
+          )}
+        </button>
+
+        {showDatePicker && (
+          <div style={{
+            position: "absolute", top: "100%", right: 0, marginTop: "0.5rem",
+            background: "white", padding: "1rem", borderRadius: "0.5rem",
+            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+            border: "1px solid #e2e8f0", zIndex: 50, width: "250px"
+          }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "0.75rem", color: "#64748b", marginBottom: "0.25rem", fontWeight: "500" }}>Start Date</label>
+                <input 
+                  type="date" 
+                  value={dateRange?.start || ""}
+                  onChange={(e) => setDateRange(prev => ({ start: e.target.value, end: prev?.end || "" }))}
+                  style={{ width: "100%", padding: "0.375rem 0.5rem", borderRadius: "0.375rem", border: "1px solid #cbd5e1", fontSize: "0.875rem" }} 
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "0.75rem", color: "#64748b", marginBottom: "0.25rem", fontWeight: "500" }}>End Date</label>
+                <input 
+                  type="date"
+                  value={dateRange?.end || ""}
+                  onChange={(e) => setDateRange(prev => ({ start: prev?.start || "", end: e.target.value }))}
+                  style={{ width: "100%", padding: "0.375rem 0.5rem", borderRadius: "0.375rem", border: "1px solid #cbd5e1", fontSize: "0.875rem" }}
+                />
+              </div>
+              <button 
+                className="btn btn-primary btn-sm" 
+                onClick={() => setShowDatePicker(false)}
+                style={{ marginTop: "0.5rem" }}
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -162,6 +266,7 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
               <Plus size={15} /> Add New
             </button>
           )}
+          {(!filterTabs || filterTabs.length === 0) && renderDateFilter()}
         </div>
         {!loading && (
           <div style={{ display: "flex", alignItems: "center", height: "36px", color: "#64748b", fontSize: "0.875rem", fontWeight: "500" }}>
@@ -171,36 +276,41 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
       </div>
 
       {/* Filter Tabs */}
-      {filterTabs && filterKey && (
-        <div style={{ display: "flex", gap: "1.5rem", marginBottom: "1rem", borderBottom: "1px solid #e2e8f0" }}>
-          {filterTabs.map((tab) => {
-            const count = tab.value === null 
-              ? data.length 
-              : data.filter(row => row[filterKey] === tab.value).length;
-            const isActive = activeFilter === tab.value;
-            
-            return (
-              <button
-                key={tab.label}
-                onClick={() => setActiveFilter(tab.value)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  padding: "0.75rem 0.25rem",
-                  fontSize: "0.875rem",
-                  fontWeight: isActive ? "600" : "500",
-                  color: isActive ? "#334155" : "#94a3b8",
-                  borderBottom: isActive ? "2px solid #475569" : "2px solid transparent",
-                  cursor: "pointer",
-                  transition: "all 0.2s",
-                }}
-              >
-                {tab.label} ({count})
-              </button>
-            );
-          })}
+      {filterTabs && filterKey && filterTabs.length > 0 ? (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", borderBottom: "1px solid #e2e8f0" }}>
+          
+          <div style={{ display: "flex", gap: "1.5rem" }}>
+            {filterTabs.map((tab) => {
+              const count = tab.value === null 
+                ? data.length 
+                : data.filter(row => row[filterKey] === tab.value).length;
+              const isActive = activeFilter === tab.value;
+              
+              return (
+                <button
+                  key={tab.label}
+                  onClick={() => setActiveFilter(tab.value)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    padding: "0.75rem 0.25rem",
+                    fontSize: "0.875rem",
+                    fontWeight: isActive ? "600" : "500",
+                    color: isActive ? "#334155" : "#94a3b8",
+                    borderBottom: isActive ? "2px solid #475569" : "2px solid transparent",
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                  }}
+                >
+                  {tab.label} ({count})
+                </button>
+              );
+            })}
+          </div>
+
+          {renderDateFilter()}
         </div>
-      )}
+      ) : null}
 
       {/* Table */}
       <div className="table-container">
@@ -209,7 +319,7 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
             <Loader2 size={20} style={{ animation: "spin 1s linear infinite" }} />
             Loading...
           </div>
-        ) : data.length === 0 ? (
+        ) : filteredData.length === 0 ? (
           <div className="empty-state">
             {emptyIcon ?? <Search size={40} style={{ opacity: 0.3 }} />}
             <p style={{ fontWeight: "600", color: "#64748b", margin: "0.5rem 0 0.25rem" }}>
@@ -228,9 +338,32 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
               <thead>
                 <tr>
                   {columns.map((col) => (
-                    <th key={col.key} style={{ width: col.width, textAlign: (col.align || "left") as any }}>{col.label}</th>
+                    <th key={col.key} style={{ width: col.width, textAlign: (col.align || "left") as any }}>
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem" }}>
+                        {col.label}
+                        {col.sortable && (
+                          <button
+                            onClick={() => {
+                              let nextDirection: "asc" | "desc" = "asc";
+                              if (sortConfig?.key === col.key && sortConfig.direction === "asc") {
+                                nextDirection = "desc";
+                              }
+                              setSortConfig({ key: col.key, direction: nextDirection });
+                            }}
+                            style={{
+                              background: "none", border: "none", cursor: "pointer", padding: "2px",
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              opacity: sortConfig?.key === col.key ? 1 : 0.4,
+                              color: sortConfig?.key === col.key ? "#0f172a" : "#94a3b8",
+                              fontSize: "0.6rem"
+                            }}
+                          >
+                            {sortConfig?.key === col.key && sortConfig.direction === "asc" ? "▲" : "▼"}
+                          </button>
+                        )}
+                      </div>
+                    </th>
                   ))}
-
                 </tr>
               </thead>
               <tbody>
@@ -287,7 +420,7 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
           </div>
         </div>
       )}
-      {showActionBar && (onView || onEdit || onDuplicate || onDelete) && (
+      {showActionBar && (onView || onEdit || onDuplicate || onDelete || customActions) && (
         <div ref={actionBarRef} style={{
           position: "fixed",
           bottom: "2rem",
@@ -343,6 +476,15 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
                 <Copy size={16} /> Duplicate
               </button>
             )}
+            {customActions && customActions.map((action, i) => (
+              <button
+                key={i}
+                onClick={() => { if (selectedRow) action.onClick(selectedRow); setSelectedRow(null); }}
+                style={{ background: "#e0e5ec", border: "none", color: "#475569", padding: "0.75rem 1.5rem", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem", cursor: "pointer", fontSize: "0.75rem", borderRadius: "0.5rem", boxShadow: "4px 4px 8px rgba(163,177,198,0.6), -4px -4px 8px rgba(255,255,255, 0.5)" }}
+              >
+                {action.icon} {action.label}
+              </button>
+            ))}
             {onDelete && selectedRow?.isActive !== false && (
               <button
                 onClick={() => { if (selectedRow) handleDelete(selectedRow); setSelectedRow(null); }}

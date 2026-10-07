@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
 import { formatCurrency, LGU_INFO } from "@/lib/utils";
-import { Printer, Save, Send, CheckCircle2, XCircle, Plus, Minus, Trash2, ArrowLeft, Loader2, ZoomIn, ZoomOut, Lock, Unlock } from "lucide-react";
+import { Printer, Save, Send, CheckCircle2, XCircle, Plus, Minus, Trash2, ArrowLeft, Loader2, ZoomIn, ZoomOut, Lock, Unlock, FolderOpen } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -151,13 +151,13 @@ export default function PurchaseRequestEditor() {
   const handleItemSelect = (itemId: string) => {
     const item = items.find(i => i.id === itemId);
     if (item) {
-      setDraftItem({ 
-        ...draftItem, 
-        itemId, 
-        description: item.description, 
-        unit: item.unit, 
+      setDraftItem({
+        ...draftItem,
+        itemId,
+        description: item.description,
+        unit: item.unit,
         unitCost: item.standardCost,
-        quantity: draftItem.quantity === "" ? 1 : draftItem.quantity 
+        quantity: draftItem.quantity === "" ? 1 : draftItem.quantity
       });
     } else {
       setDraftItem({ ...draftItem, itemId: "" });
@@ -270,7 +270,7 @@ export default function PurchaseRequestEditor() {
   if (loading) return <div className="p-8 flex justify-center"><Loader2 className="animate-spin text-blue-500" /></div>;
 
   return (
-    <div className="flex flex-col overflow-hidden print:block print:!h-auto print:!overflow-visible" style={{ height: 'calc(var(--full-vh) - 152px)' }}>
+    <div className="flex flex-col overflow-hidden print:block print:!h-auto print:!overflow-visible" style={{ height: 'calc(var(--full-vh) - 189px)' }}>
       {/* Header (No Print) */}
       <div className="no-print flex items-center justify-between p-4 bg-white border-b border-slate-200 shadow-sm z-10">
         <div className="flex items-center gap-3">
@@ -285,9 +285,14 @@ export default function PurchaseRequestEditor() {
         </div>
         <div className="flex gap-2">
           {!isNew && (
-            <button onClick={handlePrint} className="btn btn-secondary">
-              <Printer size={16} /> Print
-            </button>
+            <>
+              <Link href={`/procurement-folders/${params.id}`} className="btn btn-secondary flex items-center gap-2">
+                <FolderOpen size={16} /> Folder
+              </Link>
+              <button onClick={handlePrint} className="btn btn-secondary">
+                <Printer size={16} /> Print
+              </button>
+            </>
           )}
           {!isViewMode && !isNew && (
             <button type="button" onClick={() => setIsUnlocked(!isUnlocked)} className={`btn ${isUnlocked ? 'btn-secondary' : 'btn-primary'}`}>
@@ -318,7 +323,7 @@ export default function PurchaseRequestEditor() {
         <div className="flex-1 overflow-auto bg-slate-200 print:p-0 print:bg-white print:block print:!overflow-visible print:!h-auto">
 
           <div className="p-8 print:p-0 w-max mx-auto min-w-full flex justify-center origin-top print:block print:w-full print:min-w-0 print:!transform-none print:!mb-0" style={{ transform: `scale(${zoom})`, marginBottom: `${(zoom - 1) * 1123}px` }}>
-            <div className="print-area text-black w-[980px] bg-white shadow-xl min-h-[1123px] p-10 print:shadow-none print:w-full print:max-w-none print:p-8 print:m-0 print:min-h-0">
+            <div className="print-area text-black w-[900px] bg-white shadow-xl min-h-[1123px] p-10 print:shadow-none print:w-full print:max-w-none print:p-8 print:m-0 print:min-h-0">
               {/* PR Standard Form Layout */}
               <div className="text-right font-bold text-lg mb-2">Annex 30</div>
 

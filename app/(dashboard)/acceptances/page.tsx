@@ -108,6 +108,7 @@ export default function AcceptancesPage() {
       key: "createdAt",
       label: "Date Created",
       align: "center",
+      sortable: true,
       render: (row: Acceptance) => (
         <span style={{ fontSize: "0.8125rem", color: "#64748b", display: "block" }}>
           {new Date(row.createdAt).toLocaleDateString("en-PH")}
@@ -138,6 +139,7 @@ export default function AcceptancesPage() {
           { label: "Partial", value: "PARTIAL" },
           { label: "Completed", value: "COMPLETED" },
         ]}
+        dateFilterKey="createdAt"
       />
       {showModal && (
         <FormModal

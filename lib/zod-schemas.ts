@@ -18,7 +18,7 @@ export const purchaseRequestSchema = z.object({
 });
 
 export const purchaseRequestStatusUpdateSchema = z.object({
-  status: z.enum(["DRAFT", "SUBMITTED", "APPROVED", "FOR_RFQ", "CLOSED", "REJECTED"]),
+  status: z.enum(["DRAFT", "SUBMITTED", "APPROVED", "COMPLETED", "REJECTED"]),
 });
 
 export const userCreateSchema = z.object({

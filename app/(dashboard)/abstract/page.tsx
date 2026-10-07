@@ -94,6 +94,7 @@ export default function AOQPage() {
       key: "createdAt",
       label: "Date",
       align: "center",
+      sortable: true,
       render: (row: AOQ) => (
         <span style={{ fontSize: "0.8125rem", color: "#64748b" }}>
           {new Date(row.createdAt).toLocaleDateString("en-PH")}
@@ -144,6 +145,7 @@ export default function AOQPage() {
           { label: "Issued", value: "ISSUED" },
           { label: "Signed", value: "SIGNED" },
         ]}
+        dateFilterKey="createdAt"
       />
     </div>
   );

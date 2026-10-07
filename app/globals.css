@@ -24,14 +24,17 @@
   --color-sidebar-hover: #373f50;
   --color-sidebar-active: #1d4ed8;
 
-  --color-card-bg: #ECF0F3;
-  --color-page-bg: #ECF0F3;
+  --color-card-bg: #e8edf4;
+  --color-page-bg: #e8edf4;
 
-  --shadow-neu-drop: 18px 18px 30px #D1D9E6, -18px -18px 30px #ffffff;
-  --shadow-neu-inner: inset 18px 18px 30px #D1D9E6, inset -18px -18px 30px #ffffff;
-  --shadow-neu-drop-sm: 8px 8px 16px #D1D9E6, -8px -8px 16px #ffffff;
-  --shadow-neu-inner-sm: inset 8px 8px 16px #D1D9E6, inset -8px -8px 16px #ffffff;
-  --shadow-neu-drop-hover: 12px 12px 24px #D1D9E6, -12px -12px 24px #ffffff;
+  --sh-d: #c3ccdb;
+  --sh-l: #fbfdff;
+
+  --shadow-neu-drop: 6px 6px 14px var(--sh-d), -6px -6px 14px var(--sh-l);
+  --shadow-neu-inner: inset 3px 3px 7px var(--sh-d), inset -3px -3px 7px var(--sh-l);
+  --shadow-neu-drop-sm: 4px 4px 9px var(--sh-d), -4px -4px 9px var(--sh-l);
+  --shadow-neu-inner-sm: inset 3px 3px 6px var(--sh-d), inset -3px -3px 6px var(--sh-l);
+  --shadow-neu-drop-hover: 5px 5px 12px var(--sh-d), -5px -5px 12px var(--sh-l);
 
   --system-zoom: 0.8;
   --full-vh: calc(100vh / var(--system-zoom));
@@ -208,9 +211,15 @@
 .card {
   background: var(--color-page-bg);
   border: none;
-  border-radius: 1.25rem;
+  border-radius: 16px;
   padding: 1.5rem;
   box-shadow: var(--shadow-neu-drop);
+}
+
+.inset {
+  border-radius: 12px;
+  box-shadow: inset 3px 3px 7px var(--sh-d), inset -3px -3px 7px var(--sh-l);
+  background: var(--color-page-bg);
 }
 
 .stat-card {
@@ -442,6 +451,7 @@ tbody td {
   letter-spacing: 0;
   text-transform: capitalize;
   border: none;
+  box-shadow: inset 3px 3px 6px rgba(163, 177, 198, 0.5), inset -3px -3px 6px rgba(255, 255, 255, 0.9);
 }
 
 /* ─── Modal / Dialog ───────────────────────────────────────────────────────── */

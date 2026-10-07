@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { FileText, Printer, Eye, CheckCircle2, XCircle, Clock, Send } from "lucide-react";
+import { FileText, Printer, Eye, CheckCircle2, XCircle, Clock, Send, FolderOpen } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import DataTable from "@/components/ui/data-table";
 import { formatCurrency, PR_STATUS_LABELS } from "@/lib/utils";
 
@@ -69,6 +70,7 @@ export default function PurchaseRequestsPage() {
       key: "totalAmount",
       label: "Total Amount",
       align: "center",
+      sortable: true,
       render: (row: PR) => (
         <div style={{ fontWeight: "700", color: "#059669" }}>
           {formatCurrency(row.totalAmount)}
@@ -81,6 +83,7 @@ export default function PurchaseRequestsPage() {
       key: "createdAt",
       label: "Date",
       align: "center",
+      sortable: true,
       render: (row: PR) => (
         <span style={{ fontSize: "0.8125rem", color: "#64748b", display: "block" }}>
           {new Date(row.createdAt).toLocaleDateString("en-PH")}
@@ -124,8 +127,16 @@ export default function PurchaseRequestsPage() {
         onEdit={handleEdit}
         onDuplicate={handleDuplicate}
         onDelete={handleDelete}
+        customActions={[
+          {
+            label: "Open Folder",
+            icon: <FolderOpen size={16} />,
+            onClick: (row) => router.push(`/procurement-folders/${row.id}`)
+          }
+        ]}
         emptyIcon={<FileText size={40} style={{ opacity: 0.3 }} />}
         emptyText="No Purchase Requests found"
+        dateFilterKey="createdAt"
       />
     </div>
   );

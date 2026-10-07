@@ -66,6 +66,7 @@ export default function PurchaseOrdersPage() {
     {
       key: "totalAmount",
       label: "Amount",
+      sortable: true,
       render: (row: PO) => (
         <div style={{ fontWeight: "700", color: "#059669" }}>
           {formatCurrency(row.totalAmount)}
@@ -91,6 +92,7 @@ export default function PurchaseOrdersPage() {
       key: "createdAt",
       label: "Date",
       align: "center",
+      sortable: true,
       render: (row: PO) => (
         <span style={{ fontSize: "0.8125rem", color: "#64748b" }}>
           {new Date(row.createdAt).toLocaleDateString("en-PH")}
@@ -138,6 +140,7 @@ export default function PurchaseOrdersPage() {
           { label: "Completed", value: "COMPLETED" },
           { label: "Cancelled", value: "CANCELLED" },
         ]}
+        dateFilterKey="createdAt"
       />
     </div>
   );

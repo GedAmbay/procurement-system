@@ -256,7 +256,7 @@ export default function DashboardClient({ data, user }: DashboardClientProps) {
                 {data.recentPRs.map((pr) => (
                   <tr key={pr.id}>
                     <td>
-                      <Link href={`/purchase-requests/${pr.id}`} style={{ color: "#2563eb", fontWeight: "600", textDecoration: "none", fontSize: "0.875rem" }}>
+                      <Link href={`/procurement-folders/${pr.id}`} style={{ color: "#2563eb", fontWeight: "600", textDecoration: "none", fontSize: "0.875rem" }}>
                         {pr.prNumber}
                       </Link>
                     </td>
