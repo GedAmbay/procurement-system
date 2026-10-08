@@ -1,4 +1,5 @@
 "use client";
+import LoaderWave from "@/components/ui/loader-wave";
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -104,7 +105,7 @@ export default function RfqLivePreviewPage() {
     }
   };
 
-  if (loading) return <div className="p-8 flex justify-center"><Loader2 className="animate-spin text-blue-500" /></div>;
+  if (loading) return <LoaderWave variant="page" label="Loading RFQ..." />;
   if (!rfq) return <div>Error loading data</div>;
 
   const isReadOnly = rfq.status !== "DRAFT" && !isUnlocked;

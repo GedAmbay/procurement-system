@@ -128,10 +128,16 @@
   font-weight: 600;
   color: #94a3b8;
   cursor: pointer;
-  transition: color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  /* Deactivating is instant (no background transition) so the curved
+     corners never linger at the shrunken edge as stray triangles. */
+  transition:
+    color 0.2s ease,
+    box-shadow 0.2s ease;
   text-decoration: none;
   margin-bottom: 0.75rem;
   background: #0f172a;
+  white-space: nowrap;
+  position: relative;
 }
 
 .sidebar-nav-item:hover {
@@ -146,36 +152,126 @@
   margin-right: -1.25rem;
   padding-right: 1.25rem;
   box-shadow: none;
-  position: relative;
   z-index: 50;
+  /* Activating fades in — same duration/easing as the corners below
+     so tab and corners blend in as one shape. */
+  transition:
+    color 0.3s ease,
+    background-color 0.3s ease;
 }
 
-.sidebar-nav-item.active::before {
+.sidebar-nav-item::before,
+.sidebar-nav-item::after {
   content: "";
   position: absolute;
   right: -1px;
+  width: 21px;
+  height: 21px;
+  opacity: 0;
+  pointer-events: none;
+  transition: none;
+}
+
+.sidebar-nav-item::before {
   top: -20px;
-  width: 21px;
-  height: 21px;
   background: radial-gradient(circle at top left, transparent 20px, var(--color-page-bg) 20.5px);
-  pointer-events: none;
 }
 
-.sidebar-nav-item.active::after {
-  content: "";
-  position: absolute;
-  right: -1px;
+.sidebar-nav-item::after {
   bottom: -20px;
-  width: 21px;
-  height: 21px;
   background: radial-gradient(circle at bottom left, transparent 20px, var(--color-page-bg) 20.5px);
-  pointer-events: none;
+}
+
+.sidebar-nav-item.active::before,
+.sidebar-nav-item.active::after {
+  opacity: 1;
+  transition: opacity 0.3s ease;
 }
 
 .sidebar-nav-item .icon {
   width: 1.125rem;
   height: 1.125rem;
   flex-shrink: 0;
+}
+
+.sidebar-nav-chevron {
+  flex-shrink: 0;
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity 0.3s ease, transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-nav-item.active .sidebar-nav-chevron {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* ─── Sidebar Sub-menu (accordion) ─────────────────────────────────────────── */
+.sidebar-submenu {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transform: translateY(-4px);
+  margin-top: 0;
+  margin-bottom: 0;
+  transition:
+    grid-template-rows 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.3s ease,
+    transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    margin 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-submenu.open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transform: translateY(0);
+  margin-top: 0.25rem;
+  margin-bottom: 0.5rem;
+  transition-delay: 0s, 0.08s, 0s, 0s;
+}
+
+.sidebar-submenu-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.sidebar-submenu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-left: 2.25rem;
+  padding-left: 1rem;
+  border-left: 2px solid rgba(51, 65, 85, 0.5);
+}
+
+.sidebar-submenu-link {
+  font-size: 0.8125rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
+  color: #94a3b8;
+  text-decoration: none;
+  transition: color 0.25s ease, background-color 0.25s ease, transform 0.25s ease;
+}
+
+.sidebar-submenu-link:hover {
+  color: #e2e8f0;
+  background-color: rgba(30, 41, 59, 0.5);
+  transform: translateX(2px);
+}
+
+.sidebar-submenu-link.active {
+  color: #fff;
+  font-weight: 500;
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-nav-item,
+  .sidebar-nav-chevron,
+  .sidebar-submenu,
+  .sidebar-submenu-link {
+    transition: none;
+  }
 }
 
 /* ─── Main Content ─────────────────────────────────────────────────────────── */
@@ -665,4 +761,63 @@ tbody td {
   * {
     color: black !important;
   }
+}
+
+/* ─── Loader Wave (neumorphic press wave) ──────────────────────────────────── */
+.loader-wave-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  padding: 3rem 1rem;
+  animation: loaderFadeIn 0.3s ease both;
+}
+
+.loader-wave-page {
+  min-height: 60vh;
+}
+
+.loader-wave {
+  --loader-size: 20px;
+  display: flex;
+  gap: calc(var(--loader-size) * 0.75);
+}
+
+.loader-wave span {
+  width: var(--loader-size);
+  height: var(--loader-size);
+  border-radius: 50%;
+  background: var(--color-page-bg);
+  animation: pressWave 1.2s ease-in-out infinite;
+}
+
+.loader-wave span:nth-child(1) { animation-delay: 0s; }
+.loader-wave span:nth-child(2) { animation-delay: 0.2s; }
+.loader-wave span:nth-child(3) { animation-delay: 0.4s; }
+
+.loader-wave-label {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #94a3b8;
+}
+
+@keyframes pressWave {
+  0%, 100% {
+    box-shadow: 4px 4px 8px var(--sh-d), -4px -4px 8px var(--sh-l);
+  }
+  50% {
+    box-shadow: inset 4px 4px 8px var(--sh-d), inset -4px -4px 8px var(--sh-l);
+  }
+}
+
+@keyframes loaderFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media print {
+  .loader-wave-wrap { display: none !important; }
 }

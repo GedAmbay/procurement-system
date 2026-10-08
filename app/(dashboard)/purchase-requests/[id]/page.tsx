@@ -1,4 +1,5 @@
 "use client";
+import LoaderWave from "@/components/ui/loader-wave";
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
@@ -267,7 +268,7 @@ export default function PurchaseRequestEditor() {
 
   const isReadOnly = isViewMode || (!isNew && !isUnlocked);
 
-  if (loading) return <div className="p-8 flex justify-center"><Loader2 className="animate-spin text-blue-500" /></div>;
+  if (loading) return <LoaderWave variant="page" label="Loading purchase request..." />;
 
   return (
     <div className="flex flex-col overflow-hidden print:block print:!h-auto print:!overflow-visible" style={{ height: 'calc(var(--full-vh) - 173px)' }}>

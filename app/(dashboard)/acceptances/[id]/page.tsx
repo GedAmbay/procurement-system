@@ -1,4 +1,5 @@
 "use client";
+import LoaderWave from "@/components/ui/loader-wave";
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -123,7 +124,7 @@ export default function AcceptanceEditor() {
     }
   };
 
-  if (loading) return <div className="p-8 flex justify-center"><Loader2 className="animate-spin text-blue-500" /></div>;
+  if (loading) return <LoaderWave variant="page" label="Loading acceptance..." />;
   if (!acceptance) return <div className="p-8 text-center text-slate-500">Report not found</div>;
 
   const isReadOnly = acceptance.status !== "DRAFT" && !isUnlocked;

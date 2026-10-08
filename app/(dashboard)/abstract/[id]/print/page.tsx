@@ -1,4 +1,5 @@
 "use client";
+import LoaderWave from "@/components/ui/loader-wave";
 
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -125,11 +126,7 @@ export default function AbstractLivePreviewPage() {
     }
   };
 
-  if (loading) return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "calc(100vh - 80px)" }}>
-      <Loader2 size={28} style={{ animation: "spin 1s linear infinite", color: "#2563eb" }} />
-    </div>
-  );
+  if (loading) return <LoaderWave variant="page" label="Preparing document..." />;
   if (!data) return <div style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>Abstract not found</div>;
 
   const rfq = data.rfq;

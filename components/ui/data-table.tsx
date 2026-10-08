@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Search, Plus, Pencil, Trash2, CheckCircle, XCircle, Loader2, RefreshCw, Eye, Copy, X, Calendar } from "lucide-react";
+import LoaderWave from "@/components/ui/loader-wave";
 import { toast } from "sonner";
 
 interface Column<T> {
@@ -315,10 +316,7 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
       {/* Table */}
       <div className="table-container">
         {loading ? (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "3rem", gap: "0.75rem", color: "#94a3b8" }}>
-            <Loader2 size={20} style={{ animation: "spin 1s linear infinite" }} />
-            Loading...
-          </div>
+          <LoaderWave />
         ) : filteredData.length === 0 ? (
           <div className="empty-state">
             {emptyIcon ?? <Search size={40} style={{ opacity: 0.3 }} />}

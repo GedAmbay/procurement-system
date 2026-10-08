@@ -1,4 +1,5 @@
 "use client";
+import LoaderWave from "@/components/ui/loader-wave";
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -50,11 +51,7 @@ export default function AcceptancesHub() {
     }
   };
 
-  if (loading) return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
-      <Loader2 size={28} style={{ animation: "spin 1s linear infinite", color: "#2563eb" }} />
-    </div>
-  );
+  if (loading) return <LoaderWave variant="page" label="Loading acceptance hub..." />;
   if (!po) return <div style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>PO not found</div>;
 
   const acceptances = po.acceptances || [];

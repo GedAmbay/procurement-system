@@ -30,11 +30,20 @@ const navItems = [
     items: [
       { label: "Purchase Requests", href: "/purchase-requests", icon: ShoppingCart, roles: [] },
       { label: "Requests for Quotation", href: "/rfqs", icon: FileText, roles: [] },
-      { label: "Abstract", href: "/abstract", icon: ClipboardList, roles: [] },
+      { 
+        label: "Abstract", href: "/abstract", icon: ClipboardList, roles: [],
+        subItems: [{ label: "Abstract Hub", href: "/abstract" }]
+      },
       { label: "Purchase Orders", href: "/purchase-orders", icon: Package, roles: [] },
-      { label: "Acceptance", href: "/acceptances", icon: CheckSquare, roles: [] },
+      { 
+        label: "Acceptance", href: "/acceptances", icon: CheckSquare, roles: [],
+        subItems: [{ label: "Acceptance Hub", href: "/acceptances" }]
+      },
       { label: "Requisition & Issue", href: "/ris", icon: ClipboardCheck, roles: [] },
-      { label: "Archives", href: "/archives", icon: Archive, roles: [] },
+      { 
+        label: "Archives", href: "/archives", icon: Archive, roles: [],
+        subItems: [{ label: "Archives Hub", href: "/archives" }]
+      },
     ],
   },
   {
@@ -100,19 +109,47 @@ export default function Sidebar({ user }: SidebarProps) {
           return (
             <div key={section.section} className="sidebar-nav-section">
               <div className="sidebar-nav-label">{section.section}</div>
-              {visibleItems.map((item) => {
+              {visibleItems.map((item: any) => {
                 const Icon = item.icon;
-                const active = isActive(item.href);
+                const active = isActive(item.href) || item.subItems?.some((sub: any) => isActive(sub.href));
+                const expanded = active; // ONLY expand if the section is currently active
+
                 return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`sidebar-nav-item ${active ? "active" : ""}`}
-                  >
-                    <Icon className="icon" />
-                    <span style={{ flex: 1 }}>{item.label}</span>
-                    {active && <ChevronRight size={14} />}
-                  </Link>
+                  <div key={item.label} className="mb-3">
+                    <Link
+                      href={item.href}
+                      className={`sidebar-nav-item ${active ? "active" : ""}`}
+                      style={{ marginBottom: (item.subItems && expanded) ? '0.25rem' : '0.75rem' }}
+                    >
+                      <Icon className="icon" />
+                      <span style={{ flex: 1 }}>{item.label}</span>
+                      <ChevronRight size={14} className="sidebar-nav-chevron" />
+                    </Link>
+                    
+                    {item.subItems && (
+                      <div
+                        className={`sidebar-submenu ${expanded ? "open" : ""}`}
+                        aria-hidden={!expanded}
+                      >
+                        <div className="sidebar-submenu-inner">
+                          <div className="sidebar-submenu-list">
+                            {item.subItems.map((sub: any) => (
+                              <Link 
+                                key={sub.href} 
+                                href={sub.href}
+                                tabIndex={expanded ? 0 : -1}
+                                className={`sidebar-submenu-link ${
+                                  pathname === sub.href || pathname.startsWith(sub.href + "/") ? "active" : ""
+                                }`}
+                              >
+                                {sub.label}
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>

@@ -1,4 +1,5 @@
 "use client";
+import LoaderWave from "@/components/ui/loader-wave";
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -137,7 +138,7 @@ export default function PurchaseOrderEditor() {
     }
   };
 
-  if (loading) return <div className="p-8 flex justify-center"><Loader2 className="animate-spin text-blue-500" /></div>;
+  if (loading) return <LoaderWave variant="page" label="Loading purchase order..." />;
   if (!poData) return <div className="p-8 text-center text-slate-500">PO not found</div>;
 
   const isReadOnly = poData.status === "COMPLETED";
@@ -149,7 +150,7 @@ export default function PurchaseOrderEditor() {
   const acceptances = poData.acceptances || [];
 
   return (
-    <div className="flex flex-col overflow-hidden print:block print:!h-auto print:!overflow-visible" style={{ height: 'calc(var(--full-vh) - 152px)' }}>
+    <div className="flex flex-col overflow-hidden print:block print:!h-auto print:!overflow-visible" style={{ height: 'calc(var(--full-vh) - 173px)' }}>
       {/* Header */}
       <div className="no-print flex items-center justify-between p-4 bg-white border-b border-slate-200 shadow-sm z-10">
         <div className="flex items-center gap-3">
@@ -157,8 +158,7 @@ export default function PurchaseOrderEditor() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-lg font-bold text-slate-800">PO: {poData.poNumber}</h1>
-            <p className="text-xs text-slate-500 font-medium">{poData.status}</p>
+            <h1 className="text-lg font-bold text-slate-800">Live Preview</h1>
           </div>
         </div>
         <div className="flex gap-2">
