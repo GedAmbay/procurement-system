@@ -14,7 +14,7 @@ export default function AbstractLivePreviewPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(false);
-  const [zoom, setZoom] = useState(0.75);
+  const [zoom, setZoom] = useState(0.65);
   const [targetRows, setTargetRows] = useState(15);
 
   // Editable form state
@@ -174,7 +174,7 @@ export default function AbstractLivePreviewPage() {
   const isReadOnly = data.status !== "DRAFT" && !isUnlocked;
 
   return (
-    <div className="flex flex-col overflow-hidden print:block print:!h-auto print:!overflow-visible" style={{ height: 'calc(var(--full-vh) - 189px)' }}>
+    <div className="flex flex-col overflow-hidden print:block print:!h-auto print:!overflow-visible" style={{ height: 'calc(var(--full-vh) - 173px)' }}>
 
       {/* ─── Header Bar ─── */}
       <div className="no-print" style={{
@@ -195,8 +195,7 @@ export default function AbstractLivePreviewPage() {
             <ArrowLeft size={16} />
           </Link>
           <div>
-            <div style={{ fontWeight: "700", fontSize: "0.9375rem", color: "#0f172a" }}>Live Preview</div>
-            <div style={{ fontSize: "0.75rem", color: "#64748b" }}>{data.aoqNumber}</div>
+            <h1 style={{ fontWeight: "700", color: "#0f172a" }}>Live Preview</h1>
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
@@ -322,6 +321,19 @@ export default function AbstractLivePreviewPage() {
                         {lineItems.map((item: any, idx: number) => {
                           const isRec = recommendedQuote !== undefined;
                           const hasBreak = pageBreaks.includes(idx);
+                          
+                          const isSpec = !item.quantity || item.quantity === 0;
+                          let displayNo = "";
+                          if (!isSpec) {
+                            let count = 0;
+                            for (let i = 0; i <= idx; i++) {
+                              if (Number(lineItems[i].quantity) > 0) count++;
+                            }
+                            displayNo = count.toString();
+                          }
+
+                          const hasSpecs = !isSpec && idx + 1 < lineItems.length && (!lineItems[idx + 1].quantity || lineItems[idx + 1].quantity === 0);
+
                           return (
                             <tr key={item.id} className={`group ${hasBreak ? 'break-before-page' : ''}`} style={hasBreak ? { pageBreakBefore: 'always', breakBefore: 'page' } : {}}>
                               <td style={{ ...cell, textAlign: "center", fontWeight: "700", verticalAlign: "top", position: "relative" }}>
@@ -333,21 +345,20 @@ export default function AbstractLivePreviewPage() {
                                 {hasBreak && (
                                   <div className="absolute top-0 left-0 w-[1168px] h-0 border-t-[3px] border-dashed border-red-400 z-40 no-print" style={{ pointerEvents: 'none' }}></div>
                                 )}
-                                {idx + 1}
+                                {displayNo}
                               </td>
-                              <td style={{ ...cell }}>{item.description}</td>
-                              <td style={{ ...cell, textAlign: "center" }}>{item.quantity}</td>
-                              <td style={{ ...cell, textAlign: "center" }}>{item.unit}</td>
+                              <td style={{ ...cell, fontWeight: isSpec ? "normal" : (hasSpecs ? "bold" : "normal"), paddingLeft: isSpec ? "1.5rem" : "0.5rem" }}>{item.description}</td>
+                              <td style={{ ...cell, textAlign: "center" }}>{isSpec ? "" : item.quantity}</td>
+                              <td style={{ ...cell, textAlign: "center" }}>{isSpec ? "" : item.unit}</td>
                               {displayQuotes.map((q: any, qi: number) => {
                                 const prices = q ? getItemPrice(q, item.id) : { unitPrice: 0, totalPrice: 0 };
-                                const isWinner = q && recommendedQuote && q.id === recommendedQuote.id;
                                 return (
                                   <React.Fragment key={qi}>
                                     <td key={`up-${qi}`} style={{ ...cell, textAlign: "right" }}>
-                                      {fmt2(prices.unitPrice)}
+                                      {isSpec ? "" : fmt2(prices.unitPrice)}
                                     </td>
                                     <td key={`tp-${qi}`} style={{ ...cell, textAlign: "right" }}>
-                                      {fmt2(prices.totalPrice)}
+                                      {isSpec ? "" : fmt2(prices.totalPrice)}
                                     </td>
                                   </React.Fragment>
                                 );
@@ -568,11 +579,6 @@ export default function AbstractLivePreviewPage() {
                 <div style={{ marginBottom: "0.75rem" }}>
                   <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: "600", color: "#475569", marginBottom: "0.375rem" }}>Officer Name</label>
                   <input type="text" value={reqOfficerName} onChange={e => setReqOfficerName(e.target.value)} className="form-input" style={{ width: "100%" }} placeholder="e.g. Juan Dela Cruz" />
-                </div>
-
-                <div style={{ marginBottom: "1rem" }}>
-                  <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: "600", color: "#475569", marginBottom: "0.375rem" }}>Office Name</label>
-                  <input type="text" value={reqOfficerOffice} onChange={e => setReqOfficerOffice(e.target.value)} className="form-input" style={{ width: "100%" }} placeholder="e.g. Municipal Health Office" />
                 </div>
               </section>
             )}

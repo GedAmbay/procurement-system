@@ -40,7 +40,7 @@ export default function PurchaseRequestEditor() {
   const [prData, setPrData] = useState<any>(null);
   const [zoom, setZoom] = useState(1);
   const [isUnlocked, setIsUnlocked] = useState(false);
-  const [targetRows, setTargetRows] = useState(15);
+  const [targetRows, setTargetRows] = useState(21);
 
   // Options
   const [offices, setOffices] = useState<any[]>([]);
@@ -270,7 +270,7 @@ export default function PurchaseRequestEditor() {
   if (loading) return <div className="p-8 flex justify-center"><Loader2 className="animate-spin text-blue-500" /></div>;
 
   return (
-    <div className="flex flex-col overflow-hidden print:block print:!h-auto print:!overflow-visible" style={{ height: 'calc(var(--full-vh) - 189px)' }}>
+    <div className="flex flex-col overflow-hidden print:block print:!h-auto print:!overflow-visible" style={{ height: 'calc(var(--full-vh) - 173px)' }}>
       {/* Header (No Print) */}
       <div className="no-print flex items-center justify-between p-4 bg-white border-b border-slate-200 shadow-sm z-10">
         <div className="flex items-center gap-3">
@@ -377,12 +377,14 @@ export default function PurchaseRequestEditor() {
                         displayNo = count.toString();
                       }
 
+                      const hasSpecs = !isSpec && idx + 1 < watchLineItems.length && (!watchLineItems[idx + 1].quantity || watchLineItems[idx + 1].quantity === 0);
+
                       return (
                         <tr key={idx} onClick={() => handleRowClick(idx)} className={`h-6 ${!isReadOnly ? `cursor-pointer transition-colors ${activeItemIndex === idx ? "bg-blue-100 hover:bg-blue-200" : "hover:bg-blue-50"}` : ""}`}>
                           <td className="border border-black border-l-0 p-0 leading-tight text-center align-top">{displayNo}</td>
                           <td className="border border-black p-0 leading-tight text-center align-top">{isSpec ? "" : item.quantity}</td>
                           <td className="border border-black p-0 leading-tight text-center align-top">{isSpec ? "" : item.unit}</td>
-                          <td className={`border border-black p-0 px-1 leading-tight whitespace-normal break-words align-top ${isSpec ? "pl-4 text-sm" : "font-bold"}`}>{item.description}</td>
+                          <td className={`border border-black p-0 px-1 leading-tight whitespace-normal break-words align-top ${isSpec ? "pl-4 text-sm" : (hasSpecs ? "font-bold" : "")}`}>{item.description}</td>
                           <td className="border border-black p-0 leading-tight text-right align-top pr-1">{isSpec ? "" : (item.unitCost ? formatCurrency(item.unitCost).replace('₱', '') : '0.00')}</td>
                           <td className="border border-black border-r-0 p-0 leading-tight text-right align-top pr-1">{isSpec ? "" : ((item.quantity && item.unitCost) ? formatCurrency(item.quantity * item.unitCost).replace('₱', '') : '0.00')}</td>
                         </tr>
@@ -566,7 +568,7 @@ export default function PurchaseRequestEditor() {
 
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
                         <div>
-                          <label className="form-label">Unit</label>
+                          <label className="form-label">Unit of Issue</label>
                           <input
                             value={draftItem.unit}
                             onChange={(e) => setDraftItem({ ...draftItem, unit: e.target.value })}
@@ -575,7 +577,7 @@ export default function PurchaseRequestEditor() {
                         </div>
 
                         <div>
-                          <label className="form-label">Qty</label>
+                          <label className="form-label">Quantity</label>
                           <input
                             type="number"
                             step="1"

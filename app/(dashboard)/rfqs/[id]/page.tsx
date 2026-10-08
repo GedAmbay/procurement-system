@@ -110,7 +110,7 @@ export default function RfqLivePreviewPage() {
   const isReadOnly = rfq.status !== "DRAFT" && !isUnlocked;
 
   return (
-    <div className="flex flex-col overflow-hidden print:block print:!h-auto print:!overflow-visible" style={{ height: 'calc(var(--full-vh) - 189px)' }}>
+    <div className="flex flex-col overflow-hidden print:block print:!h-auto print:!overflow-visible" style={{ height: 'calc(var(--full-vh) - 173px)' }}>
       {/* Header */}
       <div className="no-print flex items-center justify-between p-4 bg-white border-b border-slate-200 shadow-sm z-10">
         <div className="flex items-center gap-3">
@@ -207,7 +207,7 @@ export default function RfqLivePreviewPage() {
               <div className="flex justify-end mb-6 text-center">
                 <div className="w-[250px]">
                   <div className="font-bold px-4 text-[16px] uppercase">{rfq.signatory?.name || "JEFFY S. CANGAYDA"}</div>
-                  <div>BAC Chairman</div>
+                  <div className="text-[13px]">BAC Chairman</div>
                 </div>
               </div>
 
@@ -254,13 +254,15 @@ export default function RfqLivePreviewPage() {
                       displayNo = count.toString();
                     }
 
+                    const hasSpecs = !isSpec && idx + 1 < rfq.lineItems.length && (!rfq.lineItems[idx + 1].quantity || rfq.lineItems[idx + 1].quantity === 0);
+
                     return (
                       <tr key={idx} className="h-8">
-                        <td className="border-x-[3px] border-black px-1 py-2 text-center align-top">{displayNo}</td>
-                        <td className="border-x-[3px] border-black px-2 py-2 align-top font-bold">{item.description}</td>
-                        <td className="border-x-[3px] border-black px-1 py-2 text-center align-top">{isSpec ? "" : item.quantity}</td>
-                        <td className="border-x-[3px] border-black px-1 py-2 text-center align-top">{isSpec ? "" : item.unit}</td>
-                        <td className="border-x-[3px] border-black px-2 py-2 align-top">
+                        <td className="border-x-[3px] border-black p-1 text-center align-top">{displayNo}</td>
+                        <td className={`border-x-[3px] border-black p-1 align-top ${isSpec ? "pl-4 text-[13px]" : (hasSpecs ? "font-bold" : "")}`}>{item.description}</td>
+                        <td className="border-x-[3px] border-black p-1 text-center align-top">{isSpec ? "" : item.quantity}</td>
+                        <td className="border-x-[3px] border-black p-1 text-center align-top">{isSpec ? "" : item.unit}</td>
+                        <td className="border-x-[3px] border-black p-1 text-center align-top">
                           {!isSpec && (
                             <div className="flex items-end">
                               <span className="mr-1">P</span>
@@ -268,7 +270,7 @@ export default function RfqLivePreviewPage() {
                             </div>
                           )}
                         </td>
-                        <td className="border-x-[3px] border-black px-2 py-2 align-top">
+                        <td className="border-x-[3px] border-black p-1 align-top">
                           {!isSpec && (
                             <div className="flex items-end">
                               <span className="mr-1">P</span>

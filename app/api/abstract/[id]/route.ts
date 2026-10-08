@@ -78,7 +78,7 @@ export async function PATCH(
     if (status === "APPROVED") {
       const aoqToApprove = await prisma.abstractOfQuotation.findUnique({
         where: { id },
-        include: { rfq: { include: { quotations: true } } }
+        include: { rfq: { include: { quotations: { include: { lineItems: true } } } } }
       });
       
       if (aoqToApprove && aoqToApprove.rfq.quotations.length > 0) {
@@ -86,10 +86,33 @@ export async function PATCH(
         if (validBids.length > 0) {
           const lowestBid = validBids.reduce((prev: any, current: any) => (prev.totalAmount < current.totalAmount) ? prev : current);
           
-          await prisma.purchaseOrder.updateMany({
+          const po = await prisma.purchaseOrder.findFirst({
             where: { aoqId: id },
-            data: { supplierId: lowestBid.supplierId }
+            include: { lineItems: true }
           });
+          
+          if (po) {
+            await prisma.purchaseOrder.update({
+              where: { id: po.id },
+              data: { 
+                supplierId: lowestBid.supplierId,
+                totalAmount: lowestBid.totalAmount 
+              }
+            });
+
+            for (const poLine of po.lineItems) {
+              const quoteLine = lowestBid.lineItems.find((qli: any) => qli.sortOrder === poLine.sortOrder);
+              if (quoteLine) {
+                await prisma.poLineItem.update({
+                  where: { id: poLine.id },
+                  data: {
+                    unitPrice: quoteLine.unitPrice,
+                    totalPrice: quoteLine.totalPrice
+                  }
+                });
+              }
+            }
+          }
         }
       }
     }

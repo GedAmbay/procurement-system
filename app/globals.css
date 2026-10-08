@@ -204,7 +204,7 @@
 
 .page-content {
   flex: 1;
-  padding: 2rem;
+  padding: 1.5rem 2rem;
 }
 
 /* ─── Cards ────────────────────────────────────────────────────────────────── */
@@ -377,7 +377,7 @@ thead {
 
 thead th {
   padding: 5px;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: #000000;
   font-family: "Times New Roman", Times, serif;

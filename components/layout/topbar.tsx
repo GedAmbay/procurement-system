@@ -30,6 +30,7 @@ const pageTitles: Record<string, string> = {
   "/audit-log": "Audit Trail",
   "/reports": "Reports",
   "/acceptances": "Acceptance and Inspection",
+  "/archives": "Archives",
 };
 
 export default function Topbar({ user }: TopbarProps) {

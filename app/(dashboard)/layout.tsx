@@ -19,7 +19,7 @@ export default async function DashboardLayout({
       <div className="main-content" style={{ flex: 1 }}>
         <Topbar user={session.user as any} />
         <main className="page-content" style={{ display: "flex", flexDirection: "column" }}>
-          <div style={{ padding: "0 1rem" }}>
+          <div>
             <Breadcrumb />
           </div>
           {children}

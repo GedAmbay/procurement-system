@@ -60,7 +60,7 @@ export default function Breadcrumb() {
   }
 
   return (
-    <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginBottom: "1rem", fontSize: "0.875rem", fontWeight: 600 }}>
+    <div className="print:hidden flex items-center gap-2 mb-4 text-sm font-semibold">
       {crumbs.map((crumb, index, arr) => (
         <div key={index} style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           <Link 

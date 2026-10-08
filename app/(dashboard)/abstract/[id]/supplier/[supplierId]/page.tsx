@@ -127,7 +127,7 @@ export default function SupplierEncodingPage() {
   const isOverBudget = totalAmount > abc && abc > 0;
 
   return (
-    <div style={{ width: "100%", maxWidth: "100%", margin: "0 auto", padding: "2rem" }}>
+    <div style={{ width: "100%", maxWidth: "100%", margin: "0 auto", padding: "0.5rem" }}>
 
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "2rem", flexWrap: "wrap" }}>
@@ -159,7 +159,7 @@ export default function SupplierEncodingPage() {
                 {supplier.name}
               </h1>
               <div style={{ fontSize: "0.8125rem", color: "#64748b" }}>
-                RFQ {rfq.rfqNumber} &nbsp;&middot;&nbsp; {rfq.pr?.office?.name}
+                {supplier.address}
               </div>
             </div>
           </div>
@@ -241,17 +241,32 @@ export default function SupplierEncodingPage() {
             <tbody>
               {fields.map((field, idx) => {
                 const qty = Number(watchLineItems[idx]?.quantity || 0);
+                const isSpec = qty === 0;
+
+                let displayNo = "";
+                if (!isSpec) {
+                  let count = 0;
+                  for (let i = 0; i <= idx; i++) {
+                    if (Number(watchLineItems[i]?.quantity || 0) > 0) count++;
+                  }
+                  displayNo = count.toString();
+                }
+
+                const hasSpecs = !isSpec && idx + 1 < fields.length && Number(watchLineItems[idx + 1]?.quantity || 0) === 0;
+
                 const price = Number(watchLineItems[idx]?.unitPrice || 0);
                 const lineTotal = qty * price;
 
                 return (
                   <tr key={field.id}>
-                    <td style={{ textAlign: "center", color: "#94a3b8", fontWeight: "600" }}>{idx + 1}</td>
-                    <td style={{ color: "#0f172a", fontWeight: "500" }}>{field.description}</td>
-                    <td style={{ textAlign: "center", color: "#334155" }}>{field.quantity}</td>
-                    <td style={{ textAlign: "center", color: "#64748b" }}>{field.unit}</td>
+                    <td style={{ textAlign: "center", color: "#94a3b8", fontWeight: "600" }}>{displayNo}</td>
+                    <td style={{ color: "#0f172a", fontWeight: isSpec ? "400" : (hasSpecs ? "700" : "500"), paddingLeft: isSpec ? "2rem" : "0.5rem" }}>{field.description}</td>
+                    <td style={{ textAlign: "center", color: "#334155" }}>{isSpec ? "" : field.quantity}</td>
+                    <td style={{ textAlign: "center", color: "#64748b" }}>{isSpec ? "" : field.unit}</td>
                     <td style={{ textAlign: "right", padding: "0.5rem" }}>
-                      {isReadOnly ? (
+                      {isSpec ? (
+                        <span style={{ color: "#cbd5e1", fontWeight: "600" }}>—</span>
+                      ) : isReadOnly ? (
                         <span style={{ fontWeight: "600", color: price > 0 ? "#0f172a" : "#cbd5e1" }}>
                           {price > 0 ? formatCurrency(price) : "—"}
                         </span>
@@ -260,7 +275,7 @@ export default function SupplierEncodingPage() {
                           <span style={{ color: "#94a3b8", fontSize: "0.875rem" }}>₱</span>
                           <input
                             type="number"
-                            step="0.01"
+                            step="1"
                             min="0"
                             {...register(`lineItems.${idx}.unitPrice`)}
                             placeholder="0.00"
@@ -283,7 +298,7 @@ export default function SupplierEncodingPage() {
                       )}
                     </td>
                     <td style={{ textAlign: "right", fontWeight: "700", color: lineTotal > 0 ? "#059669" : "#cbd5e1" }}>
-                      {lineTotal > 0 ? formatCurrency(lineTotal) : "—"}
+                      {isSpec ? "—" : (lineTotal > 0 ? formatCurrency(lineTotal) : "—")}
                     </td>
                   </tr>
                 );

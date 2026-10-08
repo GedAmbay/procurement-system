@@ -241,13 +241,28 @@ export default function AcceptanceEditor() {
                   </thead>
                   <tbody>
                     {(watchAll.lineItems || []).map((item, idx) => {
-                      if (item.quantityDelivered === 0) return null;
+                      const isSpec = !item.poQuantity || item.poQuantity === 0;
+                      if (item.quantityDelivered === 0 && !isSpec) return null;
+                      
+                      let displayNo = "";
+                      if (!isSpec) {
+                        let count = 0;
+                        const allItems = watchAll.lineItems || [];
+                        for (let i = 0; i <= idx; i++) {
+                          if (allItems[i].poQuantity > 0) count++;
+                        }
+                        displayNo = count.toString();
+                      }
+
+                      const allItems = watchAll.lineItems || [];
+                      const hasSpecs = !isSpec && idx + 1 < allItems.length && (!allItems[idx + 1].poQuantity || allItems[idx + 1].poQuantity === 0);
+
                       return (
                         <tr key={idx} className="h-6">
-                          <td className="border-r-2 border-black border-b text-center" style={{ borderBottomStyle: 'dashed' }}>{idx + 1}</td>
-                          <td className="border-r-2 border-black border-b px-2" style={{ borderBottomStyle: 'dashed' }}>{item.description}</td>
-                          <td className="border-r-2 border-black border-b text-center" style={{ borderBottomStyle: 'dashed' }}>{item.unit}</td>
-                          <td className="border-b text-center font-bold" style={{ borderBottomStyle: 'dashed' }}>{item.quantityDelivered}</td>
+                          <td className="border-r-2 border-black border-b text-center" style={{ borderBottomStyle: 'dashed' }}>{displayNo}</td>
+                          <td className={`border-r-2 border-black border-b px-2 ${isSpec ? "pl-4" : (hasSpecs ? "font-bold" : "")}`} style={{ borderBottomStyle: 'dashed' }}>{item.description}</td>
+                          <td className="border-r-2 border-black border-b text-center" style={{ borderBottomStyle: 'dashed' }}>{isSpec ? "" : item.unit}</td>
+                          <td className="border-b text-center font-bold" style={{ borderBottomStyle: 'dashed' }}>{isSpec ? "" : item.quantityDelivered}</td>
                         </tr>
                       )
                     })}

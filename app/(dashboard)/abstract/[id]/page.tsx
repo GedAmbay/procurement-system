@@ -251,35 +251,61 @@ export default function AoqSupplierHub() {
               <div
                 key={q.id}
                 onClick={() => router.push(`/abstract/${aoq.id}/supplier/${q.id}`)}
-                className={`bg-white rounded-xl border-2 p-5 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col ${isLowest ? 'border-emerald-300 bg-emerald-50/30' : 'border-slate-200 hover:border-blue-300'}`}
+                className="card stat-card"
+                style={{
+                  cursor: "pointer",
+                  padding: "1.5rem",
+                  display: "flex", flexDirection: "column",
+                  border: isLowest ? "2px solid #10b981" : "none"
+                }}
               >
-                <div className="flex items-start gap-3 mb-4">
-                  <div className={`p-2.5 rounded-lg shrink-0 ${isLowest ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-50 text-blue-600'}`}>
-                    <Building2 size={24} />
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
+                  <div style={{ display: "flex", gap: "1rem" }}>
+                    <div className="inset" style={{
+                      width: "48px", height: "48px", display: "flex", alignItems: "center", justifyContent: "center",
+                      color: isLowest ? "#10b981" : "#2563eb", flexShrink: 0
+                    }}>
+                      <Building2 size={24} />
+                    </div>
+                    <div>
+                      <h3 style={{ fontSize: "1.125rem", fontWeight: 700, color: "#1e293b", margin: "0 0 0.25rem 0", lineHeight: 1.2 }}>
+                        {q.supplier.name}
+                      </h3>
+                      <div style={{ fontSize: "0.875rem", color: "#94a3b8" }}>
+                        {q.supplier.contactPerson || "No contact info"}
+                      </div>
+                      {isLowest && (
+                        <div style={{
+                          marginTop: "0.5rem", display: "inline-flex", alignItems: "center", gap: "0.25rem",
+                          padding: "0.2rem 0.6rem", borderRadius: "0.5rem", fontSize: "0.75rem", fontWeight: 700,
+                          color: "#10b981", background: "#d1fae5", boxShadow: "var(--shadow-neu-drop-sm)"
+                        }}>
+                          ★ Lowest Bid
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-bold text-slate-800 line-clamp-2 leading-tight">{q.supplier.name}</h3>
-                    <div className="text-xs text-slate-500 mt-1">{q.supplier.contactPerson || "No contact info"}</div>
-                    {isLowest && (
-                      <span className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">
-                        ★ Lowest Bid
-                      </span>
-                    )}
-                  </div>
+                  <ChevronRight size={16} color="#64748b" style={{ marginTop: "4px", flexShrink: 0 }} />
                 </div>
 
-                <div className="mt-auto space-y-3 border-t border-slate-100 pt-4">
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-slate-500 flex items-center gap-1"><Calendar size={14} /> Received</span>
-                    <span className="font-medium text-slate-700">
-                      {q.submittedAt ? new Date(q.submittedAt).toLocaleDateString('en-PH') : <span className="text-amber-600 flex items-center gap-1"><Clock size={12} /> Pending</span>}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-slate-500 flex items-center gap-1"><FileCheck2 size={14} /> Bid Amount</span>
-                    <span className={`font-bold ${isEncoded ? "text-emerald-600" : "text-slate-400"}`}>
-                      {isEncoded ? formatCurrency(q.totalAmount) : "—"}
-                    </span>
+                <div style={{ marginTop: "auto" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "1rem" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.875rem", color: "#64748b" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <Calendar size={16} /> Received
+                      </div>
+                      <div style={{ fontWeight: 600, color: q.submittedAt ? "#1e293b" : "#d97706" }}>
+                        {q.submittedAt ? new Date(q.submittedAt).toLocaleDateString('en-PH') : <span style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}><Clock size={14} /> Pending</span>}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.875rem", color: "#64748b" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <FileCheck2 size={16} /> Bid Amount
+                      </div>
+                      <div style={{ fontWeight: 600, color: isEncoded ? "#10b981" : "#94a3b8" }}>
+                        {isEncoded ? formatCurrency(q.totalAmount) : "—"}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

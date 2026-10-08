@@ -274,11 +274,13 @@ export default function PurchaseOrderEditor() {
                         displayNo = count.toString();
                       }
 
+                      const hasSpecs = !isSpec && idx + 1 < lineItems.length && (!lineItems[idx + 1].quantity || lineItems[idx + 1].quantity === 0);
+
                       return (
                         <tr key={idx}>
                           <td className="border-r border-black p-1 text-center">{displayNo}</td>
                           <td className="border-r border-black p-1 text-center">{isSpec ? "" : item.unit}</td>
-                          <td className={`border-r border-black p-1 ${isSpec ? "pl-4 text-sm" : "font-bold"}`}>{item.description}</td>
+                          <td className={`border-r border-black p-1 ${isSpec ? "pl-4 text-sm" : (hasSpecs ? "font-bold" : "")}`}>{item.description}</td>
                           <td className="border-r border-black p-1 text-center">{isSpec ? "" : item.quantity}</td>
                           <td className="border-r border-black p-1 text-right">{isSpec ? "" : formatCurrency(item.unitPrice).replace('₱', '')}</td>
                           <td className="p-1 text-right font-bold">{isSpec ? "" : formatCurrency(item.totalPrice).replace('₱', '')}</td>

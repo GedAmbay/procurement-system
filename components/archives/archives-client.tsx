@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Folder, FolderOpen, Clock, CheckCircle2 } from "lucide-react";
 
 interface ArchiveStats {
   id: string;
@@ -89,8 +89,8 @@ export default function ArchivesClient({ archives, fiscalYear, availableYears }:
       </div>
 
       {/* Summary Well */}
-      <div className="inset" style={{
-        display: "grid", gridTemplateColumns: "repeat(3, 1fr)", padding: "1.5rem 2rem", marginBottom: "2.5rem"
+      <div className="table-container" style={{
+        marginBottom: "1.5rem", padding: "1.25rem 1.5rem", display: "grid", gridTemplateColumns: "repeat(3, 1fr)",
       }}>
         <div>
           <div style={{ fontSize: "0.875rem", color: "#64748b", marginBottom: "0.5rem" }}>Total folders</div>
@@ -107,7 +107,7 @@ export default function ArchivesClient({ archives, fiscalYear, availableYears }:
       </div>
 
       {/* Grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: "1.5rem" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.5rem" }}>
         {sorted.map(office => {
           const isEmpty = office.count === 0;
 
@@ -153,21 +153,26 @@ export default function ArchivesClient({ archives, fiscalYear, availableYears }:
                   <span style={{ fontSize: "0.875rem", color: "#94a3b8" }}>No folders in FY {fiscalYear}</span>
                 </div>
               ) : (
-                <div style={{ marginTop: "auto" }}>
-                  <div className="inset" style={{ height: "10px", width: "100%", display: "flex", padding: "2px", gap: "2px", marginBottom: "0.75rem" }}>
-                    {office.activeCount > 0 && (
-                      <div style={{ height: "100%", background: "#2563eb", borderRadius: "4px", flex: office.activeCount }} />
-                    )}
-                    {office.finishedCount > 0 && (
-                      <div style={{ height: "100%", background: "#10b981", borderRadius: "4px", flex: office.finishedCount }} />
-                    )}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "1rem" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.875rem", color: "#64748b" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <FolderOpen size={16} /> Total Folders
+                      </div>
+                      <div style={{ fontWeight: 600, color: "#1e293b" }}>{office.count}</div>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.875rem", color: "#64748b" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <Clock size={16} /> Active
+                      </div>
+                      <div style={{ fontWeight: 600, color: "#d97706" }}>{office.activeCount}</div>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.875rem", color: "#64748b" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <CheckCircle2 size={16} /> Finished
+                      </div>
+                      <div style={{ fontWeight: 600, color: "#10b981" }}>{office.finishedCount}</div>
+                    </div>
                   </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.875rem", fontWeight: 600 }}>
-                    <div style={{ color: "#2563eb" }}>{office.activeCount} active</div>
-                    <div style={{ color: "#10b981" }}>{office.finishedCount} finished</div>
-                    <div style={{ color: "#94a3b8", fontWeight: 500 }}>{office.count} folder{office.count > 1 ? 's' : ''}</div>
-                  </div>
-                </div>
               )}
             </div>
           );

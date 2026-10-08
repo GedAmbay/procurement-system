@@ -244,6 +244,14 @@ model AbstractOfQuotation {
   lineItems      AoqLineItem[]
   purchaseOrders PurchaseOrder[]
 
+  docDate          DateTime?
+  bacResNo         String?
+  dateReceived     DateTime?
+  dateAwarded      DateTime?
+  reqOfficerName   String?
+  reqOfficerOffice String?
+  signatoriesData  Json?
+
   @@map("abstracts_of_quotation")
 }
 

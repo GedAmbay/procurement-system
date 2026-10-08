@@ -107,7 +107,7 @@ export default function OfficeArchivePage() {
         </div>
       </div>
 
-      <div className="px-8 pb-8">
+      <div className="px-2 pb-4">
         <DataTable<FolderRecord>
           title="Procurement Folders"
           apiPath={`/api/purchase-requests?officeId=${officeId}&fiscalYear=${year}`}
