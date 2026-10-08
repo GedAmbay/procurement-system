@@ -33,6 +33,7 @@ interface DataTableProps<T extends { id: string; isActive?: boolean }> {
   filterKey?: keyof T;
   filterTabs?: { label: string; value: string | null }[];
   dateFilterKey?: keyof T;
+  customFilters?: { label: string; filterFn: (row: T) => boolean; colorClass?: string }[];
 }
 
 export default function DataTable<T extends { id: string; isActive?: boolean }>({
@@ -54,6 +55,7 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
   filterKey,
   filterTabs,
   dateFilterKey,
+  customFilters,
 }: DataTableProps<T>) {
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,6 +68,7 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
   const [isClosing, setIsClosing] = useState(false);
   const actionBarRef = useRef<HTMLDivElement>(null);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [activeCustomFilter, setActiveCustomFilter] = useState<string | null>(null);
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: "asc" | "desc" } | null>(null);
   const [dateRange, setDateRange] = useState<{ start: string, end: string } | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -134,6 +137,12 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
       const endDate = new Date(dateRange.end);
       endDate.setHours(23, 59, 59, 999);
       if (rowDate < startDate || rowDate > endDate) return false;
+    }
+
+    // Custom Filter
+    if (activeCustomFilter && customFilters) {
+      const filter = customFilters.find(f => f.label === activeCustomFilter);
+      if (filter && !filter.filterFn(row)) return false;
     }
 
     return true;
@@ -304,6 +313,32 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
                   }}
                 >
                   {tab.label} ({count})
+                </button>
+              );
+            })}
+            
+            {customFilters && customFilters.map(filter => {
+              const isActive = activeCustomFilter === filter.label;
+              return (
+                <button
+                  key={filter.label}
+                  onClick={() => setActiveCustomFilter(isActive ? null : filter.label)}
+                  style={{
+                    background: isActive ? (filter.colorClass ? "transparent" : "#f1f5f9") : "none",
+                    border: "none",
+                    padding: "0.4rem 0.75rem",
+                    borderRadius: "9999px",
+                    fontSize: "0.75rem",
+                    fontWeight: isActive ? "600" : "500",
+                    color: isActive ? "#0f172a" : "#64748b",
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                    alignSelf: "center",
+                    marginLeft: "1rem"
+                  }}
+                  className={isActive && filter.colorClass ? filter.colorClass : ""}
+                >
+                  {filter.label}
                 </button>
               );
             })}

@@ -9,9 +9,10 @@ import { FileText, Truck, Clock, CheckCircle2, FileSignature } from "lucide-reac
 interface PO {
   id: string;
   poNumber: string;
+  pr?: { purpose: string; office: { name: string; code: string }; isDirectAcquisition: boolean };
   aoq?: {
     rfq: {
-      pr: { purpose: string; office: { name: string; code: string } }
+      pr: { purpose: string; office: { name: string; code: string }; isDirectAcquisition: boolean }
     }
   };
   supplier?: { name: string };
@@ -34,11 +35,21 @@ export default function PurchaseOrdersPage() {
     {
       key: "poNumber",
       label: "PO Number",
-      render: (row: PO) => (
-        <div style={{ fontWeight: "700", color: "#0f172a", fontFamily: "monospace", fontSize: "0.875rem" }}>
-          {row.poNumber}
-        </div>
-      ),
+      render: (row: PO) => {
+        const isDirect = row.pr?.isDirectAcquisition || row.aoq?.rfq?.pr?.isDirectAcquisition;
+        return (
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+            <div style={{ fontWeight: "700", color: "#0f172a", fontFamily: "monospace", fontSize: "0.875rem" }}>
+              {row.poNumber}
+            </div>
+            {isDirect && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[0.65rem] font-medium bg-teal-100 text-teal-800 border border-teal-200 w-max">
+                Direct
+              </span>
+            )}
+          </div>
+        );
+      },
       width: "160px",
     },
     {
@@ -59,7 +70,7 @@ export default function PurchaseOrdersPage() {
           fontSize: "0.875rem", color: "#334155",
           maxWidth: "600px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis"
         }}>
-          {row.aoq?.rfq?.pr?.purpose || "N/A"}
+          {row.pr?.purpose || row.aoq?.rfq?.pr?.purpose || "N/A"}
         </div>
       ),
     },
@@ -141,6 +152,9 @@ export default function PurchaseOrdersPage() {
           { label: "Cancelled", value: "CANCELLED" },
         ]}
         dateFilterKey="createdAt"
+        customFilters={[
+          { label: "Direct Acquisition", filterFn: (row: PO) => !!row.pr?.isDirectAcquisition || !!row.aoq?.rfq?.pr?.isDirectAcquisition, colorClass: "bg-teal-100 text-teal-800" }
+        ]}
       />
     </div>
   );

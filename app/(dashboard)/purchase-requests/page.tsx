@@ -17,6 +17,7 @@ interface PR {
   totalAmount: number;
   status: string;
   createdAt: string;
+  isDirectAcquisition?: boolean;
 }
 
 const STATUS_COLORS: Record<string, { bg: string; color: string; icon: React.ReactNode }> = {
@@ -37,8 +38,15 @@ export default function PurchaseRequestsPage() {
       key: "prNumber",
       label: "PR Number",
       render: (row: PR) => (
-        <div style={{ fontWeight: "600", color: "#0f172a", fontFamily: "monospace", fontSize: "0.875rem" }}>
-          {row.prNumber}
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+          <div style={{ fontWeight: "600", color: "#0f172a", fontFamily: "monospace", fontSize: "0.875rem" }}>
+            {row.prNumber}
+          </div>
+          {row.isDirectAcquisition && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-[0.65rem] font-medium bg-teal-100 text-teal-800 border border-teal-200 w-max">
+              Direct
+            </span>
+          )}
         </div>
       ),
       width: "160px",
@@ -133,6 +141,9 @@ export default function PurchaseRequestsPage() {
             icon: <FolderOpen size={16} />,
             onClick: (row) => router.push(`/procurement-folders/${row.id}`)
           }
+        ]}
+        customFilters={[
+          { label: "Direct Acquisition", filterFn: (row: PR) => !!row.isDirectAcquisition, colorClass: "bg-teal-100 text-teal-800" }
         ]}
         emptyIcon={<FileText size={40} style={{ opacity: 0.3 }} />}
         emptyText="No Purchase Requests found"

@@ -15,25 +15,50 @@ async function getDashboardData() {
     poForSigning,
     recentPRs,
     monthlyData,
-    fundSources,
+    overdueDeliveries,
+    pipelineCounts,
+    posForSavingsAndAvgTime,
+    nextAwardEvent,
   ] = await Promise.all([
     prisma.purchaseRequest.count(),
-    prisma.rfq.count({ where: { status: "FOR_SIGNING" } }),
-    prisma.abstractOfQuotation.count({ where: { status: "FOR_SIGNING" } }),
+    prisma.rfq.count({ where: { status: "FOR_SIGNING", pr: { isDirectAcquisition: false } } }),
+    prisma.abstractOfQuotation.count({ where: { status: "FOR_SIGNING", rfq: { pr: { isDirectAcquisition: false } } } }),
     prisma.purchaseOrder.count({ where: { status: "FOR_SIGNING" } }),
     prisma.purchaseRequest.findMany({
       take: 5,
       orderBy: { createdAt: "desc" },
       include: { office: true, requestedBy: true },
     }),
-    // Monthly PR counts for the current year (simplified)
     prisma.purchaseRequest.findMany({
       where: { fiscalYear: new Date().getFullYear() },
       select: { createdAt: true, totalAmount: true, status: true },
     }),
-    prisma.fundSource.findMany({
-      where: { isActive: true, fiscalYear: new Date().getFullYear() },
-      take: 5,
+    prisma.purchaseOrder.count({
+      where: { status: "ISSUED", deliveryDate: { lt: new Date() } }
+    }),
+    Promise.all([
+      prisma.purchaseRequest.count({ where: { status: { in: ["SUBMITTED", "APPROVED"] } } }), // PR Logged
+      prisma.purchaseRequest.count({ where: { status: "FOR_RFQ", isDirectAcquisition: false } }), // For RFQ
+      prisma.purchaseRequest.count({ where: { status: "FOR_AOQ", isDirectAcquisition: false } }), // For AOQ
+      prisma.purchaseRequest.count({ where: { status: "FOR_PO" } }), // For PO
+      prisma.purchaseOrder.count({ where: { status: { in: ["ISSUED", "COMPLETED"] } } }) // Issued
+    ]),
+      prisma.purchaseOrder.findMany({
+      where: { fiscalYear: new Date().getFullYear(), status: { in: ["ISSUED", "COMPLETED"] } },
+      select: {
+        totalAmount: true,
+        createdAt: true,
+        pr: { select: { totalAmount: true, createdAt: true } },
+        aoq: { select: { rfq: { select: { pr: { select: { totalAmount: true, createdAt: true } } } } } }
+      }
+    }),
+    prisma.calendarEvent.findFirst({
+      where: {
+        eventType: "Award Date",
+        eventDate: { gte: new Date(new Date().setHours(0,0,0,0)) }
+      },
+      orderBy: { eventDate: "asc" },
+      select: { eventDate: true, title: true, pr: { select: { prNumber: true } } }
     }),
   ]);
 
@@ -48,12 +73,51 @@ async function getDashboardData() {
     };
   });
 
+  // Calculate KPIs
+  let totalSavings = 0;
+  let totalDays = 0;
+  let validProcessingCount = 0;
+
+  posForSavingsAndAvgTime.forEach(po => {
+    const pr = po.pr || po.aoq?.rfq?.pr;
+    if (pr) {
+      // Savings
+      if (pr.totalAmount > po.totalAmount) {
+        totalSavings += (pr.totalAmount - po.totalAmount);
+      }
+      
+      // Processing Time
+      const prDate = new Date(pr.createdAt).getTime();
+      const poDate = new Date(po.createdAt).getTime();
+      const diffDays = (poDate - prDate) / (1000 * 60 * 60 * 24);
+      if (diffDays >= 0) {
+        totalDays += diffDays;
+        validProcessingCount++;
+      }
+    }
+  });
+
+  const avgProcessingDays = validProcessingCount > 0 ? Math.round(totalDays / validProcessingCount) : 0;
+
   return {
     stats: {
       totalPrs,
       rfqForSigning,
       aoqForSigning,
       poForSigning,
+      overdueDeliveries,
+    },
+    kpis: {
+      totalSavings,
+      avgProcessingDays,
+      nextAwardEvent,
+    },
+    pipeline: {
+      logged: pipelineCounts[0],
+      forRfq: pipelineCounts[1],
+      forAoq: pipelineCounts[2],
+      forPo: pipelineCounts[3],
+      issued: pipelineCounts[4],
     },
     recentPRs: recentPRs.map((pr: typeof recentPRs[number]) => ({
       id: pr.id,
@@ -65,12 +129,6 @@ async function getDashboardData() {
       createdAt: pr.createdAt.toISOString(),
     })),
     monthlyChart,
-    fundSources: fundSources.map((f: typeof fundSources[number]) => ({
-      name: f.name,
-      total: f.totalBudget,
-      used: f.usedBudget,
-      available: f.totalBudget - f.usedBudget,
-    })),
   };
 }
 

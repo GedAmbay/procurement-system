@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
 import { formatCurrency, LGU_INFO } from "@/lib/utils";
-import { Printer, Save, Send, CheckCircle2, XCircle, Plus, Minus, Trash2, ArrowLeft, Loader2, ZoomIn, ZoomOut, Lock, Unlock, FolderOpen } from "lucide-react";
+import { Printer, Save, Send, CheckCircle2, XCircle, Plus, Minus, Trash2, ArrowLeft, Loader2, ZoomIn, ZoomOut, Lock, Unlock, FolderOpen, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -24,6 +24,7 @@ interface PRFormValues {
   purpose: string;
   chargeToAccount: string;
   requestedBySignatoryId: string;
+  isDirectAcquisition?: boolean;
   lineItems: PrLineItem[];
 }
 
@@ -103,6 +104,7 @@ export default function PurchaseRequestEditor() {
               fundSourceId: pr.fundSourceId || "",
               purpose: pr.purpose || "",
               chargeToAccount: pr.chargeToAccount || "",
+              isDirectAcquisition: pr.isDirectAcquisition || false,
               requestedBySignatoryId: pr.requestedBySignatoryId || "",
               lineItems: pr.lineItems.map((li: any) => ({
                 itemId: li.itemId,
@@ -307,6 +309,20 @@ export default function PurchaseRequestEditor() {
           )}
         </div>
       </div>
+
+      {prData?.isDirectAcquisition && (
+        <div className="no-print bg-teal-50 border-b border-teal-200 px-6 py-2 flex items-center gap-2 text-teal-800 text-sm shadow-sm z-10 relative">
+          <CheckCircle2 size={16} className="text-teal-600" />
+          <span className="font-semibold">Direct Acquisition:</span> This Purchase Request is marked as a direct acquisition. It will bypass the RFQ and AOQ steps and proceed directly to Purchase Order generation.
+        </div>
+      )}
+
+      {prData?.calendarEvents?.find((e: any) => e.eventType === "Award Date") && (
+        <div className="no-print bg-green-50 border-b border-green-200 px-6 py-2 flex items-center gap-2 text-green-800 text-sm shadow-sm z-10 relative">
+          <Calendar size={16} className="text-green-600" />
+          <span className="font-semibold">Award Scheduled:</span> The Award Date for this procurement is scheduled for <strong>{new Date(prData.calendarEvents.find((e: any) => e.eventType === "Award Date").eventDate).toLocaleDateString("en-PH", { year: 'numeric', month: 'long', day: 'numeric' })}</strong>.
+        </div>
+      )}
 
       <div className="flex flex-1 overflow-hidden relative print:block print:!h-auto print:!overflow-visible">
         {/* View Controls */}
@@ -522,6 +538,19 @@ export default function PurchaseRequestEditor() {
                   placeholder="Enter purpose of procurement..."
                   disabled={isReadOnly}
                 />
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <input
+                  type="checkbox"
+                  id="isDirectAcquisition"
+                  {...register("isDirectAcquisition")}
+                  disabled={isReadOnly}
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <label htmlFor="isDirectAcquisition" className="text-sm font-medium text-slate-700 cursor-pointer">
+                  Direct Acquisition <span className="text-xs text-slate-500 font-normal">(Skips RFQ and AOQ phases)</span>
+                </label>
               </div>
 
               <div style={{ paddingTop: "1rem", borderTop: "1px solid #e2e8f0" }}>

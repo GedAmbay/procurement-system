@@ -32,12 +32,15 @@ export async function GET(req: NextRequest) {
       where: whereClause,
       include: {
         supplier: true,
+        pr: {
+          select: { purpose: true, office: true, isDirectAcquisition: true }
+        },
         aoq: {
           include: {
             rfq: {
               include: {
                 pr: {
-                  select: { purpose: true, office: true }
+                  select: { purpose: true, office: true, isDirectAcquisition: true }
                 }
               }
             }

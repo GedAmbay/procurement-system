@@ -8,18 +8,20 @@ datasource db {
 }
 
 model User {
-  id               String             @id @default(cuid())
-  name             String
-  email            String             @unique
-  password         String
-  role             String             @default("END_USER")
-  officeId         String?
-  isActive         Boolean            @default(true)
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
-  auditLogs        DocumentAuditLog[]
-  purchaseRequests PurchaseRequest[]
-  office           Office?            @relation(fields: [officeId], references: [id])
+  id                     String                 @id @default(cuid())
+  name                   String
+  email                  String                 @unique
+  password               String
+  role                   String                 @default("END_USER")
+  officeId               String?
+  isActive               Boolean                @default(true)
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+  auditLogs              DocumentAuditLog[]
+  purchaseRequests       PurchaseRequest[]
+  calendarEvents         CalendarEvent[]
+  office                 Office?                @relation(fields: [officeId], references: [id])
+  calendarEventHistories CalendarEventHistory[]
 
   @@map("users")
 }
@@ -106,29 +108,32 @@ model FundSource {
 }
 
 model PurchaseRequest {
-  id                     String       @id @default(cuid())
-  prNumber               String       @unique
+  id                     String          @id @default(cuid())
+  prNumber               String          @unique
   officeId               String
   requestedById          String
   requestedBySignatoryId String?
   purpose                String
   fundSourceId           String?
   chargeToAccount        String?
-  totalAmount            Float        @default(0)
-  status                 String       @default("APPROVED")
+  totalAmount            Float           @default(0)
+  status                 String          @default("APPROVED")
   remarks                String?
-  printCount             Int          @default(0)
+  printCount             Int             @default(0)
   lastPrintedAt          DateTime?
   lastPrintedBy          String?
   fiscalYear             Int
-  createdAt              DateTime     @default(now())
-  updatedAt              DateTime     @updatedAt
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+  isDirectAcquisition    Boolean         @default(false)
   lineItems              PrLineItem[]
-  fundSource             FundSource?  @relation(fields: [fundSourceId], references: [id])
-  requestedBySignatory   Signatory?   @relation("PrRequestedBy", fields: [requestedBySignatoryId], references: [id])
-  requestedBy            User         @relation(fields: [requestedById], references: [id])
-  office                 Office       @relation(fields: [officeId], references: [id])
+  fundSource             FundSource?     @relation(fields: [fundSourceId], references: [id])
+  requestedBySignatory   Signatory?      @relation("PrRequestedBy", fields: [requestedBySignatoryId], references: [id])
+  requestedBy            User            @relation(fields: [requestedById], references: [id])
+  office                 Office          @relation(fields: [officeId], references: [id])
   rfqs                   Rfq[]
+  purchaseOrders         PurchaseOrder[]
+  calendarEvents         CalendarEvent[]
 
   @@map("purchase_requests")
 }
@@ -274,6 +279,7 @@ model PurchaseOrder {
   id              String               @id @default(cuid())
   poNumber        String               @unique
   aoqId           String?
+  prId            String?
   supplierId      String?
   deliveryTerms   String?
   paymentTerms    String?
@@ -291,16 +297,17 @@ model PurchaseOrder {
   acceptances     Acceptance[]
   supplier        Supplier?            @relation(fields: [supplierId], references: [id])
   aoq             AbstractOfQuotation? @relation(fields: [aoqId], references: [id])
+  pr              PurchaseRequest?     @relation(fields: [prId], references: [id])
 
   @@map("purchase_orders")
 }
 
 model PoLineItem {
-  id          String        @id @default(cuid())
-  poId        String
-  description String
-  unit        String
-  quantity    Float
+  id              String               @id @default(cuid())
+  poId            String
+  description     String
+  unit            String
+  quantity        Float
   unitPrice       Float
   totalPrice      Float
   sortOrder       Int                  @default(0)
@@ -327,33 +334,66 @@ model DocumentAuditLog {
 }
 
 model Acceptance {
-  id              String               @id @default(cuid())
-  iarNumber       String               @unique
-  poId            String
-  invoiceNumber   String?
-  invoiceDate     DateTime?
-  dateReceived    DateTime?
-  dateInspected   DateTime?
-  status          String               @default("DRAFT")
-  printCount      Int                  @default(0)
-  fiscalYear      Int
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
-  
-  po              PurchaseOrder        @relation(fields: [poId], references: [id])
-  lineItems       AcceptanceLineItem[]
+  id            String    @id @default(cuid())
+  iarNumber     String    @unique
+  poId          String
+  invoiceNumber String?
+  invoiceDate   DateTime?
+  dateReceived  DateTime?
+  dateInspected DateTime?
+  status        String    @default("DRAFT")
+  printCount    Int       @default(0)
+  fiscalYear    Int
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  po        PurchaseOrder        @relation(fields: [poId], references: [id])
+  lineItems AcceptanceLineItem[]
 
   @@map("acceptances")
 }
 
 model AcceptanceLineItem {
-  id              String        @id @default(cuid())
-  acceptanceId    String
-  poLineItemId    String
-  quantityDelivered Float       @default(0)
-  
-  acceptance      Acceptance    @relation(fields: [acceptanceId], references: [id], onDelete: Cascade)
-  poLineItem      PoLineItem    @relation(fields: [poLineItemId], references: [id])
+  id                String @id @default(cuid())
+  acceptanceId      String
+  poLineItemId      String
+  quantityDelivered Float  @default(0)
+
+  acceptance Acceptance @relation(fields: [acceptanceId], references: [id], onDelete: Cascade)
+  poLineItem PoLineItem @relation(fields: [poLineItemId], references: [id])
 
   @@map("acceptance_line_items")
+}
+
+model CalendarEvent {
+  id              String   @id @default(cuid())
+  title           String
+  eventType       String // Award Date, Bid Opening, BAC Meeting, Delivery, Other
+  eventDate       DateTime
+  eventTime       String? // Store as HH:mm or optional
+  notes           String? // venue, details
+  prId            String?
+  createdByUserId String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  pr            PurchaseRequest?       @relation(fields: [prId], references: [id])
+  createdByUser User                   @relation(fields: [createdByUserId], references: [id])
+  history       CalendarEventHistory[]
+
+  @@map("calendar_events")
+}
+
+model CalendarEventHistory {
+  id        String   @id @default(cuid())
+  eventId   String
+  userId    String
+  action    String // "CREATED", "UPDATED", "DELETED"
+  changes   String? // JSON payload of changes
+  createdAt DateTime @default(now())
+
+  event CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User          @relation(fields: [userId], references: [id])
+
+  @@map("calendar_event_history")
 }

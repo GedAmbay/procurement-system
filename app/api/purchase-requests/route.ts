@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid data", details: parseResult.error.format() }, { status: 400 });
     }
 
-    const { officeId, purpose, requestedBySignatoryId, fundSourceId, chargeToAccount, lineItems } = parseResult.data;
+    const { officeId, purpose, requestedBySignatoryId, fundSourceId, chargeToAccount, isDirectAcquisition, lineItems } = parseResult.data;
 
     const prNumber = await generatePRNumber();
     const totalAmount = lineItems.reduce((sum: number, item: any) => sum + (item.quantity * item.unitCost), 0);
@@ -116,6 +116,7 @@ export async function POST(req: NextRequest) {
           chargeToAccount,
           totalAmount,
           fiscalYear,
+          isDirectAcquisition,
           status: "COMPLETED",
           lineItems: {
             create: lineItems.map((item: any, idx: number) => ({
@@ -142,68 +143,92 @@ export async function POST(req: NextRequest) {
       const xxxx = prParts[prParts.length - 1]; 
       const rfqNumber = `${fundPrefix}-${yy}-${xxxx}`;
       
-      const rfq = await tx.rfq.create({
-        data: {
-          rfqNumber,
-          prId: createdPr.id,
-          fiscalYear: createdPr.fiscalYear,
-          status: "DRAFT",
-          lineItems: {
-            create: createdPr.lineItems.map(li => ({
-              description: li.description,
-              unit: li.unit,
-              quantity: li.quantity,
-              unitCost: li.unitCost,
-              totalCost: li.totalCost,
-              sortOrder: li.sortOrder
-            }))
+      if (!isDirectAcquisition) {
+        const rfq = await tx.rfq.create({
+          data: {
+            rfqNumber,
+            prId: createdPr.id,
+            fiscalYear: createdPr.fiscalYear,
+            status: "DRAFT",
+            lineItems: {
+              create: createdPr.lineItems.map(li => ({
+                description: li.description,
+                unit: li.unit,
+                quantity: li.quantity,
+                unitCost: li.unitCost,
+                totalCost: li.totalCost,
+                sortOrder: li.sortOrder
+              }))
+            }
           }
-        }
-      });
-      
-      const aoqNumber = `${rfqNumber}-AOQ`;
-      
-      const aoq = await tx.abstractOfQuotation.create({
-        data: {
-          aoqNumber,
-          rfqId: rfq.id,
-          fiscalYear: createdPr.fiscalYear,
-          totalAmount: createdPr.totalAmount, 
-          status: "DRAFT",
-          lineItems: {
-            create: createdPr.lineItems.map(li => ({
-              description: li.description,
-              unit: li.unit,
-              quantity: li.quantity,
-              lowestUnitPrice: 0,
-              totalPrice: 0,
-              sortOrder: li.sortOrder
-            }))
+        });
+        
+        const aoqNumber = `${rfqNumber}-AOQ`;
+        
+        const aoq = await tx.abstractOfQuotation.create({
+          data: {
+            aoqNumber,
+            rfqId: rfq.id,
+            fiscalYear: createdPr.fiscalYear,
+            totalAmount: createdPr.totalAmount, 
+            status: "DRAFT",
+            lineItems: {
+              create: createdPr.lineItems.map(li => ({
+                description: li.description,
+                unit: li.unit,
+                quantity: li.quantity,
+                lowestUnitPrice: 0,
+                totalPrice: 0,
+                sortOrder: li.sortOrder
+              }))
+            }
           }
-        }
-      });
-      
-      const poNumber = `${rfqNumber}-PO`;
-      
-      await tx.purchaseOrder.create({
-        data: {
-          poNumber,
-          aoqId: aoq.id,
-          fiscalYear: createdPr.fiscalYear,
-          totalAmount: createdPr.totalAmount,
-          status: "DRAFT",
-          lineItems: {
-            create: createdPr.lineItems.map(li => ({
-              description: li.description,
-              unit: li.unit,
-              quantity: li.quantity,
-              unitPrice: li.unitCost,
-              totalPrice: li.totalCost,
-              sortOrder: li.sortOrder
-            }))
+        });
+        
+        const poNumber = `${rfqNumber}-PO`;
+        
+        await tx.purchaseOrder.create({
+          data: {
+            poNumber,
+            aoqId: aoq.id,
+            fiscalYear: createdPr.fiscalYear,
+            totalAmount: createdPr.totalAmount,
+            status: "DRAFT",
+            lineItems: {
+              create: createdPr.lineItems.map(li => ({
+                description: li.description,
+                unit: li.unit,
+                quantity: li.quantity,
+                unitPrice: li.unitCost,
+                totalPrice: li.totalCost,
+                sortOrder: li.sortOrder
+              }))
+            }
           }
-        }
-      });
+        });
+      } else {
+        // Direct Acquisition: Skip RFQ & AOQ, link PO directly to PR
+        const poNumber = `${rfqNumber}-PO-DIR`;
+        await tx.purchaseOrder.create({
+          data: {
+            poNumber,
+            prId: createdPr.id,
+            fiscalYear: createdPr.fiscalYear,
+            totalAmount: createdPr.totalAmount,
+            status: "DRAFT",
+            lineItems: {
+              create: createdPr.lineItems.map(li => ({
+                description: li.description,
+                unit: li.unit,
+                quantity: li.quantity,
+                unitPrice: li.unitCost,
+                totalPrice: li.totalCost,
+                sortOrder: li.sortOrder
+              }))
+            }
+          }
+        });
+      }
 
       return createdPr;
     });

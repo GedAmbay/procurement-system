@@ -11,14 +11,28 @@ import {
   ResponsiveContainer, BarChart, Bar, Cell
 } from "recharts";
 import { formatCurrency, PR_STATUS_COLORS, PR_STATUS_LABELS } from "@/lib/utils";
+import CalendarWidget from "./calendar-widget";
 
 interface DashboardClientProps {
   data: {
+    kpis: {
+      totalSavings: number;
+      avgProcessingDays: number;
+      nextAwardEvent: { eventDate: Date, title: string, pr: { prNumber: string } | null } | null;
+    };
+    pipeline: {
+      logged: number;
+      forRfq: number;
+      forAoq: number;
+      forPo: number;
+      issued: number;
+    };
     stats: {
       totalPrs: number;
       rfqForSigning: number;
       aoqForSigning: number;
       poForSigning: number;
+      overdueDeliveries: number;
     };
     recentPRs: {
       id: string;
@@ -30,7 +44,6 @@ interface DashboardClientProps {
       createdAt: string;
     }[];
     monthlyChart: { month: string; count: number; amount: number }[];
-    fundSources: { name: string; total: number; used: number; available: number }[];
   };
   user: { name?: string; role?: string };
 }
@@ -88,147 +101,168 @@ export default function DashboardClient({ data, user }: DashboardClientProps) {
 
   return (
     <div>
-      {/* Greeting */}
-      <div style={{ marginBottom: "1.5rem" }}>
-        <h2 style={{ fontSize: "1.375rem", fontWeight: "700", color: "#0f172a", margin: 0 }}>
-          {greeting()}, {user.name?.split(" ")[0] ?? "User"} 👋
-        </h2>
-        <p style={{ color: "#64748b", margin: "0.25rem 0 0", fontSize: "0.9375rem" }}>
-          Here's an overview of procurement activities for FY 2026
-        </p>
+      {/* Greeting & Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
+        <div>
+          <h2 style={{ fontSize: "1.375rem", fontWeight: "700", color: "#0f172a", margin: 0 }}>
+            {greeting()}, {user.name?.split(" ")[0] ?? "User"} 👋
+          </h2>
+          <p style={{ color: "#64748b", margin: "0.25rem 0 0", fontSize: "0.9375rem" }}>
+            Procurement overview - FY 2026
+          </p>
+        </div>
+        <div style={{ display: "flex", gap: "0.625rem" }}>
+          <Link href="/purchase-requests/new" className="btn btn-primary text-sm font-semibold">
+            <Plus size={16} /> New Purchase Request
+          </Link>
+          <Link href="/suppliers" className="btn btn-secondary text-sm font-semibold">
+            Manage Suppliers
+          </Link>
+        </div>
       </div>
 
-      {/* Quick Actions */}
-      <div style={{ display: "flex", gap: "0.625rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
-        <Link href="/purchase-requests/new" className="btn btn-primary">
-          <Plus size={16} /> New Purchase Request
-        </Link>
-        <Link href="/purchase-requests" className="btn btn-secondary">
-          <Clock size={16} /> View All PRs
-        </Link>
-        <Link href="/suppliers" className="btn btn-secondary">
-          <BarChart2 size={16} /> Manage Suppliers
-        </Link>
+      {/* Row 1: KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+        <div className="card flex flex-col justify-between py-4 px-5">
+          <div className="text-sm font-semibold text-slate-500">Total PRs</div>
+          <div className="text-3xl font-black text-slate-800 my-1">{data.stats.totalPrs}</div>
+          <div className="text-xs font-semibold text-green-600 flex items-center gap-1">
+            <TrendingUp size={12} /> 1 Direct Acquisition
+          </div>
+        </div>
+
+        <div className="card flex flex-col justify-between py-4 px-5">
+          <div className="text-sm font-semibold text-slate-500">Needs Signature</div>
+          <div className="text-3xl font-black text-slate-800 my-1">
+            {data.stats.rfqForSigning + data.stats.aoqForSigning + data.stats.poForSigning}
+          </div>
+          <div className="text-xs font-medium text-slate-500">
+            RFQ - AOQ - PO (excl. Direct)
+          </div>
+        </div>
+
+        <div className="card flex flex-col justify-between py-4 px-5">
+          <div className="text-sm font-semibold text-slate-500">Savings (ABC vs Award)</div>
+          <div className="text-3xl font-black text-slate-800 my-1">{formatCurrency(data.kpis.totalSavings).replace('.00', '')}</div>
+          <div className="text-xs font-semibold text-green-600 flex items-center gap-1">
+            <TrendingUp size={12} className="rotate-180" /> 4.1% below ABC
+          </div>
+        </div>
+
+        <div className="card flex flex-col justify-between py-4 px-5">
+          <div className="text-sm font-semibold text-slate-500">Next Award Date</div>
+          <div className="text-3xl font-black text-slate-800 my-1">
+            {data.kpis.nextAwardEvent ? new Date(data.kpis.nextAwardEvent.eventDate).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "-"}
+          </div>
+          <div className="text-xs font-medium text-slate-500">
+            {data.kpis.nextAwardEvent ? `Award - ${data.kpis.nextAwardEvent.pr?.prNumber || 'N/A'}` : "No upcoming awards"}
+          </div>
+        </div>
       </div>
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {cards.map((card) => {
-          const Icon = card.icon;
-          return (
-            <Link key={card.label} href={card.href} style={{ textDecoration: "none" }}>
-              <div className="stat-card" style={{ cursor: "pointer" }}>
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "0.875rem" }}>
-                  <div>
-                    <Icon size={20} color={card.color} />
-                  </div>
-                  <ArrowRight size={14} color="#cbd5e1" />
+      {/* Row 2: Pipeline Strip */}
+      <div className="card mb-6 py-4 px-5">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+          <h3 style={{ fontSize: "0.9375rem", fontWeight: "700", color: "#0f172a", margin: 0 }}>
+            Procurement pipeline
+          </h3>
+          <span className="text-xs text-slate-500 font-medium">Direct Acquisition skips RFQ → AOQ</span>
+        </div>
+        <div className="flex items-center justify-between text-center">
+          {[
+            { label: "PR Logged", count: data.pipeline.logged },
+            { label: "RFQ", count: data.pipeline.forRfq },
+            { label: "Abstract", count: 0 },
+            { label: "AOQ / Award", count: data.pipeline.forAoq },
+            { label: "PO", count: data.pipeline.forPo },
+            { label: "Acceptance", count: 0 },
+            { label: "Issued", count: data.pipeline.issued },
+          ].map((step, idx) => (
+            <div key={idx} className="flex-1 flex flex-col items-center">
+              <div className="text-2xl font-black text-slate-800 mb-1">{step.count}</div>
+              <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{step.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Calendar & Action Required Rows */}
+      <CalendarWidget actionRequiredNode={
+        <div className="card flex flex-col h-full border border-slate-100 shadow-sm bg-slate-800/5 backdrop-blur-sm relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl"></div>
+
+          <h3 className="text-[0.9375rem] font-bold text-slate-800 mb-4 z-10 flex items-center gap-2">
+            Action required
+          </h3>
+          <div className="flex flex-col gap-3 z-10">
+            {data.stats.rfqForSigning > 0 && (
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200/50 last:border-0 last:pb-0">
+                <div>
+                  <div className="text-sm font-bold text-slate-800">Sign RFQs</div>
+                  <div className="text-[10px] text-slate-500">Awaiting signature</div>
                 </div>
-                <div style={{ fontSize: "2rem", fontWeight: "800", color: "#0f172a", lineHeight: "1", marginBottom: "0.25rem" }}>
-                  {card.value}
-                </div>
-                <div style={{ fontSize: "0.875rem", fontWeight: "600", color: "#374151", marginBottom: "0.25rem" }}>
-                  {card.label}
-                </div>
-                <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>
-                  {card.subtext}
-                </div>
+                <Link href="/rfqs" className="px-3 py-1 bg-blue-500 text-white text-xs font-bold rounded-full hover:bg-blue-600 transition-colors shadow-sm">
+                  Open
+                </Link>
               </div>
-            </Link>
-          );
-        })}
-      </div>
-
-      {/* Charts Row */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: "1rem", marginBottom: "1rem" }}>
-        {/* Monthly Volume Chart */}
-        <div className="card">
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem" }}>
-            <div>
-              <h3 style={{ fontSize: "0.9375rem", fontWeight: "700", color: "#0f172a", margin: 0 }}>
-                Monthly Procurement Volume
-              </h3>
-              <p style={{ color: "#94a3b8", fontSize: "0.8125rem", margin: "0.125rem 0 0" }}>FY 2026 — Purchase Requests</p>
-            </div>
-            <TrendingUp size={18} color="#2563eb" />
-          </div>
-          <ResponsiveContainer width="100%" height={220}>
-            <AreaChart data={data.monthlyChart} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
-              <defs>
-                <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#2563eb" stopOpacity={0.15} />
-                  <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={(v) => `₱${(v / 1000).toFixed(0)}k`} />
-              <Tooltip
-                contentStyle={{ background: "white", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "0.8125rem" }}
-                formatter={(value: any) => [formatCurrency(value), "Amount"]}
-              />
-              <Area type="monotone" dataKey="amount" stroke="#2563eb" strokeWidth={2} fill="url(#colorAmount)" dot={{ fill: "#2563eb", r: 3 }} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Fund Source Utilization */}
-        <div className="card">
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem" }}>
-            <div>
-              <h3 style={{ fontSize: "0.9375rem", fontWeight: "700", color: "#0f172a", margin: 0 }}>
-                Budget Utilization
-              </h3>
-              <p style={{ color: "#94a3b8", fontSize: "0.8125rem", margin: "0.125rem 0 0" }}>By fund source</p>
-            </div>
-            <Wallet size={18} color="#059669" />
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.875rem" }}>
-            {data.fundSources.map((fs, i) => {
-              const pct = fs.total > 0 ? (fs.used / fs.total) * 100 : 0;
-              const color = CHART_COLORS[i % CHART_COLORS.length];
-              return (
-                <div key={fs.name}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.3rem" }}>
-                    <span style={{ fontSize: "0.75rem", fontWeight: "600", color: "#374151", maxWidth: "65%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {fs.name.replace("General Fund - ", "").replace(" - ", " ")}
-                    </span>
-                    <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>
-                      {pct.toFixed(1)}%
-                    </span>
-                  </div>
-                  <div style={{ height: "6px", background: "#f1f5f9", borderRadius: "3px", overflow: "hidden" }}>
-                    <div style={{
-                      height: "100%",
-                      width: `${Math.min(pct, 100)}%`,
-                      background: color,
-                      borderRadius: "3px",
-                      transition: "width 0.5s ease",
-                    }} />
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: "0.2rem" }}>
-                    <span style={{ fontSize: "0.6875rem", color: "#94a3b8" }}>Used: {formatCurrency(fs.used)}</span>
-                    <span style={{ fontSize: "0.6875rem", color: "#94a3b8" }}>Budget: {formatCurrency(fs.total)}</span>
-                  </div>
+            )}
+            {data.stats.aoqForSigning > 0 && (
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200/50 last:border-0 last:pb-0">
+                <div>
+                  <div className="text-sm font-bold text-slate-800">Sign AOQs</div>
+                  <div className="text-[10px] text-slate-500">Awaiting signature</div>
                 </div>
-              );
-            })}
+                <Link href="/abstract" className="px-3 py-1 bg-indigo-500 text-white text-xs font-bold rounded-full hover:bg-indigo-600 transition-colors shadow-sm">
+                  Open
+                </Link>
+              </div>
+            )}
+            {data.stats.poForSigning > 0 && (
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200/50 last:border-0 last:pb-0">
+                <div>
+                  <div className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                    Sign POs <span className="px-1.5 py-0.5 bg-teal-100 text-teal-700 rounded text-[9px] uppercase font-bold tracking-wider">Direct</span>
+                  </div>
+                  <div className="text-[10px] text-slate-500">Ready for PO signing</div>
+                </div>
+                <Link href="/purchase-orders" className="px-3 py-1 bg-blue-500 text-white text-xs font-bold rounded-full hover:bg-blue-600 transition-colors shadow-sm">
+                  Open
+                </Link>
+              </div>
+            )}
+            {data.stats.overdueDeliveries > 0 && (
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200/50 last:border-0 last:pb-0">
+                <div>
+                  <div className="text-sm font-bold text-slate-800">Overdue Deliveries</div>
+                  <div className="text-[10px] text-slate-500">Delivery overdue</div>
+                </div>
+                <Link href="/purchase-orders" className="px-3 py-1 bg-slate-800 text-white text-xs font-bold rounded-full hover:bg-slate-700 transition-colors shadow-sm">
+                  View
+                </Link>
+              </div>
+            )}
+            <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-200/50">
+              <div>
+                <div className="text-sm font-bold text-slate-800">Avg. PR → PO time</div>
+                <div className="text-[10px] text-slate-500">Last 30 days</div>
+              </div>
+              <div className="text-sm font-black text-slate-800">{data.kpis.avgProcessingDays} days</div>
+            </div>
           </div>
         </div>
-      </div>
+      } />
 
       {/* Recent PRs */}
       <div className="card">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
           <h3 style={{ fontSize: "0.9375rem", fontWeight: "700", color: "#0f172a", margin: 0 }}>
-            Recent Purchase Requests
+            Recent purchase requests
           </h3>
-          <Link href="/purchase-requests" style={{
-            fontSize: "0.8125rem", color: "#2563eb", fontWeight: "500",
-            display: "flex", alignItems: "center", gap: "0.25rem", textDecoration: "none",
-          }}>
-            View All <ArrowRight size={14} />
-          </Link>
+          <div className="flex gap-2">
+            <button className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">All</button>
+            <button className="px-3 py-1 text-slate-500 hover:bg-slate-100 text-xs font-bold rounded-full transition-colors">Direct Acquisition</button>
+          </div>
         </div>
 
         {data.recentPRs.length === 0 ? (
@@ -240,16 +274,16 @@ export default function DashboardClient({ data, user }: DashboardClientProps) {
             </Link>
           </div>
         ) : (
-          <div className="table-container">
-            <table>
+          <div className="overflow-x-auto bg-slate-50/50 rounded-xl p-4 border border-slate-100 shadow-inner">
+            <table className="data-table">
               <thead>
                 <tr>
-                  <th>PR Number</th>
-                  <th>Office</th>
-                  <th>Purpose</th>
-                  <th>Amount</th>
-                  <th>Status</th>
-                  <th>Date</th>
+                  <th style={{ fontFamily: "inherit", fontWeight: "700", textTransform: "uppercase", fontSize: "0.75rem", letterSpacing: "0.05em", color: "#64748b" }}>PR Number</th>
+                  <th style={{ fontFamily: "inherit", fontWeight: "700", textTransform: "uppercase", fontSize: "0.75rem", letterSpacing: "0.05em", color: "#64748b" }}>Office</th>
+                  <th style={{ fontFamily: "inherit", fontWeight: "700", textTransform: "uppercase", fontSize: "0.75rem", letterSpacing: "0.05em", color: "#64748b" }}>Purpose</th>
+                  <th style={{ fontFamily: "inherit", fontWeight: "700", textTransform: "uppercase", fontSize: "0.75rem", letterSpacing: "0.05em", color: "#64748b" }}>Amount</th>
+                  <th style={{ fontFamily: "inherit", fontWeight: "700", textTransform: "uppercase", fontSize: "0.75rem", letterSpacing: "0.05em", color: "#64748b" }}>Status</th>
+                  <th style={{ fontFamily: "inherit", fontWeight: "700", textTransform: "uppercase", fontSize: "0.75rem", letterSpacing: "0.05em", color: "#64748b" }}>Date</th>
                 </tr>
               </thead>
               <tbody>
