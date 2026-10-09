@@ -100,8 +100,9 @@ export default function AoqSupplierHub() {
 
   const statusConfig: Record<string, { bg: string; color: string; label: string }> = {
     DRAFT: { bg: "#fef3c7", color: "#b45309", label: "Draft" },
-    RECOMMENDED: { bg: "#eff6ff", color: "#2563eb", label: "Recommended" },
-    APPROVED: { bg: "#f0fdf4", color: "#16a34a", label: "Approved" },
+    ISSUED: { bg: "#eff6ff", color: "#2563eb", label: "Issued" },
+    SIGNED: { bg: "#f0fdf4", color: "#16a34a", label: "Signed" },
+    COMPLETED: { bg: "#dcfce7", color: "#15803d", label: "Completed" },
   };
   const statusStyle = statusConfig[aoq.status] ?? { bg: "#f1f5f9", color: "#475569", label: aoq.status };
 
@@ -154,8 +155,16 @@ export default function AoqSupplierHub() {
 
           {aoq.status === "ISSUED" && (
             <>
-              <button onClick={() => updateStatus("SIGNED")} className="btn btn-success" style={{ display: "flex", alignItems: "center", gap: "0.375rem", background: "#16a34a" }}>
+              <button onClick={() => updateStatus("SIGNED")} className="btn btn-success" style={{ display: "flex", alignItems: "center", gap: "0.375rem", background: "#16a34a", color: "#fff" }}>
                 <CheckCircle2 size={15} /> Mark as Signed
+              </button>
+            </>
+          )}
+
+          {aoq.status === "SIGNED" && (
+            <>
+              <button onClick={() => updateStatus("COMPLETED")} className="btn btn-success" style={{ display: "flex", alignItems: "center", gap: "0.375rem", background: "#15803d", color: "#fff" }}>
+                <CheckCircle2 size={15} /> Mark as Completed
               </button>
             </>
           )}

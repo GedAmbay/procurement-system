@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Search, Plus, Pencil, Trash2, CheckCircle, XCircle, Loader2, RefreshCw, Eye, Copy, X, Calendar } from "lucide-react";
 import LoaderWave from "@/components/ui/loader-wave";
+import ConfirmModal from "@/components/ui/confirm-modal";
 import { toast } from "sonner";
 
 interface Column<T> {
@@ -72,6 +73,7 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: "asc" | "desc" } | null>(null);
   const [dateRange, setDateRange] = useState<{ start: string, end: string } | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [rowToDelete, setRowToDelete] = useState<T | null>(null);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -170,10 +172,11 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
   const totalPages = Math.max(1, Math.ceil(sortedData.length / itemsPerPage));
   const paginatedData = sortedData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const handleDelete = async (row: T) => {
-    if (!onDelete) return;
-    if (!confirm(`Are you sure you want to deactivate this record?`)) return;
-    setDeleting(row.id);
+  const confirmDelete = async () => {
+    if (!onDelete || !rowToDelete) return;
+    setDeleting(rowToDelete.id);
+    const row = rowToDelete;
+    setRowToDelete(null);
     try {
       await onDelete(row);
       toast.success("Record deactivated successfully");
@@ -520,7 +523,7 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
             ))}
             {onDelete && selectedRow?.isActive !== false && (
               <button
-                onClick={() => { if (selectedRow) handleDelete(selectedRow); setSelectedRow(null); }}
+                onClick={() => { if (selectedRow) setRowToDelete(selectedRow); setSelectedRow(null); }}
                 disabled={deleting === selectedRow?.id}
                 style={{ background: "#e0e5ec", border: "none", color: "#ef4444", padding: "0.75rem 1.5rem", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem", cursor: "pointer", fontSize: "0.75rem", borderRadius: "0.5rem", boxShadow: "4px 4px 8px rgba(163,177,198,0.6), -4px -4px 8px rgba(255,255,255, 0.5)", opacity: deleting === selectedRow?.id ? 0.5 : 1 }}
               >
@@ -546,6 +549,16 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
         @keyframes modalSlideUp { from { transform: translate(-50%, 100%); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
         @keyframes modalSlideDown { from { transform: translate(-50%, 0); opacity: 1; } to { transform: translate(-50%, 100%); opacity: 0; } }
       `}</style>
+
+      <ConfirmModal
+        isOpen={!!rowToDelete}
+        onClose={() => setRowToDelete(null)}
+        onConfirm={confirmDelete}
+        title="Confirm Deactivation"
+        message="Are you sure you want to deactivate this record? This action might be reversible depending on system settings."
+        confirmText="Deactivate"
+        isDestructive={true}
+      />
     </div >
   );
 }

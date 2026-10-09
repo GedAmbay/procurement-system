@@ -24,6 +24,7 @@ const STATUS_COLORS: Record<string, { bg: string; color: string; icon: React.Rea
   DRAFT: { bg: "#fef3c7", color: "#b45309", icon: <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "currentColor" }} /> },
   ISSUED: { bg: "#eff6ff", color: "#2563eb", icon: <Send size={11} /> },
   SIGNED: { bg: "#f0fdf4", color: "#16a34a", icon: <CheckCircle2 size={11} /> },
+  COMPLETED: { bg: "#dcfce7", color: "#15803d", icon: <CheckCircle2 size={11} /> },
 };
 
 export default function AOQPage() {
@@ -144,6 +145,7 @@ export default function AOQPage() {
           { label: "Draft", value: "DRAFT" },
           { label: "Issued", value: "ISSUED" },
           { label: "Signed", value: "SIGNED" },
+          { label: "Completed", value: "COMPLETED" },
         ]}
         dateFilterKey="createdAt"
       />

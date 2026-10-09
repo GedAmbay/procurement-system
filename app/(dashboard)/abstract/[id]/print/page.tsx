@@ -205,7 +205,7 @@ export default function AbstractLivePreviewPage() {
               <button onClick={() => saveChanges()} disabled={submitting} className="btn btn-primary flex items-center gap-2">
                 <Save size={14} /> Save
               </button>
-              <button onClick={() => saveChanges("APPROVED")} disabled={submitting} className="btn btn-primary bg-blue-600 hover:bg-blue-700 flex items-center gap-2">
+              <button onClick={() => saveChanges("ISSUED")} disabled={submitting} className="btn btn-primary bg-blue-600 hover:bg-blue-700 flex items-center gap-2">
                 <CheckCircle2 size={14} /> Finalize
               </button>
             </>

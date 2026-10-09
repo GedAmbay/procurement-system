@@ -8,6 +8,7 @@ import { Printer, Save, ArrowLeft, Loader2, ZoomIn, ZoomOut, Minus, Plus, Lock, 
 import Link from "next/link";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/utils";
+import ConfirmModal from "@/components/ui/confirm-modal";
 
 interface AcceptanceFormValues {
   invoiceNumber: string;
@@ -37,6 +38,8 @@ export default function AcceptanceEditor() {
   const [zoom, setZoom] = useState(1);
   const [targetRows, setTargetRows] = useState(25);
   const [isUnlocked, setIsUnlocked] = useState(false);
+  const [saveModalOpen, setSaveModalOpen] = useState(false);
+  const [unlockModalOpen, setUnlockModalOpen] = useState(false);
 
   const { register, handleSubmit, control, reset, watch } = useForm<AcceptanceFormValues>();
   const { fields } = useFieldArray({
@@ -124,6 +127,25 @@ export default function AcceptanceEditor() {
     }
   };
 
+  const handleSaveConfirm = () => {
+    setSaveModalOpen(false);
+    handleSubmit(onSubmit)();
+  };
+
+  const handleUnlockConfirm = async (password?: string) => {
+    // TODO: In a fully secure implementation, you would send this password 
+    // to an API endpoint to verify it against the database before unlocking.
+    if (!password) {
+      toast.error("Password is required");
+      return;
+    }
+    
+    // For now, simulating a successful password verification
+    setIsUnlocked(true);
+    setUnlockModalOpen(false);
+    toast.success("Document unlocked securely");
+  };
+
   if (loading) return <LoaderWave variant="page" label="Loading acceptance..." />;
   if (!acceptance) return <div className="p-8 text-center text-slate-500">Report not found</div>;
 
@@ -160,7 +182,7 @@ export default function AcceptanceEditor() {
 
           {acceptance.status === "DRAFT" && (
             <>
-              <button onClick={handleSubmit(onSubmit)} disabled={submitting} className="btn btn-primary flex items-center gap-2">
+              <button onClick={() => setSaveModalOpen(true)} disabled={submitting} className="btn btn-primary flex items-center gap-2">
                 <Save size={16} /> Save
               </button>
               <button onClick={() => updateStatus("ISSUED")} className="btn btn-primary bg-blue-600 hover:bg-blue-700 flex items-center gap-2">
@@ -170,12 +192,12 @@ export default function AcceptanceEditor() {
           )}
 
           {acceptance.status !== "DRAFT" && (
-            <button type="button" onClick={() => setIsUnlocked(!isUnlocked)} className={`btn ${isUnlocked ? 'btn-secondary' : 'btn-primary'}`}>
+            <button type="button" onClick={() => isUnlocked ? setIsUnlocked(false) : setUnlockModalOpen(true)} className={`btn ${isUnlocked ? 'btn-secondary' : 'btn-primary'}`}>
               {isUnlocked ? <><Lock size={16} /> Lock</> : <><Unlock size={16} /> Unlock</>}
             </button>
           )}
           {isUnlocked && (
-            <button onClick={handleSubmit(onSubmit)} disabled={submitting} className="btn btn-primary flex items-center gap-2">
+            <button onClick={() => setSaveModalOpen(true)} disabled={submitting} className="btn btn-primary flex items-center gap-2">
               <Save size={16} /> Save Changes
             </button>
           )}
@@ -244,7 +266,7 @@ export default function AcceptanceEditor() {
                     {(watchAll.lineItems || []).map((item, idx) => {
                       const isSpec = !item.poQuantity || item.poQuantity === 0;
                       if (item.quantityDelivered === 0 && !isSpec) return null;
-                      
+
                       let displayNo = "";
                       if (!isSpec) {
                         let count = 0;
@@ -293,75 +315,85 @@ export default function AcceptanceEditor() {
                 </table>
 
                 <div className="flex border-t-2 border-black">
-                  <div className="w-1/2 border-r-2 border-black p-4 flex flex-col justify-between" style={{ minHeight: "220px" }}>
-                    <div>
-                      <div className="text-center font-bold mb-2">ACCEPTANCE</div>
-                      <div className="flex mb-4">
-                        <span className="font-bold w-28">Date Received:</span>
-                        <span className="flex-1 border-b border-black text-center">{watchAll.dateReceived ? new Date(watchAll.dateReceived).toLocaleDateString() : ""}</span>
+                  <div className="w-[45%] border-r-2 border-black flex flex-col h-full" style={{ minHeight: "260px" }}>
+                    <div className="text-center font-bold py-2 border-b-2 border-black">ACCEPTANCE</div>
+                    <div className="flex flex-col flex-1 p-4">
+                      <div className="h-[70px]">
+                        <div className="flex mb-3">
+                          <span className="font-bold w-28 whitespace-nowrap mr-2">Date Received:</span>
+                          <span className="w-48 border-b border-black text-center">{watchAll.dateReceived ? new Date(watchAll.dateReceived).toLocaleDateString() : ""}</span>
+                        </div>
+
+                        <div className="pl-6">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="w-4 h-4 border border-black flex items-center justify-center font-bold text-xs">{isComplete ? "/" : ""}</div>
+                            <span>Complete</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 border border-black flex items-center justify-center font-bold text-xs">{!isComplete ? "/" : ""}</div>
+                            <span>Partial (pls. Specify)</span>
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="pl-6 mb-4">
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className="w-4 h-4 border border-black flex items-center justify-center font-bold text-xs">{isComplete ? "/" : ""}</div>
-                          <span>Complete</span>
+                      <div className="flex-1 flex mt-6">
+                        <div className="w-1/2 flex items-center">
+                          <span className="text-sm">Received By:</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 border border-black flex items-center justify-center font-bold text-xs">{!isComplete ? "/" : ""}</div>
-                          <span>Partial (pls. Specify)</span>
+                        <div className="w-1/2 flex flex-col justify-between text-center">
+                          <div className="flex flex-col items-center">
+                            <div className="font-bold underline uppercase whitespace-nowrap">HON. TOMAS U. ESTOPEREZ JR.</div>
+                            <div className="text-[10px] mt-1">Requisitioning Officer</div>
+                          </div>
+                          <div className="flex flex-col items-center">
+                            <div className="font-bold underline uppercase whitespace-nowrap">FLORIME Y. OLANDRES</div>
+                            <div className="text-[10px] mt-1">Requisitioning Officer</div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-8 text-center flex flex-col gap-6">
-                      <div className="relative">
-                        <div className="font-bold underline uppercase">HON. TOMAS U. ESTOPEREZ JR.</div>
-                        <div className="text-s">Requisitioning Officer</div>
-                      </div>
-                      <div className="text-left text-s">Received By:</div>
-                      <div className="relative mt-4">
-                        <div className="font-bold underline uppercase">FLORIME Y. OLANDRES</div>
-                        <div className="text-s">Requisitioning Officer</div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="w-1/2 p-4 flex flex-col justify-between" style={{ minHeight: "220px" }}>
-                    <div>
-                      <div className="text-center font-bold mb-2">INSPECTION</div>
-                      <div className="flex mb-4">
-                        <span className="font-bold w-28">Date Inspected:</span>
-                        <span className="flex-1 border-b border-black text-center">{watchAll.dateInspected ? new Date(watchAll.dateInspected).toLocaleDateString() : ""}</span>
-                      </div>
+                  <div className="w-[55%] flex flex-col h-full" style={{ minHeight: "260px" }}>
+                    <div className="text-center font-bold py-2 border-b-2 border-black">INSPECTION</div>
+                    <div className="flex flex-col flex-1 p-4">
+                      <div className="h-[70px]">
+                        <div className="flex mb-3">
+                          <span className="font-bold w-28 whitespace-nowrap mr-2">Date Inspected:</span>
+                          <span className="w-48 border-b border-black text-center">{watchAll.dateInspected ? new Date(watchAll.dateInspected).toLocaleDateString() : ""}</span>
+                        </div>
 
-                      <div className="pl-6 mb-4 flex gap-2">
-                        <div className="w-4 h-4 border border-black flex flex-shrink-0 items-center justify-center font-bold text-xs mt-1">/</div>
-                        <div className="leading-tight">
-                          Inspected, verified and found <span className="font-bold">OK</span><br />
-                          as to quantity and specifications
+                        <div className="pl-6 flex gap-2">
+                          <div className="w-4 h-4 border border-black flex flex-shrink-0 items-center justify-center font-bold text-xs mt-1">/</div>
+                          <div className="leading-tight">
+                            Inspected, verified and found <span className="font-bold">OK</span><br />
+                            as to quantity and specifications
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="mt-8 flex justify-between gap-2 text-center">
-                      <div className="flex-1">
-                        <div className="font-bold underline uppercase">EDSEL J. AMBUBUYOG</div>
-                        <div className="text-s leading-tight">Chairman, Committee on<br />Inspection/Acting Mun. Treasurer</div>
-                      </div>
-                      <div className="flex-1">
-                        <div className="font-bold underline uppercase">HON. TOMAS U. ESTOPEREZ JR.</div>
-                        <div className="text-s leading-tight">Requisitioning Officer</div>
-                      </div>
-                    </div>
+                      <div className="flex-1 flex flex-col justify-between text-center mt-6">
+                        <div className="flex justify-between gap-2 items-start">
+                          <div className="flex-1">
+                            <div className="font-bold underline uppercase whitespace-normal leading-tight">EDSEL J. AMBUBUYOG</div>
+                            <div className="text-[10px] leading-tight mt-1">Chairman, Committee on<br />Inspection/Acting Mun. Treasurer</div>
+                          </div>
+                          <div className="flex-1">
+                            <div className="font-bold underline uppercase whitespace-normal leading-tight">HON. TOMAS U.<br />ESTOPEREZ JR.</div>
+                            <div className="text-[10px] leading-tight mt-1">Requisitioning Officer</div>
+                          </div>
+                        </div>
 
-                    <div className="mt-8 flex justify-between gap-2 text-center">
-                      <div className="flex-1">
-                        <div className="font-bold underline uppercase">CARLOS O. SUAN JR.</div>
-                        <div className="text-s leading-tight">Member/ PDO II</div>
-                      </div>
-                      <div className="flex-1">
-                        <div className="font-bold underline uppercase">RUEL E. CASIDSID</div>
-                        <div className="text-s leading-tight">Member/Draftsman III</div>
+                        <div className="flex justify-between gap-2 items-start">
+                          <div className="flex-1">
+                            <div className="font-bold underline uppercase whitespace-nowrap">CARLOS O. SUAN JR.</div>
+                            <div className="text-[10px] leading-tight mt-1">Member/ PDO II</div>
+                          </div>
+                          <div className="flex-1">
+                            <div className="font-bold underline uppercase whitespace-nowrap">RUEL E. CASIDSID</div>
+                            <div className="text-[10px] leading-tight mt-1">Member/Draftsman III</div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -413,6 +445,10 @@ export default function AcceptanceEditor() {
                     const maxQty = watchAll.lineItems?.[index]?.poQuantity;
                     const prevDelivered = watchAll.lineItems?.[index]?.previouslyDelivered || 0;
                     const remainingQty = maxQty - prevDelivered;
+
+                    // Skip rendering inputs for specification lines
+                    if (!maxQty || maxQty === 0) return null;
+
                     return (
                       <div key={field.id} className="p-3 bg-white rounded-lg shadow-sm border border-slate-100 flex flex-col gap-2">
                         <div className="text-xs font-semibold text-slate-700">{itemDesc}</div>
@@ -444,6 +480,26 @@ export default function AcceptanceEditor() {
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={saveModalOpen}
+        onClose={() => setSaveModalOpen(false)}
+        onConfirm={handleSaveConfirm}
+        title="Confirm Save"
+        message="Are you sure you want to save these changes to the acceptance report?"
+        confirmText="Save Changes"
+      />
+
+      <ConfirmModal
+        isOpen={unlockModalOpen}
+        onClose={() => setUnlockModalOpen(false)}
+        onConfirm={handleUnlockConfirm}
+        title="Unlock Document"
+        message="This document has been issued. Are you sure you want to unlock it for editing?"
+        confirmText="Unlock Document"
+        requirePassword={true}
+        isDestructive={true}
+      />
     </div>
   );
 }

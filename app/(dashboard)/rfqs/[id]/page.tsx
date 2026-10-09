@@ -8,6 +8,7 @@ import { Printer, Save, ArrowLeft, Loader2, ZoomIn, ZoomOut, Send, Clock, CheckC
 import Link from "next/link";
 import { toast } from "sonner";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import ConfirmModal from "@/components/ui/confirm-modal";
 
 export default function RfqLivePreviewPage() {
   const params = useParams();
@@ -19,6 +20,7 @@ export default function RfqLivePreviewPage() {
   const [signatories, setSignatories] = useState<any[]>([]);
   const [zoom, setZoom] = useState(1);
   const [isUnlocked, setIsUnlocked] = useState(false);
+  const [unlockModalOpen, setUnlockModalOpen] = useState(false);
   const [targetRows, setTargetRows] = useState(8);
 
   const { register, handleSubmit, reset, watch } = useForm({
@@ -105,6 +107,17 @@ export default function RfqLivePreviewPage() {
     }
   };
 
+  const handleUnlockConfirm = async (password?: string) => {
+    if (!password) {
+      toast.error("Password is required");
+      return;
+    }
+
+    setIsUnlocked(true);
+    setUnlockModalOpen(false);
+    toast.success("Document unlocked securely");
+  };
+
   if (loading) return <LoaderWave variant="page" label="Loading RFQ..." />;
   if (!rfq) return <div>Error loading data</div>;
 
@@ -125,11 +138,11 @@ export default function RfqLivePreviewPage() {
         <div className="flex gap-2">
           {rfq.status === "DRAFT" && (
             <button onClick={() => updateStatus("COMPLETED")} className="btn btn-primary flex items-center gap-2">
-              <CheckCircle2 size={16} /> Finalize RFQ
+              <CheckCircle2 size={16} /> Issue
             </button>
           )}
           {rfq.status === "COMPLETED" && (
-            <button type="button" onClick={() => setIsUnlocked(!isUnlocked)} className={`btn ${isUnlocked ? 'btn-secondary' : 'btn-primary'}`}>
+            <button type="button" onClick={() => isUnlocked ? setIsUnlocked(false) : setUnlockModalOpen(true)} className={`btn ${isUnlocked ? 'btn-secondary' : 'btn-primary'}`}>
               {isUnlocked ? <><Lock size={16} /> Lock</> : <><Unlock size={16} /> Unlock</>}
             </button>
           )}
@@ -349,6 +362,17 @@ export default function RfqLivePreviewPage() {
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={unlockModalOpen}
+        onClose={() => setUnlockModalOpen(false)}
+        onConfirm={handleUnlockConfirm}
+        title="Unlock Document"
+        message="This document has been finalized. Are you sure you want to unlock it for editing?"
+        confirmText="Unlock Document"
+        requirePassword={true}
+        isDestructive={true}
+      />
     </div >
   );
 }

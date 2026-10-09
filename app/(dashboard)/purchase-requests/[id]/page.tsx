@@ -277,8 +277,13 @@ export default function PurchaseRequestEditor() {
       {/* Header (No Print) */}
       <div className="no-print flex items-center justify-between p-4 bg-white border-b border-slate-200 shadow-sm z-10">
         <div className="flex items-center gap-3">
-          <Link href="/purchase-requests" className="p-2 rounded-md hover:bg-slate-100 text-slate-500 transition-colors">
-            <ArrowLeft size={18} />
+          <Link href="/purchase-requests" style={{
+            display: "flex", alignItems: "center", justifyContent: "center",
+            width: "34px", height: "34px", borderRadius: "50%",
+            background: "var(--color-page-bg)", boxShadow: "var(--shadow-neu-drop)",
+            color: "#64748b", textDecoration: "none",
+          }}>
+            <ArrowLeft size={16} />
           </Link>
           <div>
             <h1 className="text-lg font-bold text-slate-800">

@@ -78,7 +78,7 @@ export default function AcceptancesHub() {
   });
 
   return (
-    <div style={{ width: "100%", maxWidth: "100%", margin: "0 auto", padding: "2rem" }}>
+    <div style={{ width: "100%", maxWidth: "100%", margin: "0 auto", padding: "0.5rem" }}>
       {/* Top Bar */}
       <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "2rem", flexWrap: "wrap" }}>
         <Link
@@ -185,9 +185,9 @@ export default function AcceptancesHub() {
                         onClick={() => router.push(`/acceptances/${acc.id}`)}
                         className={`block p-5 transition-all cursor-pointer rounded-xl`}
                         style={{
-                           background: "var(--color-page-bg)",
-                           boxShadow: "var(--shadow-neu-drop)",
-                           border: isDraft ? '1px solid rgba(251, 191, 36, 0.3)' : '1px solid rgba(255,255,255,0.4)',
+                          background: "var(--color-page-bg)",
+                          boxShadow: "var(--shadow-neu-drop)",
+                          border: isDraft ? '1px solid rgba(251, 191, 36, 0.3)' : '1px solid rgba(255,255,255,0.4)',
                         }}
                       >
                         <div className="flex justify-between items-start mb-3">
