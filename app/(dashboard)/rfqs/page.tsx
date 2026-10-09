@@ -38,7 +38,7 @@ export default function RFQPage() {
       if (!res.ok) throw new Error();
       const data = await res.json();
       // Show all PRs that don't have an RFQ
-      setPrs(data.filter((pr: any) => !pr.rfqId && pr.status === "APPROVED"));
+      setPrs(data.filter((pr: any) => !pr.rfqId));
       setShowModal(true);
     } catch {
       toast.error("Failed to fetch Purchase Requests");

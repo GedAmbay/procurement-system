@@ -18,9 +18,6 @@ export const purchaseRequestSchema = z.object({
   lineItems: z.array(prLineItemSchema).min(1, "At least one line item is required"),
 });
 
-export const purchaseRequestStatusUpdateSchema = z.object({
-  status: z.enum(["DRAFT", "SUBMITTED", "APPROVED", "COMPLETED", "REJECTED"]),
-});
 
 export const userCreateSchema = z.object({
   name: z.string().min(1, "Name is required"),

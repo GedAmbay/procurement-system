@@ -24,6 +24,7 @@ export async function GET(
             office: true,
           }
         },
+        createdBy: true,
         signatory: true,
         lineItems: { orderBy: { sortOrder: "asc" } },
         quotations: {

@@ -199,7 +199,6 @@ async function main() {
           fundSourceId: healthFund.id,
           chargeToAccount: "5-02-03-010",
           totalAmount: 42500.00,
-          status: "SUBMITTED",
           fiscalYear: 2026,
           lineItems: {
             create: [

@@ -4,7 +4,7 @@ import LoaderWave from "@/components/ui/loader-wave";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
-import { Printer, Save, ArrowLeft, Loader2, Send, ZoomIn, ZoomOut, Minus, Plus, Package, FileText, ChevronRight, CheckCircle2, XCircle } from "lucide-react";
+import { Printer, Save, ArrowLeft, Loader2, Send, ZoomIn, ZoomOut, Minus, Plus, Package, FileText, ChevronRight, CheckCircle2, XCircle, User } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { formatCurrency, numberToWords } from "@/lib/utils";
@@ -159,6 +159,11 @@ export default function PurchaseOrderEditor() {
           </Link>
           <div>
             <h1 className="text-lg font-bold text-slate-800">Live Preview</h1>
+            {poData.createdBy && (
+              <div className="text-sm text-slate-500 mt-0.5 flex items-center gap-1">
+                <User size={14} /> Created by <strong className="text-slate-700">{poData.createdBy.name}</strong>
+              </div>
+            )}
           </div>
         </div>
         <div className="flex gap-2">

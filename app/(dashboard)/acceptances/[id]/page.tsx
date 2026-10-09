@@ -4,7 +4,7 @@ import LoaderWave from "@/components/ui/loader-wave";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
-import { Printer, Save, ArrowLeft, Loader2, ZoomIn, ZoomOut, Minus, Plus, Lock, Unlock, CheckCircle2 } from "lucide-react";
+import { Printer, Save, ArrowLeft, Loader2, ZoomIn, ZoomOut, Minus, Plus, Lock, Unlock, CheckCircle2, User } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/utils";
@@ -173,6 +173,11 @@ export default function AcceptanceEditor() {
           <div>
             <h1 className="text-lg font-bold text-slate-800">IAR: {acceptance.iarNumber}</h1>
             <p className="text-xs text-slate-500 font-medium">{acceptance.status}</p>
+            {acceptance.createdBy && (
+              <div className="text-sm text-slate-500 mt-0.5 flex items-center gap-1">
+                <User size={14} /> Created by <strong className="text-slate-700">{acceptance.createdBy.name}</strong>
+              </div>
+            )}
           </div>
         </div>
         <div className="flex gap-2">

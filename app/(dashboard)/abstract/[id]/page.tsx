@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft, Plus, Building2, FileCheck2, Loader2, Send,
-  CheckCircle2, Clock, AlertCircle, Printer, ChevronRight, X, Calendar
+  CheckCircle2, Clock, AlertCircle, Printer, ChevronRight, X, Calendar, User
 } from "lucide-react";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
@@ -136,6 +136,11 @@ export default function AoqSupplierHub() {
               {statusStyle.label}
             </span>
           </div>
+          {aoq.createdBy && (
+            <div className="text-sm text-slate-500 mt-1 flex items-center gap-1">
+              <User size={14} /> Created by <strong className="text-slate-700">{aoq.createdBy.name}</strong>
+            </div>
+          )}
           <div style={{ fontSize: "0.8125rem", color: "#64748b", marginTop: "0.25rem" }}>
             {rfq.pr?.office?.name} &nbsp;&middot;&nbsp; {totalItems} item{totalItems !== 1 ? "s" : ""}
             &nbsp;&middot;&nbsp; ABC: <strong style={{ color: "#059669" }}>{formatCurrency(rfq.pr?.totalAmount)}</strong>

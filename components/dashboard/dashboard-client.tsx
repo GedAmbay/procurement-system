@@ -40,7 +40,6 @@ interface DashboardClientProps {
       office: string;
       purpose: string;
       totalAmount: number;
-      status: string;
       createdAt: string;
     }[];
     monthlyChart: { month: string; count: number; amount: number }[];

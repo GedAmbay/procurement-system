@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth-utils";
+import { auth } from "@/auth";
 
 export async function GET() {
   const roleCheck = await requireRole(["ANY"]);
@@ -39,6 +40,8 @@ export async function POST(req: Request) {
   const roleCheck = await requireRole(["ADMIN", "BAC_SECRETARIAT"]);
   if (!roleCheck.authorized) return roleCheck.response;
 
+  const session = await auth();
+
   try {
     const body = await req.json();
     const { poId, fiscalYear } = body;
@@ -71,6 +74,7 @@ export async function POST(req: Request) {
         iarNumber,
         poId,
         fiscalYear: fiscalYear || new Date().getFullYear(),
+        createdById: session?.user?.id,
         lineItems: {
           create: poLineItems.map(item => {
             // Calculate previously delivered (only from non-DRAFT or all, let's say all for simplicity, or just ISSUED/COMPLETED)

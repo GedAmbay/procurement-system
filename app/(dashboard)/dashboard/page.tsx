@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import DashboardClient from "@/components/dashboard/dashboard-client";
 import { formatCurrency } from "@/lib/utils";
 
-type MonthlyPR = { createdAt: Date; totalAmount: number; status: string };
+type MonthlyPR = { createdAt: Date; totalAmount: number };
 
 
 async function getDashboardData() {
@@ -31,16 +31,16 @@ async function getDashboardData() {
     }),
     prisma.purchaseRequest.findMany({
       where: { fiscalYear: new Date().getFullYear() },
-      select: { createdAt: true, totalAmount: true, status: true },
+      select: { createdAt: true, totalAmount: true },
     }),
     prisma.purchaseOrder.count({
       where: { status: "ISSUED", deliveryDate: { lt: new Date() } }
     }),
     Promise.all([
-      prisma.purchaseRequest.count({ where: { status: { in: ["SUBMITTED", "APPROVED"] } } }), // PR Logged
-      prisma.purchaseRequest.count({ where: { status: "FOR_RFQ", isDirectAcquisition: false } }), // For RFQ
-      prisma.purchaseRequest.count({ where: { status: "FOR_AOQ", isDirectAcquisition: false } }), // For AOQ
-      prisma.purchaseRequest.count({ where: { status: "FOR_PO" } }), // For PO
+      prisma.purchaseRequest.count(), // PR Logged
+      prisma.purchaseRequest.count({ where: { rfqs: { none: {} }, isDirectAcquisition: false } }), // For RFQ
+      prisma.rfq.count({ where: { aoq: null, pr: { isDirectAcquisition: false } } }), // For AOQ
+      prisma.purchaseRequest.count({ where: { isDirectAcquisition: true, purchaseOrders: { none: {} } } }), // For PO (Direct) + below for normal
       prisma.purchaseOrder.count({ where: { status: { in: ["ISSUED", "COMPLETED"] } } }) // Issued
     ]),
       prisma.purchaseOrder.findMany({
@@ -116,7 +116,7 @@ async function getDashboardData() {
       logged: pipelineCounts[0],
       forRfq: pipelineCounts[1],
       forAoq: pipelineCounts[2],
-      forPo: pipelineCounts[3],
+      forPo: pipelineCounts[3] + pipelineCounts[2], // Placeholder logic approximation for PO pipeline
       issued: pipelineCounts[4],
     },
     recentPRs: recentPRs.map((pr: typeof recentPRs[number]) => ({
@@ -125,7 +125,6 @@ async function getDashboardData() {
       office: pr.office.name,
       purpose: pr.purpose,
       totalAmount: pr.totalAmount,
-      status: pr.status,
       createdAt: pr.createdAt.toISOString(),
     })),
     monthlyChart,

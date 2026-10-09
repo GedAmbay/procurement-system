@@ -20,14 +20,7 @@ interface PR {
   isDirectAcquisition?: boolean;
 }
 
-const STATUS_COLORS: Record<string, { bg: string; color: string; icon: React.ReactNode }> = {
-  DRAFT: { bg: "#fef3c7", color: "#b45309", icon: <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "currentColor" }} /> },
-  SUBMITTED: { bg: "#eff6ff", color: "#2563eb", icon: <Send size={11} /> },
-  APPROVED: { bg: "#f0fdf4", color: "#16a34a", icon: <CheckCircle2 size={11} /> },
-  REJECTED: { bg: "#fef2f2", color: "#dc2626", icon: <XCircle size={11} /> },
-  FOR_RFQ: { bg: "#fff7ed", color: "#c2410c", icon: <FileText size={11} /> },
-  CLOSED: { bg: "#f8fafc", color: "#64748b", icon: <CheckCircle2 size={11} /> },
-};
+
 
 export default function PurchaseRequestsPage() {
   const router = useRouter();

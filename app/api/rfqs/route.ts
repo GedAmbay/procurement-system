@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
   if (!roleCheck.authorized) return roleCheck.response;
 
   try {
+    const session = await auth();
     const { prId } = await req.json();
     if (!prId) return NextResponse.json({ error: "PR ID is required" }, { status: 400 });
 
@@ -83,6 +84,7 @@ export async function POST(req: NextRequest) {
         prId,
         fiscalYear: pr.fiscalYear,
         status: "DRAFT",
+        createdById: session?.user?.id,
         lineItems: {
           create: pr.lineItems.map(li => ({
             description: li.description,

@@ -4,7 +4,7 @@ import LoaderWave from "@/components/ui/loader-wave";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { Printer, Save, ArrowLeft, Loader2, ZoomIn, ZoomOut, Send, Clock, CheckCircle2, Lock, Unlock, Minus, Plus } from "lucide-react";
+import { Printer, Save, ArrowLeft, Loader2, ZoomIn, ZoomOut, Send, Clock, CheckCircle2, Lock, Unlock, Minus, Plus, User } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -133,6 +133,11 @@ export default function RfqLivePreviewPage() {
           </Link>
           <div>
             <h1 className="text-lg font-bold text-slate-800">{rfq.rfqNumber} • Status: <strong className="text-slate-700">{rfq.status.replace(/_/g, ' ')}</strong></h1>
+            {rfq.createdBy && (
+              <div className="text-sm text-slate-500 mt-0.5 flex items-center gap-1">
+                <User size={14} /> Created by <strong className="text-slate-700">{rfq.createdBy.name}</strong>
+              </div>
+            )}
           </div>
         </div>
         <div className="flex gap-2">

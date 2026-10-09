@@ -20,6 +20,10 @@ model User {
   auditLogs              DocumentAuditLog[]
   purchaseRequests       PurchaseRequest[]
   calendarEvents         CalendarEvent[]
+  rfqsCreated            Rfq[]                 @relation("RfqCreatedBy")
+  aoqsCreated            AbstractOfQuotation[] @relation("AoqCreatedBy")
+  purchaseOrdersCreated  PurchaseOrder[]       @relation("PoCreatedBy")
+  acceptancesCreated     Acceptance[]          @relation("AcceptanceCreatedBy")
   office                 Office?                @relation(fields: [officeId], references: [id])
   calendarEventHistories CalendarEventHistory[]
 
@@ -117,7 +121,6 @@ model PurchaseRequest {
   fundSourceId           String?
   chargeToAccount        String?
   totalAmount            Float           @default(0)
-  status                 String          @default("APPROVED")
   remarks                String?
   printCount             Int             @default(0)
   lastPrintedAt          DateTime?
@@ -167,12 +170,14 @@ model Rfq {
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt
   signatoryId   String?
+  createdById   String?
   aoq           AbstractOfQuotation?
   quotations    Quotation[]
   lineItems     RfqLineItem[]
   suppliers     RfqSupplier[]
   signatory     Signatory?           @relation(fields: [signatoryId], references: [id])
   pr            PurchaseRequest      @relation(fields: [prId], references: [id])
+  createdBy     User?                @relation("RfqCreatedBy", fields: [createdById], references: [id])
 
   @@map("rfqs")
 }
@@ -243,11 +248,13 @@ model AbstractOfQuotation {
   printCount     Int             @default(0)
   lastPrintedAt  DateTime?
   fiscalYear     Int
+  createdById   String?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   rfq            Rfq             @relation(fields: [rfqId], references: [id])
   lineItems      AoqLineItem[]
   purchaseOrders PurchaseOrder[]
+  createdBy      User?           @relation("AoqCreatedBy", fields: [createdById], references: [id])
 
   docDate          DateTime?
   bacResNo         String?
@@ -291,6 +298,7 @@ model PurchaseOrder {
   printCount      Int                  @default(0)
   lastPrintedAt   DateTime?
   fiscalYear      Int
+  createdById     String?
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt
   lineItems       PoLineItem[]
@@ -298,6 +306,7 @@ model PurchaseOrder {
   supplier        Supplier?            @relation(fields: [supplierId], references: [id])
   aoq             AbstractOfQuotation? @relation(fields: [aoqId], references: [id])
   pr              PurchaseRequest?     @relation(fields: [prId], references: [id])
+  createdBy       User?                @relation("PoCreatedBy", fields: [createdById], references: [id])
 
   @@map("purchase_orders")
 }
@@ -344,11 +353,13 @@ model Acceptance {
   status        String    @default("DRAFT")
   printCount    Int       @default(0)
   fiscalYear    Int
+  createdById   String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   po        PurchaseOrder        @relation(fields: [poId], references: [id])
   lineItems AcceptanceLineItem[]
+  createdBy User?                @relation("AcceptanceCreatedBy", fields: [createdById], references: [id])
 
   @@map("acceptances")
 }

@@ -19,6 +19,7 @@ export async function GET(
     const aoq = await prisma.abstractOfQuotation.findUnique({
       where: { id },
       include: {
+        createdBy: true,
         rfq: {
           include: {
             pr: {

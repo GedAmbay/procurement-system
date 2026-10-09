@@ -117,7 +117,6 @@ export async function POST(req: NextRequest) {
           totalAmount,
           fiscalYear,
           isDirectAcquisition,
-          status: "COMPLETED",
           lineItems: {
             create: lineItems.map((item: any, idx: number) => ({
               itemId: item.itemId || null,

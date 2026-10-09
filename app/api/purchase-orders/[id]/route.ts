@@ -19,6 +19,7 @@ export async function GET(
     const po = await prisma.purchaseOrder.findUnique({
       where: { id },
       include: {
+        createdBy: true,
         supplier: true,
         lineItems: { orderBy: { sortOrder: "asc" } },
         aoq: {

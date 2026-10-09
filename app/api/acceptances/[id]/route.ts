@@ -10,6 +10,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     const acceptance = await prisma.acceptance.findUnique({
       where: { id },
       include: {
+        createdBy: true,
         po: {
           include: {
             supplier: true,
