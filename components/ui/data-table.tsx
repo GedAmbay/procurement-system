@@ -26,7 +26,12 @@ interface DataTableProps<T extends { id: string; isActive?: boolean }> {
   onEdit?: (row: T) => void;
   onDuplicate?: (row: T) => void;
   onDelete?: (row: T) => Promise<void>;
-  customActions?: { label: string; icon: React.ReactNode; onClick: (row: T) => void }[];
+  customActions?: {
+    label: React.ReactNode | ((row: T) => React.ReactNode);
+    icon?: React.ReactNode | ((row: T) => React.ReactNode);
+    color?: string | ((row: T) => string);
+    onClick: (row: T) => void;
+  }[];
   extraHeaderContent?: React.ReactNode;
   emptyIcon?: React.ReactNode;
   emptyText?: string;
@@ -407,12 +412,12 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
                   <tr
                     key={row.id}
                     style={{
-                      opacity: row.isActive === false ? 0.5 : 1,
-                      cursor: (onView || onEdit || onDuplicate || onDelete) ? "pointer" : "default",
+                      opacity: row.isActive === false ? 0.6 : 1,
+                      cursor: (onView || onEdit || onDuplicate || onDelete || (customActions && customActions.length > 0)) ? "pointer" : "default",
                       backgroundColor: selectedRow?.id === row.id ? "#f1f5f9" : "transparent",
                     }}
                     onClick={() => {
-                      if (onView || onEdit || onDuplicate || onDelete) setSelectedRow(row);
+                      if (onView || onEdit || onDuplicate || onDelete || (customActions && customActions.length > 0)) setSelectedRow(row);
                     }}
                     onDoubleClick={() => {
                       if (onView) onView(row);
@@ -512,16 +517,34 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
                 <Copy size={16} /> Duplicate
               </button>
             )}
-            {customActions && customActions.map((action, i) => (
-              <button
-                key={i}
-                onClick={() => { if (selectedRow) action.onClick(selectedRow); setSelectedRow(null); }}
-                style={{ background: "#e0e5ec", border: "none", color: "#475569", padding: "0.75rem 1.5rem", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem", cursor: "pointer", fontSize: "0.75rem", borderRadius: "0.5rem", boxShadow: "4px 4px 8px rgba(163,177,198,0.6), -4px -4px 8px rgba(255,255,255, 0.5)" }}
-              >
-                {action.icon} {action.label}
-              </button>
-            ))}
-            {onDelete && selectedRow?.isActive !== false && (
+            {customActions && selectedRow && customActions.map((action, i) => {
+              const label = typeof action.label === "function" ? action.label(selectedRow) : action.label;
+              const icon = typeof action.icon === "function" ? action.icon(selectedRow) : action.icon;
+              const color = typeof action.color === "function" ? action.color(selectedRow) : action.color;
+              return (
+                <button
+                  key={i}
+                  onClick={() => { action.onClick(selectedRow); setSelectedRow(null); }}
+                  style={{
+                    background: "#e0e5ec",
+                    border: "none",
+                    color: (color as string) || "#475569",
+                    padding: "0.75rem 1.5rem",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "0.25rem",
+                    cursor: "pointer",
+                    fontSize: "0.75rem",
+                    borderRadius: "0.5rem",
+                    boxShadow: "4px 4px 8px rgba(163,177,198,0.6), -4px -4px 8px rgba(255,255,255, 0.5)"
+                  }}
+                >
+                  {icon as React.ReactNode} {label as React.ReactNode}
+                </button>
+              );
+            })}
+            {onDelete && selectedRow && (
               <button
                 onClick={() => { if (selectedRow) setRowToDelete(selectedRow); setSelectedRow(null); }}
                 disabled={deleting === selectedRow?.id}

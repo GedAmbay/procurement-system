@@ -149,6 +149,7 @@ export async function POST(req: NextRequest) {
             prId: createdPr.id,
             fiscalYear: createdPr.fiscalYear,
             status: "DRAFT",
+            createdById: user.id,
             lineItems: {
               create: createdPr.lineItems.map(li => ({
                 description: li.description,
@@ -171,6 +172,7 @@ export async function POST(req: NextRequest) {
             fiscalYear: createdPr.fiscalYear,
             totalAmount: createdPr.totalAmount, 
             status: "DRAFT",
+            createdById: user.id,
             lineItems: {
               create: createdPr.lineItems.map(li => ({
                 description: li.description,
@@ -193,6 +195,7 @@ export async function POST(req: NextRequest) {
             fiscalYear: createdPr.fiscalYear,
             totalAmount: createdPr.totalAmount,
             status: "DRAFT",
+            createdById: user.id,
             lineItems: {
               create: createdPr.lineItems.map(li => ({
                 description: li.description,
@@ -215,6 +218,7 @@ export async function POST(req: NextRequest) {
             fiscalYear: createdPr.fiscalYear,
             totalAmount: createdPr.totalAmount,
             status: "DRAFT",
+            createdById: user.id,
             lineItems: {
               create: createdPr.lineItems.map(li => ({
                 description: li.description,

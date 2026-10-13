@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FileText, Printer, Eye, CheckCircle2, XCircle, Clock, Send, FolderOpen } from "lucide-react";
+import { FileText, Printer, Eye, CheckCircle2, XCircle, Clock, Send, FolderOpen, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import DataTable from "@/components/ui/data-table";
@@ -91,7 +91,20 @@ export default function PurchaseRequestsPage() {
         </span>
       ),
       width: "120px",
-    }
+    },
+
+    {
+      key: "requestedBy",
+      label: "Created By",
+      align: "center",
+      render: (row: PR) => (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.375rem", fontSize: "0.8125rem", color: "#475569", fontWeight: 500 }}>
+          <User size={13} style={{ color: "#94a3b8" }} />
+          <span>{row.requestedBy?.name || "—"}</span>
+        </div>
+      ),
+      width: "150px",
+    },
   ];
 
   const handleEdit = (row: PR) => {

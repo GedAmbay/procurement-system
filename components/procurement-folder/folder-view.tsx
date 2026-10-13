@@ -9,7 +9,8 @@ import {
   Eye,
   Edit,
   ArrowRight,
-  ChevronRight
+  ChevronRight,
+  User
 } from "lucide-react";
 
 interface FolderViewProps {
@@ -62,7 +63,7 @@ export default function FolderView({ folderData, stages }: FolderViewProps) {
           </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "2rem", marginBottom: "3rem" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "1.5rem", marginBottom: "3rem" }}>
           <div>
             <div style={{ fontSize: "0.875rem", color: "#64748b", marginBottom: "0.5rem" }}>PR number</div>
             <div style={{ fontWeight: 700, color: "#1e293b", fontSize: "1.125rem" }}>{folderData.prNumber}</div>
@@ -70,6 +71,10 @@ export default function FolderView({ folderData, stages }: FolderViewProps) {
           <div>
             <div style={{ fontSize: "0.875rem", color: "#64748b", marginBottom: "0.5rem" }}>Requesting office</div>
             <div style={{ fontWeight: 700, color: "#1e293b", fontSize: "1.125rem" }}>{folderData.office?.name || "—"}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: "0.875rem", color: "#64748b", marginBottom: "0.5rem" }}>Created by</div>
+            <div style={{ fontWeight: 700, color: "#1e293b", fontSize: "1.125rem" }}>{folderData.requestedBy?.name || "—"}</div>
           </div>
           <div>
             <div style={{ fontSize: "0.875rem", color: "#64748b", marginBottom: "0.5rem" }}>Fund source</div>
@@ -191,6 +196,8 @@ export default function FolderView({ folderData, stages }: FolderViewProps) {
                   case "IAR": editPath = `/acceptances/${docId}`; numberStr = doc.iarNumber; break;
                 }
 
+                const authorName = doc.createdBy?.name || (stage.key === 'PR' ? folderData.requestedBy?.name : null);
+
                 if (isDone || doc.status === "COMPLETED" || doc.status === "APPROVED") {
                   return (
                     <div key={docId} className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1.5rem 2rem" }}>
@@ -207,7 +214,7 @@ export default function FolderView({ folderData, stages }: FolderViewProps) {
                             <span style={{ fontSize: "1rem", fontWeight: 600, color: "#64748b" }}>{numberStr}</span>
                           </div>
                           <div style={{ fontSize: "0.875rem", color: "#64748b" }}>
-                            Created {formatDate(doc.createdAt)} {stage.key === 'PR' ? `· ${itemsCount} items · ${formatCurrency(doc.totalAmount)}` : ''}
+                            Created {formatDate(doc.createdAt)} {authorName ? `by ${authorName}` : ''} {stage.key === 'PR' ? `· ${itemsCount} items · ${formatCurrency(doc.totalAmount)}` : ''}
                           </div>
                         </div>
                       </div>
@@ -249,7 +256,7 @@ export default function FolderView({ folderData, stages }: FolderViewProps) {
                           </span>
                         </div>
                         <div style={{ fontSize: "0.875rem", color: "#64748b" }}>
-                          Created {formatDate(doc.createdAt)} {stage.key === 'RFQ' ? `· ${(doc.quotations || []).length} suppliers invited` : ''}
+                          Created {formatDate(doc.createdAt)} {authorName ? `by ${authorName}` : ''} {stage.key === 'RFQ' ? `· ${(doc.quotations || []).length} suppliers invited` : ''}
                         </div>
                       </div>
                       <div style={{ display: "flex", gap: "1rem" }}>

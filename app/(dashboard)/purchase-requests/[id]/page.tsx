@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
 import { formatCurrency, LGU_INFO } from "@/lib/utils";
-import { Printer, Save, Send, CheckCircle2, XCircle, Plus, Minus, Trash2, ArrowLeft, Loader2, ZoomIn, ZoomOut, Lock, Unlock, FolderOpen, Calendar } from "lucide-react";
+import { Printer, Save, Send, CheckCircle2, XCircle, Plus, Minus, Trash2, ArrowLeft, Loader2, ZoomIn, ZoomOut, Lock, Unlock, FolderOpen, Calendar, User } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -289,6 +289,11 @@ export default function PurchaseRequestEditor() {
             <h1 className="text-lg font-bold text-slate-800">
               {isNew ? "New Purchase Request" : `PR: ${prData?.prNumber}`}
             </h1>
+            {prData?.requestedBy && (
+              <div className="text-sm text-slate-500 mt-0.5 flex items-center gap-1">
+                <User size={14} /> Created by <strong className="text-slate-700">{prData.requestedBy.name}</strong>
+              </div>
+            )}
           </div>
         </div>
         <div className="flex gap-2">

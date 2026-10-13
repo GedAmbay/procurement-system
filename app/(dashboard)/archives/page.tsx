@@ -22,7 +22,6 @@ export default async function ArchivesPage(props: { searchParams: Promise<{ year
         select: {
           id: true,
           totalAmount: true,
-          status: true,
           rfqs: {
             select: {
               aoq: {

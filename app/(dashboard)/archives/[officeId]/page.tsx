@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { FileText, ArrowLeft, FolderOpen, ChevronRight } from "lucide-react";
+import { FileText, ArrowLeft, FolderOpen, ChevronRight, User } from "lucide-react";
 import Link from "next/link";
 import DataTable from "@/components/ui/data-table";
 import { formatCurrency } from "@/lib/utils";
@@ -12,8 +12,8 @@ interface FolderRecord {
   prNumber: string;
   purpose: string;
   totalAmount: number;
-  status: string;
   createdAt: string;
+  requestedBy?: { name: string };
 }
 
 export default function OfficeArchivePage() {
@@ -64,17 +64,7 @@ export default function OfficeArchivePage() {
       ),
       width: "140px",
     },
-    {
-      key: "status",
-      label: "PR Status",
-      align: "center",
-      render: (row: FolderRecord) => (
-        <span className="px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600">
-          {row.status}
-        </span>
-      ),
-      width: "120px",
-    },
+
     {
       key: "createdAt",
       label: "Date Created",
@@ -86,6 +76,19 @@ export default function OfficeArchivePage() {
         </span>
       ),
       width: "120px",
+    },
+
+    {
+      key: "requestedBy",
+      label: "Created By",
+      align: "center",
+      render: (row: FolderRecord) => (
+        <div className="flex items-center justify-center gap-1.5 text-xs text-slate-700 font-medium">
+          <User size={13} className="text-slate-400" />
+          <span>{row.requestedBy?.name || "—"}</span>
+        </div>
+      ),
+      width: "150px",
     }
   ];
 

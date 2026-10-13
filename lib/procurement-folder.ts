@@ -22,6 +22,7 @@ export async function getProcurementFolder(prId: string) {
       },
       rfqs: {
         include: {
+          createdBy: true,
           suppliers: {
             include: { supplier: true }
           },
@@ -31,12 +32,14 @@ export async function getProcurementFolder(prId: string) {
           signatory: true,
           aoq: {
             include: {
+              createdBy: true,
               lineItems: true,
               purchaseOrders: {
                 include: {
+                  createdBy: true,
                   supplier: true,
                   acceptances: {
-                    include: { lineItems: true }
+                    include: { lineItems: true, createdBy: true }
                   },
                   lineItems: true
                 }
