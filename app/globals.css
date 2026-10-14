@@ -266,6 +266,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .sidebar-nav-item,
   .sidebar-nav-chevron,
   .sidebar-submenu,
@@ -732,12 +733,23 @@ tbody td {
     margin-left: 0 !important;
   }
 
+  html,
   body {
     background: white;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  .print-area {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
   }
 
   @page {
-    margin-top: 0.5in;
+    margin-top: 0.50in;
     margin-bottom: 0.10in;
     margin-left: 0.10in;
     margin-right: 0.10in;
@@ -792,9 +804,17 @@ tbody td {
   animation: pressWave 1.2s ease-in-out infinite;
 }
 
-.loader-wave span:nth-child(1) { animation-delay: 0s; }
-.loader-wave span:nth-child(2) { animation-delay: 0.2s; }
-.loader-wave span:nth-child(3) { animation-delay: 0.4s; }
+.loader-wave span:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.loader-wave span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.loader-wave span:nth-child(3) {
+  animation-delay: 0.4s;
+}
 
 .loader-wave-label {
   margin: 0;
@@ -805,19 +825,29 @@ tbody td {
 }
 
 @keyframes pressWave {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 4px 4px 8px var(--sh-d), -4px -4px 8px var(--sh-l);
   }
+
   50% {
     box-shadow: inset 4px 4px 8px var(--sh-d), inset -4px -4px 8px var(--sh-l);
   }
 }
 
 @keyframes loaderFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @media print {
-  .loader-wave-wrap { display: none !important; }
+  .loader-wave-wrap {
+    display: none !important;
+  }
 }

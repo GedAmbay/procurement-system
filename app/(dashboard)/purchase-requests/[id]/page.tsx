@@ -350,7 +350,7 @@ export default function PurchaseRequestEditor() {
         <div className="flex-1 overflow-auto bg-slate-200 print:p-0 print:bg-white print:block print:!overflow-visible print:!h-auto">
 
           <div className="p-8 print:p-0 w-max mx-auto min-w-full flex justify-center origin-top print:block print:w-full print:min-w-0 print:!transform-none print:!mb-0" style={{ transform: `scale(${zoom})`, marginBottom: `${(zoom - 1) * 1123}px` }}>
-            <div className="print-area text-black w-[900px] bg-white shadow-xl min-h-[1123px] p-10 print:shadow-none print:w-full print:max-w-none print:p-8 print:m-0 print:min-h-0">
+            <div className="print-area text-black w-[900px] bg-white shadow-xl min-h-[1123px] p-10 print:shadow-none print:w-full print:max-w-none print:p-0 print:m-0 print:min-h-0">
               {/* PR Standard Form Layout */}
               <div className="text-right font-bold text-lg mb-2">Annex 30</div>
 
@@ -463,7 +463,7 @@ export default function PurchaseRequestEditor() {
                       <td className="border border-black border-t-0 border-r-0 py-0 px-1 leading-tight font-bold sign-text">Approved by:</td>
                     </tr>
                     <tr className="border-none">
-                      <td className="border border-black border-l-0 border-b-0 py-0 px-1 pl-2 italic text-left align-top h-[10px] text-[13px]">Signature:</td>
+                      <td className="border border-black border-l-0 border-b-0 py-0 px-1 pl-2 italic text-left align-top h-[30px] text-[13px]">Signature:</td>
                       <td className="border border-black py-0 px-1"></td>
                       <td className="border border-black py-0 px-1"></td>
                       <td className="border border-black border-r-0 py-0 px-1"></td>

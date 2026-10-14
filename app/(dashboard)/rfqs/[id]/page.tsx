@@ -187,7 +187,7 @@ export default function RfqLivePreviewPage() {
               }
             `}</style>
 
-            <div className="print-area text-black w-[900px] bg-white shadow-xl min-h-[1123px] p-10 print:shadow-none print:w-full print:max-w-none print:p-8 print:m-0 print:min-h-0 font-sans text-[11px]">
+            <div className="print-area text-black w-[900px] bg-white shadow-xl min-h-[1123px] p-10 print:shadow-none print:w-full print:max-w-none print:p-0 print:m-0 print:min-h-0 font-sans text-[11px]">
 
               {/* Header Layout per Template */}
               <div className="flex justify-between items-start mb-6">
