@@ -10,7 +10,7 @@ interface PO {
   id: string;
   poNumber: string;
   pr?: { purpose: string; office: { name: string; code: string }; isDirectAcquisition: boolean };
-  aoq?: {
+  abstract?: {
     rfq: {
       pr: { purpose: string; office: { name: string; code: string }; isDirectAcquisition: boolean }
     }
@@ -36,7 +36,7 @@ export default function PurchaseOrdersPage() {
       key: "poNumber",
       label: "PO Number",
       render: (row: PO) => {
-        const isDirect = row.pr?.isDirectAcquisition || row.aoq?.rfq?.pr?.isDirectAcquisition;
+        const isDirect = row.pr?.isDirectAcquisition || row.abstract?.rfq?.pr?.isDirectAcquisition;
         return (
           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
             <div style={{ fontWeight: "700", color: "#0f172a", fontFamily: "monospace", fontSize: "0.875rem" }}>
@@ -70,7 +70,7 @@ export default function PurchaseOrdersPage() {
           fontSize: "0.875rem", color: "#334155",
           maxWidth: "600px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis"
         }}>
-          {row.pr?.purpose || row.aoq?.rfq?.pr?.purpose || "N/A"}
+          {row.pr?.purpose || row.abstract?.rfq?.pr?.purpose || "N/A"}
         </div>
       ),
     },
@@ -153,7 +153,7 @@ export default function PurchaseOrdersPage() {
         ]}
         dateFilterKey="createdAt"
         customFilters={[
-          { label: "Direct Acquisition", filterFn: (row: PO) => !!row.pr?.isDirectAcquisition || !!row.aoq?.rfq?.pr?.isDirectAcquisition, colorClass: "bg-teal-100 text-teal-800" }
+          { label: "Direct Acquisition", filterFn: (row: PO) => !!row.pr?.isDirectAcquisition || !!row.abstract?.rfq?.pr?.isDirectAcquisition, colorClass: "bg-teal-100 text-teal-800" }
         ]}
       />
     </div>

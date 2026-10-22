@@ -188,10 +188,10 @@ export default function FolderView({ folderData, stages }: FolderViewProps) {
                 switch (stage.key) {
                   case "PR": editPath = `/purchase-requests/${docId}`; numberStr = doc.prNumber; break;
                   case "RFQ":
-                    editPath = doc.aoq ? `/abstract/${doc.aoq.id}` : `/rfqs/${docId}`;
+                    editPath = doc.abstract ? `/abstract/${doc.abstract.id}` : `/rfqs/${docId}`;
                     numberStr = doc.rfqNumber;
                     break;
-                  case "AOQ": title = "Abstract of Canvass"; editPath = `/abstract/${docId}`; numberStr = doc.aoqNumber; break;
+                  case "abstract": title = "Abstract of Canvass"; editPath = `/abstract/${docId}`; numberStr = doc.abstractNumber; break;
                   case "PO": editPath = `/purchase-orders/${docId}`; numberStr = doc.poNumber; break;
                   case "IAR": editPath = `/acceptances/${docId}`; numberStr = doc.iarNumber; break;
                 }

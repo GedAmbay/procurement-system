@@ -10,7 +10,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 export const metadata: Metadata = {
   title: "BAC PANDAN",
   description:
-    "Digital procurement management for the Municipality of Pandan, Antique. Manage PR, RFQ, AOQ, and PO documents with full audit trail.",
+    "Digital procurement management for the Municipality of Pandan, Antique. Manage PR, RFQ, abstract, and PO documents with full audit trail.",
   keywords: ["LGU", "procurement", "purchase request", "government", "Philippines"],
 };
 

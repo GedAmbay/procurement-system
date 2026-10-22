@@ -21,6 +21,7 @@ interface FormModalProps {
   onSubmit: (data: Record<string, string>) => Promise<void>;
   initialValues?: any;
   submitLabel?: string;
+  showCancel?: boolean;
 }
 
 export default function FormModal({
@@ -30,6 +31,7 @@ export default function FormModal({
   onSubmit,
   initialValues = {},
   submitLabel = "Save",
+  showCancel = false,
 }: FormModalProps) {
   const [values, setValues] = useState<Record<string, string>>(() => {
     const init: Record<string, string> = {};
@@ -120,9 +122,21 @@ export default function FormModal({
             ))}
           </div>
 
-          <div style={{ display: "flex", gap: "0.625rem", justifyContent: "flex-end", marginTop: "1.5rem", paddingTop: "1rem", borderTop: "1px solid #f1f5f9" }}>
-            <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn btn-primary" disabled={loading}>
+          <div style={{ display: "flex", gap: "0.625rem", marginTop: "1.5rem", paddingTop: "1rem", borderTop: "1px solid #f1f5f9" }}>
+            {showCancel && (
+              <button type="button" className="btn btn-secondary" onClick={onClose} style={{ flex: 1 }}>
+                Cancel
+              </button>
+            )}
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={loading}
+              style={{
+                width: "100%",
+                justifyContent: "center",
+              }}
+            >
               {loading ? <><Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> Saving...</> : submitLabel}
             </button>
           </div>

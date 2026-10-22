@@ -6,9 +6,9 @@ import DataTable from "@/components/ui/data-table";
 import { formatCurrency } from "@/lib/utils";
 import { Send, Clock, CheckCircle2, ClipboardList, XCircle } from "lucide-react";
 
-interface AOQ {
+interface abstract {
   id: string;
-  aoqNumber: string;
+  abstractNumber: string;
   rfq: {
     pr: {
       purpose: string;
@@ -27,17 +27,17 @@ const STATUS_COLORS: Record<string, { bg: string; color: string; icon: React.Rea
   COMPLETED: { bg: "#dcfce7", color: "#15803d", icon: <CheckCircle2 size={11} /> },
 };
 
-export default function AOQPage() {
+export default function abstractPage() {
   const router = useRouter();
   const [refreshKey, setRefreshKey] = useState(0);
 
   const columns = [
     {
-      key: "aoqNumber",
-      label: "AOQ Number",
-      render: (row: AOQ) => (
+      key: "abstractNumber",
+      label: "abstract Number",
+      render: (row: abstract) => (
         <div style={{ fontWeight: "700", color: "#0f172a", fontFamily: "monospace", fontSize: "0.875rem" }}>
-          {row.aoqNumber}
+          {row.abstractNumber}
         </div>
       ),
       width: "160px",
@@ -45,7 +45,7 @@ export default function AOQPage() {
     {
       key: "office",
       label: "Requesting Office",
-      render: (row: AOQ) => (
+      render: (row: abstract) => (
         <div style={{ fontWeight: "600", color: "#1e293b", fontSize: "0.875rem" }}>
           {row.rfq.pr.office.name}
         </div>
@@ -56,7 +56,7 @@ export default function AOQPage() {
       key: "purpose",
       label: "Purpose",
       align: "left",
-      render: (row: AOQ) => (
+      render: (row: abstract) => (
         <div style={{
           fontSize: "0.875rem", color: "#334155",
           maxWidth: "600px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
@@ -70,7 +70,7 @@ export default function AOQPage() {
       key: "abc",
       label: "Approved Budget",
       align: "center",
-      render: (row: AOQ) => (
+      render: (row: abstract) => (
         <div style={{ fontWeight: "700", color: "#059669" }}>
           {formatCurrency(row.rfq.pr.totalAmount)}
         </div>
@@ -81,7 +81,7 @@ export default function AOQPage() {
       key: "status",
       label: "Status",
       align: "center",
-      render: (row: AOQ) => {
+      render: (row: abstract) => {
         const conf = STATUS_COLORS[row.status] || STATUS_COLORS.DRAFT;
         return (
           <span className="badge" style={{ background: conf.bg, color: conf.color, display: "inline-flex", alignItems: "center", gap: "0.25rem" }}>
@@ -96,7 +96,7 @@ export default function AOQPage() {
       label: "Date",
       align: "center",
       sortable: true,
-      render: (row: AOQ) => (
+      render: (row: abstract) => (
         <span style={{ fontSize: "0.8125rem", color: "#64748b" }}>
           {new Date(row.createdAt).toLocaleDateString("en-PH")}
         </span>
@@ -105,28 +105,28 @@ export default function AOQPage() {
     }
   ];
 
-  const handleEdit = (row: AOQ) => {
+  const handleEdit = (row: abstract) => {
     router.push(`/abstract/${row.id}`);
   };
 
-  const handleDuplicate = (row: AOQ) => {
+  const handleDuplicate = (row: abstract) => {
     router.push(`/abstract/new?duplicateFrom=${row.id}`);
   };
 
-  const handleDelete = async (row: AOQ) => {
-    if (!confirm("Are you sure you want to delete this AOQ?")) return;
+  const handleDelete = async (row: abstract) => {
+    if (!confirm("Are you sure you want to delete this abstract?")) return;
     try {
       const res = await fetch(`/api/abstract/${row.id}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
       setRefreshKey(k => k + 1);
     } catch {
-      alert("Failed to delete AOQ");
+      alert("Failed to delete abstract");
     }
   };
 
   return (
     <div>
-      <DataTable<AOQ>
+      <DataTable<abstract>
         key={refreshKey}
         title="Abstract of Canvass"
         description="Consolidate supplier bids and recommend the lowest calculated responsive quotation."
@@ -138,7 +138,7 @@ export default function AOQPage() {
         onDuplicate={handleDuplicate}
         onDelete={handleDelete}
         emptyIcon={<ClipboardList size={40} style={{ opacity: 0.3 }} />}
-        emptyText="No AOQs generated yet."
+        emptyText="No Abstracts of Canvass generated yet."
         filterKey="status"
         filterTabs={[
           { label: "All", value: null },

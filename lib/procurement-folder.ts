@@ -30,7 +30,7 @@ export async function getProcurementFolder(prId: string) {
             include: { supplier: true, lineItems: true }
           },
           signatory: true,
-          aoq: {
+          abstract: {
             include: {
               createdBy: true,
               lineItems: true,
@@ -65,15 +65,15 @@ export function deriveStages(pr: any): ProcurementStage[] {
   const rfqDone = rfqs.some((r: any) => r.status !== "DRAFT");
   const rfqActive = prDone && !rfqDone;
 
-  // Stage 3: AOQ
-  const aoqs = rfqs.map((r: any) => r.aoq).filter(Boolean);
-  const aoqDone = aoqs.some((a: any) => a.status !== "DRAFT");
-  const aoqActive = rfqDone && !aoqDone;
+  // Stage 3: abstract
+  const abstracts = rfqs.map((r: any) => r.abstract).filter(Boolean);
+  const abstractDone = abstracts.some((a: any) => a.status !== "DRAFT");
+  const abstractActive = rfqDone && !abstractDone;
 
   // Stage 4: Purchase Order
-  const pos = aoqs.flatMap((a: any) => a.purchaseOrders || []);
+  const pos = abstracts.flatMap((a: any) => a.purchaseOrders || []);
   const poDone = pos.some((p: any) => p.status !== "DRAFT");
-  const poActive = aoqDone && !poDone;
+  const poActive = abstractDone && !poDone;
 
   // Stage 5: Acceptance (IAR)
   const acceptances = pos.flatMap((p: any) => p.acceptances || []);
@@ -94,10 +94,10 @@ export function deriveStages(pr: any): ProcurementStage[] {
       docs: rfqs
     },
     {
-      key: "AOQ",
+      key: "abstract",
       label: "Abstract of Canvass",
-      state: aoqDone ? "done" : (aoqActive ? "active" : "pending"),
-      docs: aoqs
+      state: abstractDone ? "done" : (abstractActive ? "active" : "pending"),
+      docs: abstracts
     },
     {
       key: "PO",

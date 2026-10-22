@@ -46,7 +46,7 @@ Almost every route only checks whether a session exists. Role checks appear only
 
 - change a PO's supplier, terms, and status; 
 
-- set a PR to APPROVED or FOR_RFQ, which auto-creates the RFQ, AOQ, and PO. 
+- set a PR to APPROVED or FOR_RFQ, which auto-creates the RFQ, abstract, and PO. 
 
 Roles such as APPROVING_OFFICIAL, BAC_SECRETARIAT, and BUDGET_OFFICER are defined but not enforced. Hiding buttons in the UI does not protect anything. 
 
@@ -266,7 +266,7 @@ This keeps the delay small (the foundation is about one to two weeks) and avoids
 
 ## **11. What is already good** 
 
-The overall structure is reasonable. Routes are organized sensibly, transactions are used in the PR flow, bcrypt with cost 12 is a good choice, and the workflow chain (PR, RFQ, AOQ, PO, IAR) is clear. The main work is closing the authorization and audit gaps. 
+The overall structure is reasonable. Routes are organized sensibly, transactions are used in the PR flow, bcrypt with cost 12 is a good choice, and the workflow chain (PR, RFQ, abstract, PO, IAR) is clear. The main work is closing the authorization and audit gaps. 
 
 ## **12. Suggested next deliverables** 
 

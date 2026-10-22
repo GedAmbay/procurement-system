@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     });
     return NextResponse.json(office, { status: 201 });
   } catch (e: any) {
-    if (e.code === "P2002") return NextResponse.json({ error: "Office code already exists" }, { status: 409 });
-    throw e;
+    if (e.code === "P2002") return NextResponse.json({ error: "Office code or name already exists" }, { status: 409 });
+    return NextResponse.json({ error: e.message || "Failed to create office" }, { status: 500 });
   }
 }

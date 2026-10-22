@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
 
   if (search) {
     whereClause.OR = [
-      { aoqNumber: { contains: search } },
+      { abstractNumber: { contains: search } },
       { rfq: { pr: { purpose: { contains: search } } } },
       { rfq: { pr: { office: { name: { contains: search } } } } },
       { rfq: { pr: { office: { code: { contains: search } } } } },
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const aoqs = await prisma.abstractOfQuotation.findMany({
+    const abstracts = await prisma.abstractOfQuotation.findMany({
       where: whereClause,
       include: {
         rfq: {
@@ -52,9 +52,9 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json(aoqs);
+    return NextResponse.json(abstracts);
   } catch (error) {
-    console.error("Fetch AOQs Error:", error);
+    console.error("Fetch abstracts Error:", error);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

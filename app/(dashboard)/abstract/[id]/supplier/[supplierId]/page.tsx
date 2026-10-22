@@ -31,7 +31,7 @@ export default function SupplierEncodingPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [quoteData, setQuoteData] = useState<any>(null);
-  const [aoqStatus, setAoqStatus] = useState<string>("DRAFT");
+  const [abstractStatus, setabstractStatus] = useState<string>("DRAFT");
 
   const { register, control, handleSubmit, watch, reset } = useForm<QuoteFormValues>({
     defaultValues: { submittedAt: "", remarks: "", lineItems: [] }
@@ -51,10 +51,10 @@ export default function SupplierEncodingPage() {
           const data = await res.json();
           setQuoteData(data);
 
-          const aoqRes = await fetch(`/api/abstract/${params.id}`);
-          if (aoqRes.ok) {
-            const aoqData = await aoqRes.json();
-            setAoqStatus(aoqData.status);
+          const abstractRes = await fetch(`/api/abstract/${params.id}`);
+          if (abstractRes.ok) {
+            const abstractData = await abstractRes.json();
+            setabstractStatus(abstractData.status);
           }
 
           const mappedLineItems = data.rfq.lineItems.map((rfqItem: any) => {
@@ -119,7 +119,7 @@ export default function SupplierEncodingPage() {
   if (!quoteData) return <div style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>Error loading data</div>;
 
   const { rfq, supplier } = quoteData;
-  const isReadOnly = aoqStatus !== "DRAFT";
+  const isReadOnly = abstractStatus !== "DRAFT";
   const abc = rfq.pr?.totalAmount || 0;
   const isOverBudget = totalAmount > abc && abc > 0;
 

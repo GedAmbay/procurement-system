@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
       { supplier: { name: { contains: search } } },
     ];
   }
-  
+
   if (status) {
     whereClause.status = status;
   }
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
         pr: {
           select: { purpose: true, office: true, isDirectAcquisition: true }
         },
-        aoq: {
+        abstract: {
           include: {
             rfq: {
               include: {

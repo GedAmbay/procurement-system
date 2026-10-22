@@ -11,7 +11,7 @@ async function getDashboardData() {
   const [
     totalPrs,
     rfqForSigning,
-    aoqForSigning,
+    abstractForSigning,
     poForSigning,
     recentPRs,
     monthlyData,
@@ -39,23 +39,23 @@ async function getDashboardData() {
     Promise.all([
       prisma.purchaseRequest.count(), // PR Logged
       prisma.purchaseRequest.count({ where: { rfqs: { none: {} }, isDirectAcquisition: false } }), // For RFQ
-      prisma.rfq.count({ where: { aoq: null, pr: { isDirectAcquisition: false } } }), // For AOQ
+      prisma.rfq.count({ where: { abstract: null, pr: { isDirectAcquisition: false } } }), // For abstract
       prisma.purchaseRequest.count({ where: { isDirectAcquisition: true, purchaseOrders: { none: {} } } }), // For PO (Direct) + below for normal
       prisma.purchaseOrder.count({ where: { status: { in: ["ISSUED", "COMPLETED"] } } }) // Issued
     ]),
-      prisma.purchaseOrder.findMany({
+    prisma.purchaseOrder.findMany({
       where: { fiscalYear: new Date().getFullYear(), status: { in: ["ISSUED", "COMPLETED"] } },
       select: {
         totalAmount: true,
         createdAt: true,
         pr: { select: { totalAmount: true, createdAt: true } },
-        aoq: { select: { rfq: { select: { pr: { select: { totalAmount: true, createdAt: true } } } } } }
+        abstract: { select: { rfq: { select: { pr: { select: { totalAmount: true, createdAt: true } } } } } }
       }
     }),
     prisma.calendarEvent.findFirst({
       where: {
         eventType: "Award Date",
-        eventDate: { gte: new Date(new Date().setHours(0,0,0,0)) }
+        eventDate: { gte: new Date(new Date().setHours(0, 0, 0, 0)) }
       },
       orderBy: { eventDate: "asc" },
       select: { eventDate: true, title: true, pr: { select: { prNumber: true } } }
@@ -79,13 +79,13 @@ async function getDashboardData() {
   let validProcessingCount = 0;
 
   posForSavingsAndAvgTime.forEach(po => {
-    const pr = po.pr || po.aoq?.rfq?.pr;
+    const pr = po.pr || po.abstract?.rfq?.pr;
     if (pr) {
       // Savings
       if (pr.totalAmount > po.totalAmount) {
         totalSavings += (pr.totalAmount - po.totalAmount);
       }
-      
+
       // Processing Time
       const prDate = new Date(pr.createdAt).getTime();
       const poDate = new Date(po.createdAt).getTime();
@@ -103,7 +103,7 @@ async function getDashboardData() {
     stats: {
       totalPrs,
       rfqForSigning,
-      aoqForSigning,
+      abstractForSigning,
       poForSigning,
       overdueDeliveries,
     },
@@ -115,7 +115,7 @@ async function getDashboardData() {
     pipeline: {
       logged: pipelineCounts[0],
       forRfq: pipelineCounts[1],
-      forAoq: pipelineCounts[2],
+      forabstract: pipelineCounts[2],
       forPo: pipelineCounts[3] + pipelineCounts[2], // Placeholder logic approximation for PO pipeline
       issued: pipelineCounts[4],
     },

@@ -21,7 +21,7 @@ model User {
   purchaseRequests       PurchaseRequest[]
   calendarEvents         CalendarEvent[]
   rfqsCreated            Rfq[]                 @relation("RfqCreatedBy")
-  aoqsCreated            AbstractOfQuotation[] @relation("AoqCreatedBy")
+  abstractsCreated            AbstractOfQuotation[] @relation("abstractCreatedBy")
   purchaseOrdersCreated  PurchaseOrder[]       @relation("PoCreatedBy")
   acceptancesCreated     Acceptance[]          @relation("AcceptanceCreatedBy")
   office                 Office?                @relation(fields: [officeId], references: [id])
@@ -171,7 +171,7 @@ model Rfq {
   updatedAt     DateTime             @updatedAt
   signatoryId   String?
   createdById   String?
-  aoq           AbstractOfQuotation?
+  abstract           AbstractOfQuotation?
   quotations    Quotation[]
   lineItems     RfqLineItem[]
   suppliers     RfqSupplier[]
@@ -240,7 +240,7 @@ model QuotationLineItem {
 
 model AbstractOfQuotation {
   id             String          @id @default(cuid())
-  aoqNumber      String          @unique
+  abstractNumber      String          @unique
   rfqId          String          @unique
   recommendation String?
   totalAmount    Float           @default(0)
@@ -252,9 +252,9 @@ model AbstractOfQuotation {
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   rfq            Rfq             @relation(fields: [rfqId], references: [id])
-  lineItems      AoqLineItem[]
+  lineItems      abstractLineItem[]
   purchaseOrders PurchaseOrder[]
-  createdBy      User?           @relation("AoqCreatedBy", fields: [createdById], references: [id])
+  createdBy      User?           @relation("abstractCreatedBy", fields: [createdById], references: [id])
 
   docDate          DateTime?
   bacResNo         String?
@@ -267,9 +267,9 @@ model AbstractOfQuotation {
   @@map("abstracts_of_quotation")
 }
 
-model AoqLineItem {
+model abstractLineItem {
   id               String              @id @default(cuid())
-  aoqId            String
+  abstractId            String
   description      String
   unit             String
   quantity         Float
@@ -277,15 +277,15 @@ model AoqLineItem {
   totalPrice       Float
   winnerSupplierId String?
   sortOrder        Int                 @default(0)
-  aoq              AbstractOfQuotation @relation(fields: [aoqId], references: [id], onDelete: Cascade)
+  abstract              AbstractOfQuotation @relation(fields: [abstractId], references: [id], onDelete: Cascade)
 
-  @@map("aoq_line_items")
+  @@map("abstract_line_items")
 }
 
 model PurchaseOrder {
   id              String               @id @default(cuid())
   poNumber        String               @unique
-  aoqId           String?
+  abstractId           String?
   prId            String?
   supplierId      String?
   deliveryTerms   String?
@@ -304,7 +304,7 @@ model PurchaseOrder {
   lineItems       PoLineItem[]
   acceptances     Acceptance[]
   supplier        Supplier?            @relation(fields: [supplierId], references: [id])
-  aoq             AbstractOfQuotation? @relation(fields: [aoqId], references: [id])
+  abstract             AbstractOfQuotation? @relation(fields: [abstractId], references: [id])
   pr              PurchaseRequest?     @relation(fields: [prId], references: [id])
   createdBy       User?                @relation("PoCreatedBy", fields: [createdById], references: [id])
 

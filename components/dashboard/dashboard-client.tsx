@@ -23,14 +23,14 @@ interface DashboardClientProps {
     pipeline: {
       logged: number;
       forRfq: number;
-      forAoq: number;
+      forabstract: number;
       forPo: number;
       issued: number;
     };
     stats: {
       totalPrs: number;
       rfqForSigning: number;
-      aoqForSigning: number;
+      abstractForSigning: number;
       poForSigning: number;
       overdueDeliveries: number;
     };
@@ -67,8 +67,8 @@ const statCards = (stats: DashboardClientProps["data"]["stats"]) => [
     href: "/rfqs",
   },
   {
-    label: "AOQs For Signing",
-    value: stats.aoqForSigning,
+    label: "abstracts For Signing",
+    value: stats.abstractForSigning,
     icon: ClipboardList,
     color: "#64748b",
     bg: "#f0fdf4",
@@ -133,10 +133,10 @@ export default function DashboardClient({ data, user }: DashboardClientProps) {
         <div className="card flex flex-col justify-between py-4 px-5">
           <div className="text-sm font-semibold text-slate-500">Needs Signature</div>
           <div className="text-3xl font-black text-slate-800 my-1">
-            {data.stats.rfqForSigning + data.stats.aoqForSigning + data.stats.poForSigning}
+            {data.stats.rfqForSigning + data.stats.abstractForSigning + data.stats.poForSigning}
           </div>
           <div className="text-xs font-medium text-slate-500">
-            RFQ - AOQ - PO (excl. Direct)
+            RFQ - abstract - PO (excl. Direct)
           </div>
         </div>
 
@@ -165,14 +165,14 @@ export default function DashboardClient({ data, user }: DashboardClientProps) {
           <h3 style={{ fontSize: "0.9375rem", fontWeight: "700", color: "#0f172a", margin: 0 }}>
             Procurement pipeline
           </h3>
-          <span className="text-xs text-slate-500 font-medium">Direct Acquisition skips RFQ → AOQ</span>
+          <span className="text-xs text-slate-500 font-medium">Direct Acquisition skips RFQ → abstract</span>
         </div>
         <div className="flex items-center justify-between text-center">
           {[
             { label: "PR Logged", count: data.pipeline.logged },
             { label: "RFQ", count: data.pipeline.forRfq },
             { label: "Abstract", count: 0 },
-            { label: "AOQ / Award", count: data.pipeline.forAoq },
+            { label: "abstract / Award", count: data.pipeline.forabstract },
             { label: "PO", count: data.pipeline.forPo },
             { label: "Acceptance", count: 0 },
             { label: "Issued", count: data.pipeline.issued },
@@ -206,10 +206,10 @@ export default function DashboardClient({ data, user }: DashboardClientProps) {
                 </Link>
               </div>
             )}
-            {data.stats.aoqForSigning > 0 && (
+            {data.stats.abstractForSigning > 0 && (
               <div className="flex items-center justify-between pb-3 border-b border-slate-200/50 last:border-0 last:pb-0">
                 <div>
-                  <div className="text-sm font-bold text-slate-800">Sign AOQs</div>
+                  <div className="text-sm font-bold text-slate-800">Sign abstracts</div>
                   <div className="text-[10px] text-slate-500">Awaiting signature</div>
                 </div>
                 <Link href="/abstract" className="px-3 py-1 bg-indigo-500 text-white text-xs font-bold rounded-full hover:bg-indigo-600 transition-colors shadow-sm">

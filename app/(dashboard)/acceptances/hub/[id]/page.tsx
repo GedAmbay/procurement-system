@@ -55,7 +55,7 @@ export default function AcceptancesHub() {
   if (!po) return <div style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>PO not found</div>;
 
   const acceptances = po.acceptances || [];
-  const reqDepartment = po.aoq?.rfq?.pr?.office?.name || "N/A";
+  const reqDepartment = po.abstract?.rfq?.pr?.office?.name || "N/A";
   const poDate = po.deliveryDate ? new Date(po.deliveryDate).toLocaleDateString('en-PH') : (po.createdAt ? new Date(po.createdAt).toLocaleDateString('en-PH') : "N/A");
 
   // Calculate Progress

@@ -46,16 +46,37 @@ export default function OfficesPage() {
 
   const handleSubmit = async (data: Record<string, string>) => {
     if (editTarget) {
-      await fetch(`/api/offices`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+      const res = await fetch(`/api/offices/${editTarget.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        throw new Error(e.error ?? "Failed to update office");
+      }
       toast.success("Office updated");
     } else {
       const res = await fetch("/api/offices", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
       });
-      if (!res.ok) { const e = await res.json(); throw new Error(e.error ?? "Failed to create office"); }
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        throw new Error(e.error ?? "Failed to create office");
+      }
       toast.success("Office added");
     }
     setRefreshKey((k) => k + 1);
+  };
+
+  const handleDelete = async (row: Office) => {
+    const res = await fetch(`/api/offices/${row.id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}));
+      throw new Error(e.error ?? "Failed to deactivate office");
+    }
   };
 
   return (
@@ -69,6 +90,7 @@ export default function OfficesPage() {
         searchPlaceholder="Search..."
         onAdd={() => { setEditTarget(null); setShowModal(true); }}
         onEdit={(row) => { setEditTarget(row); setShowModal(true); }}
+        onDelete={handleDelete}
         emptyIcon={<Building2 size={40} style={{ opacity: 0.3 }} />}
         emptyText="No offices configured yet"
       />

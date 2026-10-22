@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronRight, Folder, FolderOpen, Clock, CheckCircle2 } from "lucide-react";
+import { ChevronRight, FolderOpen, Clock, CheckCircle2 } from "lucide-react";
 
 interface ArchiveStats {
   id: string;
@@ -35,7 +35,7 @@ export default function ArchivesClient({ archives, fiscalYear, availableYears }:
   const filtered = archives.filter(a => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
-    return a.name.toLowerCase().includes(q) || (a.head && a.head.toLowerCase().includes(q));
+    return a.name.toLowerCase().includes(q) || (a.head && a.head.toLowerCase().includes(q)) || a.code.toLowerCase().includes(q);
   });
 
   const sorted = [...filtered].sort((a, b) => {
@@ -125,23 +125,15 @@ export default function ArchivesClient({ archives, fiscalYear, availableYears }:
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
-                <div style={{ display: "flex", gap: "1rem" }}>
-                  <div className="inset" style={{
-                    width: "48px", height: "48px", display: "flex", alignItems: "center", justifyContent: "center",
-                    fontWeight: 700, fontSize: "0.875rem", color: isEmpty ? "#94a3b8" : "#2563eb", flexShrink: 0
-                  }}>
-                    {office.code}
-                  </div>
-                  <div>
-                    <h3 style={{ fontSize: "1.125rem", fontWeight: 700, color: isEmpty ? "#64748b" : "#1e293b", margin: "0 0 0.25rem 0", lineHeight: 1.2 }}>
-                      {office.name}
-                    </h3>
-                    {office.head && (
-                      <div style={{ fontSize: "0.875rem", color: "#94a3b8" }}>
-                        {office.head}
-                      </div>
-                    )}
-                  </div>
+                <div>
+                  <h3 style={{ fontSize: "1.125rem", fontWeight: 700, color: isEmpty ? "#64748b" : "#1e293b", margin: "0 0 0.25rem 0", lineHeight: 1.2 }}>
+                    {office.name}
+                  </h3>
+                  {office.head && (
+                    <div style={{ fontSize: "0.875rem", color: "#94a3b8" }}>
+                      {office.head}
+                    </div>
+                  )}
                 </div>
                 {!isEmpty && (
                   <ChevronRight size={16} color="#64748b" style={{ marginTop: "4px", flexShrink: 0 }} />

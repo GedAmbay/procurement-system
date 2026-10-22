@@ -11,10 +11,10 @@ import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
 
-export default function AoqSupplierHub() {
+export default function abstractSupplierHub() {
   const params = useParams();
   const router = useRouter();
-  const [aoq, setAoq] = useState<any>(null);
+  const [abstract, setabstract] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [allSuppliers, setAllSuppliers] = useState<any[]>([]);
   const [selectedNewSupplier, setSelectedNewSupplier] = useState("");
@@ -30,7 +30,7 @@ export default function AoqSupplierHub() {
       const res = await fetch(`/api/abstract/${params.id}`);
       if (res.ok) {
         const data = await res.json();
-        setAoq(data);
+        setabstract(data);
       }
       const supRes = await fetch("/api/suppliers");
       if (supRes.ok) setAllSuppliers(await supRes.json());
@@ -42,14 +42,14 @@ export default function AoqSupplierHub() {
   };
 
   const addSupplier = async () => {
-    if (!selectedNewSupplier || !aoq?.rfq) return;
+    if (!selectedNewSupplier || !abstract?.rfq) return;
     if (quotations.length >= 3) {
       toast.error("Maximum of 3 suppliers allowed");
       return;
     }
     setAddingSupplier(true);
     try {
-      const res = await fetch(`/api/rfqs/${aoq.rfq.id}`, {
+      const res = await fetch(`/api/rfqs/${abstract.rfq.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ supplierId: selectedNewSupplier })
@@ -87,9 +87,9 @@ export default function AoqSupplierHub() {
   };
 
   if (loading) return <LoaderWave variant="page" label="Loading abstract..." />;
-  if (!aoq || !aoq.rfq) return <div style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>Abstract not found</div>;
+  if (!abstract || !abstract.rfq) return <div style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>Abstract not found</div>;
 
-  const rfq = aoq.rfq;
+  const rfq = abstract.rfq;
   const quotations = rfq.quotations || [];
   const completedCount = quotations.filter((q: any) => q.totalAmount > 0).length;
   const totalItems = rfq.lineItems?.length || 0;
@@ -104,7 +104,7 @@ export default function AoqSupplierHub() {
     SIGNED: { bg: "#f0fdf4", color: "#16a34a", label: "Signed" },
     COMPLETED: { bg: "#dcfce7", color: "#15803d", label: "Completed" },
   };
-  const statusStyle = statusConfig[aoq.status] ?? { bg: "#f1f5f9", color: "#475569", label: aoq.status };
+  const statusStyle = statusConfig[abstract.status] ?? { bg: "#f1f5f9", color: "#475569", label: abstract.status };
 
   const validBids = quotations.filter((q: any) => q.totalAmount > 0);
   const lowestBid = validBids.length > 0 ? Math.min(...validBids.map((q: any) => q.totalAmount)) : null;
@@ -130,15 +130,15 @@ export default function AoqSupplierHub() {
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
             <h1 style={{ fontSize: "1.375rem", fontWeight: "800", color: "#0f172a", margin: 0 }}>
-              {aoq.aoqNumber}
+              {abstract.abstractNumber}
             </h1>
             <span className="badge" style={{ background: statusStyle.bg, color: statusStyle.color }}>
               {statusStyle.label}
             </span>
           </div>
-          {aoq.createdBy && (
+          {abstract.createdBy && (
             <div className="text-sm text-slate-500 mt-1 flex items-center gap-1">
-              <User size={14} /> Created by <strong className="text-slate-700">{aoq.createdBy.name}</strong>
+              <User size={14} /> Created by <strong className="text-slate-700">{abstract.createdBy.name}</strong>
             </div>
           )}
           <div style={{ fontSize: "0.8125rem", color: "#64748b", marginTop: "0.25rem" }}>
@@ -152,13 +152,13 @@ export default function AoqSupplierHub() {
             <Printer size={14} /> Open Abstract
           </button>
 
-          {aoq.status === "DRAFT" && quotations.length > 0 && completedCount > 0 && (
+          {abstract.status === "DRAFT" && quotations.length > 0 && completedCount > 0 && (
             <button onClick={() => updateStatus("ISSUED")} className="btn btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
               <Send size={15} /> Finalize & Issue
             </button>
           )}
 
-          {aoq.status === "ISSUED" && (
+          {abstract.status === "ISSUED" && (
             <>
               <button onClick={() => updateStatus("SIGNED")} className="btn btn-success" style={{ display: "flex", alignItems: "center", gap: "0.375rem", background: "#16a34a", color: "#fff" }}>
                 <CheckCircle2 size={15} /> Mark as Signed
@@ -166,7 +166,7 @@ export default function AoqSupplierHub() {
             </>
           )}
 
-          {aoq.status === "SIGNED" && (
+          {abstract.status === "SIGNED" && (
             <>
               <button onClick={() => updateStatus("COMPLETED")} className="btn btn-success" style={{ display: "flex", alignItems: "center", gap: "0.375rem", background: "#15803d", color: "#fff" }}>
                 <CheckCircle2 size={15} /> Mark as Completed
@@ -205,7 +205,7 @@ export default function AoqSupplierHub() {
         <h2 style={{ fontSize: "1rem", fontWeight: "700", color: "#334155", margin: 0 }}>
           Supplier Quotations {quotations.length >= 3 && <span style={{ fontSize: "0.75rem", color: "#94a3b8", fontWeight: "400", marginLeft: "0.5rem" }}>(Max 3 reached)</span>}
         </h2>
-        {aoq.status === "DRAFT" && quotations.length < 3 && (
+        {abstract.status === "DRAFT" && quotations.length < 3 && (
           <button
             className="btn btn-primary"
             style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}
@@ -261,7 +261,7 @@ export default function AoqSupplierHub() {
             return (
               <div
                 key={q.id}
-                onClick={() => router.push(`/abstract/${aoq.id}/supplier/${q.id}`)}
+                onClick={() => router.push(`/abstract/${abstract.id}/supplier/${q.id}`)}
                 className="card stat-card"
                 style={{
                   cursor: "pointer",

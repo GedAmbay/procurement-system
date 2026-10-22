@@ -139,7 +139,7 @@ export default function AcceptanceEditor() {
       toast.error("Password is required");
       return;
     }
-    
+
     // For now, simulating a successful password verification
     setIsUnlocked(true);
     setUnlockModalOpen(false);
@@ -248,11 +248,11 @@ export default function AcceptanceEditor() {
                   <div className="w-3/5 border-r-2 border-black p-2 flex flex-col gap-1 justify-center">
                     <div className="flex font-bold"><span className="w-44">Supplier :</span> <span className="flex-1 border-b border-black">{acceptance.po?.supplier?.name}</span></div>
                     <div className="flex font-bold"><span className="w-44">PO No. /Date:</span> <span className="flex-1 border-b border-black">{acceptance.po?.poNumber} / {acceptance.po?.createdAt ? new Date(acceptance.po.createdAt).toLocaleDateString() : ""}</span></div>
-                    <div className="flex font-bold"><span className="w-44">Req. Office/Department:</span> <span className="flex-1 border-b border-black ">{acceptance.po?.aoq?.rfq?.pr?.office?.name}</span></div>
+                    <div className="flex font-bold"><span className="w-44">Req. Office/Department:</span> <span className="flex-1 border-b border-black ">{acceptance.po?.abstract?.rfq?.pr?.office?.name}</span></div>
                   </div>
                   <div className="w-2/5 p-2 flex flex-col gap-1 justify-center">
-                    <div className="flex font-bold"><span className="w-28">AIR No. :</span> <span className="flex-1 border-b border-black">{acceptance.iarNumber}</span></div>
-                    <div className="flex font-bold"><span className="w-28">Date :</span> <span className="flex-1 border-b border-black">{new Date(acceptance.createdAt).toLocaleDateString()}</span></div>
+                    <div className="flex font-bold"><span className="w-28">AIR No. :</span> <span className="flex-1 border-b border-black"></span></div>
+                    <div className="flex font-bold"><span className="w-28">Date :</span> <span className="flex-1 border-b border-black"></span></div>
                     <div className="flex font-bold"><span className="w-28">Invoice No. :</span> <span className="flex-1 border-b border-black">{watchAll.invoiceNumber}</span></div>
                     <div className="flex font-bold"><span className="w-28">Date :</span> <span className="flex-1 border-b border-black">{watchAll.invoiceDate ? new Date(watchAll.invoiceDate).toLocaleDateString() : ""}</span></div>
                   </div>

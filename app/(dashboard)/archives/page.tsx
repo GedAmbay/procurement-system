@@ -24,7 +24,7 @@ export default async function ArchivesPage(props: { searchParams: Promise<{ year
           totalAmount: true,
           rfqs: {
             select: {
-              aoq: {
+              abstract: {
                 select: {
                   purchaseOrders: {
                     select: {
@@ -50,8 +50,8 @@ export default async function ArchivesPage(props: { searchParams: Promise<{ year
     for (const pr of prs) {
       let isFinished = false;
       const rfqs = pr.rfqs || [];
-      const aoqs = rfqs.map((r: any) => r.aoq).filter(Boolean);
-      const pos = aoqs.flatMap((a: any) => a.purchaseOrders || []);
+      const abstracts = rfqs.map((r: any) => r.abstract).filter(Boolean);
+      const pos = abstracts.flatMap((a: any) => a.purchaseOrders || []);
       const acceptances = pos.flatMap((p: any) => p.acceptances || []);
       if (acceptances.some((a: any) => a.status !== "DRAFT")) {
         isFinished = true;
@@ -76,10 +76,10 @@ export default async function ArchivesPage(props: { searchParams: Promise<{ year
   const availableYears = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
   return (
-    <ArchivesClient 
-      archives={archives} 
-      fiscalYear={fiscalYear} 
-      availableYears={availableYears} 
+    <ArchivesClient
+      archives={archives}
+      fiscalYear={fiscalYear}
+      availableYears={availableYears}
     />
   );
 }

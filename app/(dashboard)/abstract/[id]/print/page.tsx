@@ -41,14 +41,14 @@ export default function AbstractLivePreviewPage() {
   useEffect(() => {
     async function load() {
       try {
-        const [aoqRes, sigRes] = await Promise.all([
+        const [abstractRes, sigRes] = await Promise.all([
           fetch(`/api/abstract/${params.id}`),
           fetch("/api/signatories"),
         ]);
-        let aoqResData: any = null;
-        if (aoqRes.ok) {
-          const d = await aoqRes.json();
-          aoqResData = d;
+        let abstractResData: any = null;
+        if (abstractRes.ok) {
+          const d = await abstractRes.json();
+          abstractResData = d;
           setData(d);
           if (d.rfq?.pr) {
             setReqOfficerName(d.reqOfficerName || d.rfq.pr.requestedBy || "");
@@ -63,8 +63,8 @@ export default function AbstractLivePreviewPage() {
           const sigs = await sigRes.json();
           setAllSignatories(sigs);
 
-          if (aoqRes.ok && aoqResData && aoqResData.signatoriesData) {
-            const savedSigs = aoqResData.signatoriesData as any;
+          if (abstractRes.ok && abstractResData && abstractResData.signatoriesData) {
+            const savedSigs = abstractResData.signatoriesData as any;
             setSelectedSigIds(savedSigs.selectedSigIds || []);
             setSigOverrides(savedSigs.sigOverrides || {});
           } else {
@@ -318,7 +318,7 @@ export default function AbstractLivePreviewPage() {
                         {lineItems.map((item: any, idx: number) => {
                           const isRec = recommendedQuote !== undefined;
                           const hasBreak = pageBreaks.includes(idx);
-                          
+
                           const isSpec = !item.quantity || item.quantity === 0;
                           let displayNo = "";
                           if (!isSpec) {

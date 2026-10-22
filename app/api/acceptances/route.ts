@@ -12,7 +12,7 @@ export async function GET() {
         po: {
           include: {
             supplier: true,
-            aoq: {
+            abstract: {
               include: {
                 rfq: {
                   include: {
@@ -80,7 +80,7 @@ export async function POST(req: Request) {
             // Calculate previously delivered (only from non-DRAFT or all, let's say all for simplicity, or just ISSUED/COMPLETED)
             const delivered = item.acceptanceItems.reduce((acc, curr) => acc + curr.quantityDelivered, 0);
             const remaining = Math.max(0, item.quantity - delivered);
-            
+
             return {
               poLineItemId: item.id,
               quantityDelivered: remaining, // default to remaining

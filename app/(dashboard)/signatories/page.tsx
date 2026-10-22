@@ -87,7 +87,7 @@ export default function SignatoriesPage() {
     fetch("/api/offices")
       .then((r) => r.json())
       .then((data: { id: string; name: string }[]) => setOffices(data))
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const signatoryFields = [
@@ -132,7 +132,7 @@ export default function SignatoriesPage() {
       <DataTable<Signatory>
         key={refreshKey}
         title="Signatories Master List"
-        description="Manage authorized signatories for PR, RFQ, AOQ, and PO documents"
+        description="Manage authorized signatories for PR, RFQ, abstract, and PO documents"
         apiPath="/api/signatories"
         columns={columns}
         searchPlaceholder="Search..."

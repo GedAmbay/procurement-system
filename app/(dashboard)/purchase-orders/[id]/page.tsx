@@ -145,7 +145,7 @@ export default function PurchaseOrderEditor() {
   const selectedSupplier = suppliers.find(s => s.id === watchAll.supplierId) || poData.supplier;
 
   // Calculate exact PR number and ABC from nested relation if available
-  const linkedPrNumber = poData.aoq?.rfq?.pr?.prNumber || "PENDING";
+  const linkedPrNumber = poData.abstract?.rfq?.pr?.prNumber || "PENDING";
   const lineItems = poData.lineItems || [];
   const acceptances = poData.acceptances || [];
 
@@ -233,10 +233,10 @@ export default function PurchaseOrderEditor() {
                     <div className="flex items-end mt-1"><span className="font-bold whitespace-nowrap mr-2">TIN :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight"></span></div>
                   </div>
                   <div className="col-span-3 p-1 px-2 flex flex-col justify-between">
-                    <div className="flex items-end"><span className="font-bold whitespace-nowrap mr-2">P.O. No. :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{poData.poNumber}</span></div>
+                    <div className="flex items-end"><span className="font-bold whitespace-nowrap mr-2">P.O. No. :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight"></span></div>
                     <div className="flex items-end mt-1"><span className="font-bold whitespace-nowrap mr-2">Date :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{watchAll.deliveryDate ? new Date(watchAll.deliveryDate).toLocaleDateString('en-PH') : ""}</span></div>
                     <div className="flex items-end mt-1"><span className="font-bold whitespace-nowrap mr-2">Mode of Procurement :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{watchAll.modeOfProcurement}</span></div>
-                    <div className="flex items-end mt-1"><span className="font-bold whitespace-nowrap mr-2">PR No./s :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{linkedPrNumber}</span></div>
+                    <div className="flex items-end mt-1"><span className="font-bold whitespace-nowrap mr-2">PR No./s :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight"></span></div>
                   </div>
                 </div>
 
@@ -398,7 +398,7 @@ export default function PurchaseOrderEditor() {
                     <option key={s.id} value={s.id}>{s.name}</option>
                   ))}
                 </select>
-                <p className="text-[10px] text-slate-400 mt-1">Ideally set during AOQ, but can be forced here.</p>
+                <p className="text-[10px] text-slate-400 mt-1">Ideally set during abstract, but can be forced here.</p>
               </div>
 
               <div>

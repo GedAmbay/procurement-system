@@ -16,7 +16,7 @@ export async function GET(
   const { id } = await context.params;
 
   try {
-    const aoq = await prisma.abstractOfQuotation.findUnique({
+    const abstract = await prisma.abstractOfQuotation.findUnique({
       where: { id },
       include: {
         createdBy: true,
@@ -40,9 +40,9 @@ export async function GET(
       },
     });
 
-    if (!aoq) return NextResponse.json({ error: "AOQ not found" }, { status: 404 });
+    if (!abstract) return NextResponse.json({ error: "abstract not found" }, { status: 404 });
 
-    return NextResponse.json(aoq);
+    return NextResponse.json(abstract);
   } catch (error) {
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
@@ -77,27 +77,27 @@ export async function PATCH(
     if (signatoriesData !== undefined) dataToUpdate.signatoriesData = signatoriesData;
 
     if (status === "APPROVED") {
-      const aoqToApprove = await prisma.abstractOfQuotation.findUnique({
+      const abstractToApprove = await prisma.abstractOfQuotation.findUnique({
         where: { id },
         include: { rfq: { include: { quotations: { include: { lineItems: true } } } } }
       });
-      
-      if (aoqToApprove && aoqToApprove.rfq.quotations.length > 0) {
-        const validBids = aoqToApprove.rfq.quotations.filter((q: any) => q.totalAmount > 0);
+
+      if (abstractToApprove && abstractToApprove.rfq.quotations.length > 0) {
+        const validBids = abstractToApprove.rfq.quotations.filter((q: any) => q.totalAmount > 0);
         if (validBids.length > 0) {
           const lowestBid = validBids.reduce((prev: any, current: any) => (prev.totalAmount < current.totalAmount) ? prev : current);
-          
+
           const po = await prisma.purchaseOrder.findFirst({
-            where: { aoqId: id },
+            where: { abstractId: id },
             include: { lineItems: true }
           });
-          
+
           if (po) {
             await prisma.purchaseOrder.update({
               where: { id: po.id },
-              data: { 
+              data: {
                 supplierId: lowestBid.supplierId,
-                totalAmount: lowestBid.totalAmount 
+                totalAmount: lowestBid.totalAmount
               }
             });
 
@@ -118,13 +118,13 @@ export async function PATCH(
       }
     }
 
-    const updatedAoq = await prisma.abstractOfQuotation.update({
+    const updatedabstract = await prisma.abstractOfQuotation.update({
       where: { id },
       data: dataToUpdate,
     });
-    return NextResponse.json(updatedAoq);
+    return NextResponse.json(updatedabstract);
   } catch (error) {
-    console.error("AOQ Update Error:", error);
+    console.error("abstract Update Error:", error);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

@@ -22,7 +22,7 @@ export async function GET(
         createdBy: true,
         supplier: true,
         lineItems: { orderBy: { sortOrder: "asc" } },
-        aoq: {
+        abstract: {
           include: {
             rfq: {
               include: {

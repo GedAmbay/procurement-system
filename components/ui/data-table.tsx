@@ -26,6 +26,10 @@ interface DataTableProps<T extends { id: string; isActive?: boolean }> {
   onEdit?: (row: T) => void;
   onDuplicate?: (row: T) => void;
   onDelete?: (row: T) => Promise<void>;
+  deleteModalTitle?: string;
+  deleteModalMessage?: string;
+  deleteConfirmText?: string;
+  deleteSuccessToast?: string;
   customActions?: {
     label: React.ReactNode | ((row: T) => React.ReactNode);
     icon?: React.ReactNode | ((row: T) => React.ReactNode);
@@ -53,6 +57,10 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
   onEdit,
   onDuplicate,
   onDelete,
+  deleteModalTitle,
+  deleteModalMessage,
+  deleteConfirmText,
+  deleteSuccessToast,
   customActions,
   extraHeaderContent,
   emptyIcon,
@@ -184,10 +192,10 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
     setRowToDelete(null);
     try {
       await onDelete(row);
-      toast.success("Record deactivated successfully");
+      toast.success(deleteSuccessToast || "Record deleted successfully");
       fetchData();
-    } catch (e) {
-      toast.error("Failed to delete record");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to delete record");
     } finally {
       setDeleting(null);
     }
@@ -577,9 +585,9 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
         isOpen={!!rowToDelete}
         onClose={() => setRowToDelete(null)}
         onConfirm={confirmDelete}
-        title="Confirm Deactivation"
-        message="Are you sure you want to deactivate this record? This action might be reversible depending on system settings."
-        confirmText="Deactivate"
+        title={deleteModalTitle || "Confirm Deletion"}
+        message={deleteModalMessage || "Are you sure you want to delete this record? This action cannot be undone."}
+        confirmText={deleteConfirmText || "Delete"}
         isDestructive={true}
       />
     </div >

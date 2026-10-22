@@ -14,7 +14,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         po: {
           include: {
             supplier: true,
-            aoq: {
+            abstract: {
               include: {
                 rfq: {
                   include: {
@@ -70,7 +70,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
     // Start a transaction if line items are updated
     const updatePromises = [];
-    
+
     if (lineItems && lineItems.length > 0) {
       for (const item of lineItems) {
         updatePromises.push(

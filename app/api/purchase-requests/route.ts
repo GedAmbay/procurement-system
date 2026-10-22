@@ -136,12 +136,12 @@ export async function POST(req: NextRequest) {
       if (createdPr.fundSource && createdPr.fundSource.code.toUpperCase().startsWith("TF")) {
         fundPrefix = "TF";
       }
-      
+
       const yy = String(createdPr.fiscalYear).slice(-2) || String(new Date().getFullYear()).slice(-2);
       const prParts = createdPr.prNumber.split("-");
-      const xxxx = prParts[prParts.length - 1]; 
+      const xxxx = prParts[prParts.length - 1];
       const rfqNumber = `${fundPrefix}-${yy}-${xxxx}`;
-      
+
       if (!isDirectAcquisition) {
         const rfq = await tx.rfq.create({
           data: {
@@ -162,15 +162,15 @@ export async function POST(req: NextRequest) {
             }
           }
         });
-        
-        const aoqNumber = `${rfqNumber}-AOQ`;
-        
-        const aoq = await tx.abstractOfQuotation.create({
+
+        const abstractNumber = `${rfqNumber}-abstract`;
+
+        const abstract = await tx.abstractOfQuotation.create({
           data: {
-            aoqNumber,
+            abstractNumber,
             rfqId: rfq.id,
             fiscalYear: createdPr.fiscalYear,
-            totalAmount: createdPr.totalAmount, 
+            totalAmount: createdPr.totalAmount,
             status: "DRAFT",
             createdById: user.id,
             lineItems: {
@@ -185,13 +185,13 @@ export async function POST(req: NextRequest) {
             }
           }
         });
-        
+
         const poNumber = `${rfqNumber}-PO`;
-        
+
         await tx.purchaseOrder.create({
           data: {
             poNumber,
-            aoqId: aoq.id,
+            abstractId: abstract.id,
             fiscalYear: createdPr.fiscalYear,
             totalAmount: createdPr.totalAmount,
             status: "DRAFT",
@@ -209,7 +209,7 @@ export async function POST(req: NextRequest) {
           }
         });
       } else {
-        // Direct Acquisition: Skip RFQ & AOQ, link PO directly to PR
+        // Direct Acquisition: Skip RFQ & abstract, link PO directly to PR
         const poNumber = `${rfqNumber}-PO-DIR`;
         await tx.purchaseOrder.create({
           data: {

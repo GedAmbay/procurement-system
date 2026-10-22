@@ -323,7 +323,7 @@ export default function PurchaseRequestEditor() {
       {prData?.isDirectAcquisition && (
         <div className="no-print bg-teal-50 border-b border-teal-200 px-6 py-2 flex items-center gap-2 text-teal-800 text-sm shadow-sm z-10 relative">
           <CheckCircle2 size={16} className="text-teal-600" />
-          <span className="font-semibold">Direct Acquisition:</span> This Purchase Request is marked as a direct acquisition. It will bypass the RFQ and AOQ steps and proceed directly to Purchase Order generation.
+          <span className="font-semibold">Direct Acquisition:</span> This Purchase Request is marked as a direct acquisition. It will bypass the RFQ and abstract steps and proceed directly to Purchase Order generation.
         </div>
       )}
 
@@ -559,7 +559,7 @@ export default function PurchaseRequestEditor() {
                   className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
                 />
                 <label htmlFor="isDirectAcquisition" className="text-sm font-medium text-slate-700 cursor-pointer">
-                  Direct Acquisition <span className="text-xs text-slate-500 font-normal">(Skips RFQ and AOQ phases)</span>
+                  Direct Acquisition <span className="text-xs text-slate-500 font-normal">(Skips RFQ and abstract phases)</span>
                 </label>
               </div>
 
