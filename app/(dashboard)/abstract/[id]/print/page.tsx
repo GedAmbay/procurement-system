@@ -241,14 +241,47 @@ export default function AbstractLivePreviewPage() {
         <div className="flex-1 relative min-w-0 bg-slate-200 print:bg-white print:static print:block print:!overflow-visible print:!h-auto">
           <div className="absolute inset-0 overflow-auto print:static print:overflow-visible">
             <style>{`
+              @page {
+                size: landscape;
+                margin: 0 !important;
+              }
               @media print { 
-                .print-zoom-reset { zoom: 1 !important; } 
-                @page { margin-top: 20mm !important; }
-                @page :first { margin-top: 5mm !important; }
+                .no-print, .sidebar, .topbar { display: none !important; }
+                html, body {
+                  background: white !important;
+                  margin: 0 !important;
+                  padding: 0 !important;
+                  width: 100% !important;
+                }
+                .main-content, .page-content {
+                  margin: 0 !important;
+                  padding: 0 !important;
+                  width: 100% !important;
+                  display: block !important;
+                }
+
+                /* Reset preview zoom scale and inline margin offsets during print */
+                .abstract-zoom-wrapper {
+                  transform: none !important;
+                  margin: 0 !important;
+                  padding: 0 !important;
+                  width: 100% !important;
+                  max-width: 100% !important;
+                }
+
+                /* Ensure zero padding/margin outside black border so it sits directly on printer margin */
+                .abstract-print-sheet {
+                  padding: 0 !important;
+                  margin: 0 !important;
+                  width: 100% !important;
+                  max-width: 100% !important;
+                  box-shadow: none !important;
+                  min-height: 0 !important;
+                }
               }
             `}</style>
             <div className="w-max mx-auto min-w-full flex justify-center print:block print:w-full print:min-w-0">
-              <div className="p-8 print:p-0 origin-top print:!transform-none print:!m-0"
+              <div className="abstract-zoom-wrapper p-2 print:p-0 origin-top print:!transform-none print:!m-0"
                 style={{
                   transform: `scale(${zoom})`,
                   marginBottom: `${(zoom - 1) * 816}px`,
@@ -259,8 +292,8 @@ export default function AbstractLivePreviewPage() {
                   background: "#fff",
                   color: "#000",
                   fontFamily: "Arial, sans-serif", fontSize: "13px",
-                }} className="w-[1448px] shadow-xl min-h-[816px] p-[40px] print:!p-0 block print:shadow-none print:!w-full print:!max-w-none print:!m-0 print:!min-h-0">
-                  <div style={{ border: "1px solid #000", padding: "20px 0" }}>
+                }} className="abstract-print-sheet print-area w-[1448px] shadow-xl min-h-[816px] p-[40px] print:!p-0 block print:shadow-none print:!w-full print:!max-w-none print:!m-0 print:!min-h-0">
+                  <div style={{ border: "1px solid #000", padding: "10px 0" }}>
 
                     {/* Doc Header */}
                     <div style={{ textAlign: "center", marginBottom: "6px" }}>
@@ -403,7 +436,7 @@ export default function AbstractLivePreviewPage() {
                           {displayQuotes.map((q: any, qi: number) => {
                             const isWinner = q && recommendedQuote && q.id === recommendedQuote.id;
                             return (
-                              <td key={`tot-${qi}`} colSpan={2} style={{ ...cell, borderTop: "2px solid #000", textAlign: "right", fontWeight: "700", fontSize: isWinner ? "14px" : "13px" }}>
+                              <td key={`tot-${qi}`} colSpan={2} style={{ ...cell, borderTop: "2px solid #000", textAlign: "right", fontWeight: isWinner ? "700" : "normal", fontSize: isWinner ? "14px" : "13px" }}>
                                 {q && q.totalAmount > 0 ? fmt2(q.totalAmount) : ""}
                               </td>
                             );
@@ -431,22 +464,22 @@ export default function AbstractLivePreviewPage() {
                     </div>
 
                     {/* Certification Paragraph */}
-                    <div className="print:break-inside-avoid" style={{ fontSize: "14px", lineHeight: "1.6", marginBottom: "40px", textAlign: "justify", padding: "0 24px" }}>
+                    <div className="print:break-inside-avoid" style={{ fontSize: "14px", lineHeight: "1.6", marginBottom: "50px", textAlign: "justify", padding: "0 24px" }}>
                       &nbsp;&nbsp;&nbsp;&nbsp;We, the undersigned the BAC Chairman, Members and Requisitioning Officer, do hereby certify that the foregoing is the true and correct ABSTRACT OF CANVASS of the Request for Quotation received on <strong>{fmtDate(dateReceived)}</strong> by BAC Secretariat and was opened by Bids and Awards Committee of Pandan, Antique on <strong>{fmtDate(dateAwarded)}</strong> for&nbsp;
                       <span style={{ borderBottom: "1px solid #000" }}><strong>&nbsp;{pr?.purpose}&nbsp;</strong></span>
                       &nbsp;needed for use in the Office of the <strong>{reqOfficerOffice || "___________________"}</strong>, Pandan, Antique.
-                      The offer <strong><span style={{ textDecoration: "underline" }}>{recommendedQuote ? recommendedQuote.supplier?.name?.toUpperCase() : "___________________"}</span></strong> for items herein and respectively checked and articles/materials are hereby ACCEPTED AND AWARDED OF PRICE RECOMMENDATION. Recommending approval of the award in favor of the dealer quoted most advantageous offers indicating in the column above.
+                      The offer <strong><span>{recommendedQuote ? recommendedQuote.supplier?.name?.toUpperCase() : "___________________"}</span></strong> for items herein and respectively checked and articles/materials are hereby ACCEPTED AND AWARDED OF PRICE RECOMMENDATION. Recommending approval of the award in favor of the dealer quoted most advantageous offers indicating in the column above.
                     </div>
 
-                    <div className="print:break-inside-avoid" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px", flexWrap: "nowrap", rowGap: "32px", padding: "0 24px" }}>
+                    <div className="print:break-inside-avoid" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px", flexWrap: "nowrap", rowGap: "32px" }}>
                       {bacChairman && (
                         <div
                           onClick={() => { setEditingSigId(bacChairman.id); setShowAllSigs(false); }}
                           style={{ flex: "1 1 auto", textAlign: "center", padding: "4px", cursor: "pointer", borderRadius: "6px", backgroundColor: editingSigId === bacChairman.id ? "rgba(37,99,235,0.08)" : "transparent" }}
                           title="Click to edit"
                         >
-                          <div style={{ fontWeight: "800", fontSize: "13px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{bacChairman.name}</div>
-                          <div style={{ fontSize: "12px" }}>{bacChairman.position}</div>
+                          <div style={{ fontWeight: "700", fontSize: "12px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{bacChairman.name}</div>
+                          <div style={{ fontSize: "12px", }}>{bacChairman.position}</div>
                           <div style={{ fontSize: "12px" }}>BAC Chairman</div>
                         </div>
                       )}
@@ -457,7 +490,7 @@ export default function AbstractLivePreviewPage() {
                           style={{ flex: "1 1 auto", textAlign: "center", padding: "4px", cursor: "pointer", borderRadius: "6px", backgroundColor: editingSigId === m.id ? "rgba(37,99,235,0.08)" : "transparent" }}
                           title="Click to edit"
                         >
-                          <div style={{ fontWeight: "900", fontSize: "13px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{m.name}</div>
+                          <div style={{ fontWeight: "700", fontSize: "12px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{m.name}</div>
                           <div style={{ fontSize: "12px" }}>{m.position}</div>
                           <div style={{ fontSize: "12px" }}>{m.label || "BAC Member"}</div>
                         </div>
@@ -467,19 +500,19 @@ export default function AbstractLivePreviewPage() {
                         style={{ flex: "1 1 auto", textAlign: "center", padding: "4px", cursor: "pointer", borderRadius: "6px", backgroundColor: editingSigId === "req" ? "rgba(37,99,235,0.08)" : "transparent" }}
                         title="Click to edit"
                       >
-                        <div style={{ fontWeight: "900", fontSize: "13px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{reqOfficerName || "___________________"}</div>
-                        <div style={{ fontSize: "12px", fontWeight: "700", marginTop: "4px" }}>Requisitioning Officer</div>
+                        <div style={{ fontWeight: "700", fontSize: "12px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{reqOfficerName || "___________________"}</div>
+                        <div style={{ fontSize: "12px" }}>Requisitioning Officer</div>
                       </div>
                     </div>
 
                     {/* Approved by */}
-                    <div className="print:break-inside-avoid" style={{ display: "flex", justifyContent: "flex-end", marginTop: "6px", padding: "0 24px", marginBottom: "20px" }}>
+                    <div className="print:break-inside-avoid" style={{ display: "flex", justifyContent: "flex-end", marginTop: "6px", padding: "0 24px", marginBottom: "10px" }}>
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
-                        <div style={{ fontSize: "13px", marginBottom: "20px" }}>Approved:</div>
+                        <div style={{ fontSize: "13px", marginBottom: "30px" }}>Approved:</div>
                         {hope ? (
                           <div style={{ textAlign: "center", minWidth: "180px" }}>
-                            <div style={{ fontWeight: "900", fontSize: "13px", textTransform: "uppercase" }}>{hope.name}</div>
-                            <div style={{ fontSize: "13px" }}>{hope.position}</div>
+                            <div style={{ fontWeight: "700", fontSize: "12px", textTransform: "uppercase" }}>{hope.name}</div>
+                            <div style={{ fontSize: "12px" }}>{hope.position}</div>
                           </div>
                         ) : (
                           <div style={{ textAlign: "center", minWidth: "180px" }}>
@@ -692,13 +725,6 @@ export default function AbstractLivePreviewPage() {
         </div>
       </div>
 
-      <style>{`
-        @media print {
-          .no-print { display: none !important; }
-          body { background: white !important; }
-          @page { size: 13in 8.5in; }
-        }
-      `}</style>
     </div>
   );
 }
