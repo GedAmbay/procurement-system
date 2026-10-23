@@ -26,10 +26,17 @@ export default function RfqLivePreviewPage() {
   const { register, handleSubmit, reset, watch } = useForm({
     defaultValues: {
       signatoryId: "",
+      deadline: "",
     }
   });
 
   const watchSignatoryId = watch("signatoryId");
+  const watchDeadline = watch("deadline");
+
+  const selectedSignatory = 
+    signatories.find(s => s.id === watchSignatoryId) || 
+    rfq?.signatory || 
+    signatories.find(s => s.name?.toUpperCase().includes("JEFFY"));
 
   useEffect(() => {
     async function loadData() {
@@ -39,15 +46,24 @@ export default function RfqLivePreviewPage() {
           fetch("/api/signatories")
         ]);
 
+        let loadedSignatories: any[] = [];
         if (sigRes.ok) {
-          setSignatories(await sigRes.json());
+          loadedSignatories = await sigRes.json();
+          setSignatories(loadedSignatories);
         }
 
         if (rfqRes.ok) {
           const data = await rfqRes.json();
           setRfq(data);
+
+          const defaultSig = loadedSignatories.find(
+            s => s.name?.toUpperCase().includes("JEFFY")
+          );
+          const activeSigId = data.signatoryId || (defaultSig ? defaultSig.id : "");
+
           reset({
-            signatoryId: data.signatoryId || "",
+            signatoryId: activeSigId,
+            deadline: data.deadline ? data.deadline.substring(0, 10) : "",
           });
         }
       } catch (err) {
@@ -64,6 +80,7 @@ export default function RfqLivePreviewPage() {
     try {
       const payload = {
         signatoryId: data.signatoryId || null,
+        deadline: data.deadline || null,
       };
 
       const res = await fetch(`/api/rfqs/${params.id}`, {
@@ -72,38 +89,56 @@ export default function RfqLivePreviewPage() {
         body: JSON.stringify(payload)
       });
 
-      if (res.ok || res.status === 400) {
-        toast.success("RFQ details saved successfully");
-        // fetch data again
-        const refreshRes = await fetch(`/api/rfqs/${params.id}`);
-        if (refreshRes.ok) setRfq(await refreshRes.json());
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to save RFQ details");
       }
-    } catch (e) {
-      toast.error("An error occurred");
+
+      const updated = await res.json();
+      setRfq(updated);
+      toast.success("RFQ details saved successfully");
+    } catch (e: any) {
+      toast.error(e.message || "An error occurred");
     } finally {
       setSubmitting(false);
     }
   };
 
   const updateStatus = async (status: string) => {
-    if (status === "COMPLETED" && !watchSignatoryId) {
-      toast.error("Please select a signatory and save before finalizing");
+    const currentSigId = watchSignatoryId || rfq?.signatoryId;
+    if ((status === "ISSUED" || status === "COMPLETED") && !currentSigId) {
+      toast.error("Please select a signatory before issuing");
       return;
     }
 
+    setSubmitting(true);
     try {
+      const payload: any = { status };
+      if (currentSigId) {
+        payload.signatoryId = currentSigId;
+      }
+      if (watchDeadline) {
+        payload.deadline = watchDeadline;
+      }
+
       const res = await fetch(`/api/rfqs/${params.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status })
+        body: JSON.stringify(payload)
       });
-      if (res.ok) {
-        toast.success(`Status updated to ${status.replace(/_/g, ' ')}`);
-        const data = await res.json();
-        setRfq(data);
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to update status");
       }
-    } catch (e) {
-      toast.error("Update failed");
+
+      const updated = await res.json();
+      setRfq(updated);
+      toast.success(`RFQ ${status === "ISSUED" ? "issued" : status.toLowerCase().replace(/_/g, ' ')} successfully`);
+    } catch (e: any) {
+      toast.error(e.message || "Update failed");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -142,12 +177,20 @@ export default function RfqLivePreviewPage() {
         </div>
         <div className="flex gap-2">
           {rfq.status === "DRAFT" && (
-            <button onClick={() => updateStatus("COMPLETED")} className="btn btn-primary flex items-center gap-2">
-              <CheckCircle2 size={16} /> Issue
+            <button
+              onClick={() => updateStatus("ISSUED")}
+              disabled={submitting}
+              className="btn btn-primary flex items-center gap-2"
+            >
+              <Send size={16} /> Issue
             </button>
           )}
-          {rfq.status === "COMPLETED" && (
-            <button type="button" onClick={() => isUnlocked ? setIsUnlocked(false) : setUnlockModalOpen(true)} className={`btn ${isUnlocked ? 'btn-secondary' : 'btn-primary'}`}>
+          {(rfq.status === "ISSUED" || rfq.status === "COMPLETED") && (
+            <button
+              type="button"
+              onClick={() => isUnlocked ? setIsUnlocked(false) : setUnlockModalOpen(true)}
+              className={`btn ${isUnlocked ? 'btn-secondary' : 'btn-primary'}`}
+            >
               {isUnlocked ? <><Lock size={16} /> Lock</> : <><Unlock size={16} /> Unlock</>}
             </button>
           )}
@@ -220,12 +263,12 @@ export default function RfqLivePreviewPage() {
               <div className="mb-8 indent-[28px] text-[13px]">
                 Please quote your lowest price on the item(s) listed below, subject to the General Conditions on the last page, <br />
                 stating the shortest time of the delivery and submit your quotation duly signed by your representative not later <br />
-                than ___________________________ in the return envelope attached herewith. <br />
+                than <span className="font-bold underline">{watchDeadline ? formatDate(watchDeadline) : (rfq.deadline ? formatDate(rfq.deadline) : "___________________________")}</span> in the return envelope attached herewith. <br />
               </div>
 
               <div className="flex justify-end mb-6 text-center">
                 <div className="w-[250px]">
-                  <div className="font-bold px-4 text-[16px] uppercase">{rfq.signatory?.name || "JEFFY S. CANGAYDA"}</div>
+                  <div className="font-bold px-4 text-[16px] uppercase">{selectedSignatory?.name || "JEFFY S. CANGAYDA"}</div>
                   <div className="text-[13px]">BAC Chairman</div>
                 </div>
               </div>
@@ -316,7 +359,7 @@ export default function RfqLivePreviewPage() {
 
               <div className="flex justify-between items-end mb-2">
                 <div className="font-bold text-[14px]">GRAND TOTAL</div>
-                <div className="w-32 border-b-2 border-black pb-0.5 mb-1 text-base text-right font-bold">
+                <div className="w-32 border-b-2 border-black pb-0.5 mt-4 mb-1 text-base text-right font-bold">
                   <div className="border-b-2 border-black w-full mt-0.5"></div>
                 </div>
               </div>
@@ -349,7 +392,7 @@ export default function RfqLivePreviewPage() {
             <h3 style={{ fontWeight: "800", color: "#0f172a", marginBottom: "1.25rem", fontSize: "1rem" }}>RFQ Details</h3>
             <p style={{ fontSize: "0.8125rem", color: "#64748b", marginBottom: "1.5rem" }}>Update the details for the Request for Quotation.</p>
 
-            <form style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+            <form onSubmit={handleSubmit(onSubmit)} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
               <div>
                 <label className="form-label">Signatory</label>
                 <select
@@ -359,10 +402,33 @@ export default function RfqLivePreviewPage() {
                 >
                   <option value="">Select Signatory...</option>
                   {signatories.map(s => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
                   ))}
                 </select>
               </div>
+
+              <div>
+                <label className="form-label">Submission Deadline</label>
+                <input
+                  type="date"
+                  {...register("deadline")}
+                  disabled={isReadOnly}
+                  className="form-input"
+                />
+              </div>
+
+              {!isReadOnly && (
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="btn btn-primary w-full flex items-center justify-center gap-2 mt-2"
+                >
+                  {submitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                  Save Details
+                </button>
+              )}
             </form>
           </div>
         </div>

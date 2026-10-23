@@ -130,7 +130,7 @@ export default function abstractSupplierHub() {
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
             <h1 style={{ fontSize: "1.375rem", fontWeight: "800", color: "#0f172a", margin: 0 }}>
-              {abstract.abstractNumber}
+              PR No. {rfq.pr?.prNumber || abstract.abstractNumber}
             </h1>
             <span className="badge" style={{ background: statusStyle.bg, color: statusStyle.color }}>
               {statusStyle.label}

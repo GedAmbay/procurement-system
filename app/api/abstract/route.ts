@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
   if (search) {
     whereClause.OR = [
       { abstractNumber: { contains: search } },
+      { rfq: { pr: { prNumber: { contains: search } } } },
       { rfq: { pr: { purpose: { contains: search } } } },
       { rfq: { pr: { office: { name: { contains: search } } } } },
       { rfq: { pr: { office: { code: { contains: search } } } } },
@@ -37,13 +38,29 @@ export async function GET(req: NextRequest) {
     const abstracts = await prisma.abstractOfQuotation.findMany({
       where: whereClause,
       include: {
+        purchaseOrders: {
+          select: {
+            supplier: {
+              select: { name: true }
+            }
+          }
+        },
         rfq: {
           include: {
             pr: {
               select: {
+                prNumber: true,
                 purpose: true,
                 totalAmount: true,
                 office: { select: { name: true, code: true } }
+              }
+            },
+            quotations: {
+              select: {
+                totalAmount: true,
+                supplier: {
+                  select: { name: true }
+                }
               }
             }
           }

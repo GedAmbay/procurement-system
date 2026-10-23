@@ -97,11 +97,10 @@ export default function FolderView({ folderData, stages }: FolderViewProps) {
 
         {/* Stepper */}
         <div style={{ position: "relative", display: "flex", justifyContent: "space-between", padding: "0 2rem" }}>
-          {/* Background line */}
-          <div style={{ position: "absolute", left: "4rem", right: "4rem", top: "1.25rem", height: "6px", borderRadius: "3px", boxShadow: "var(--shadow-neu-inner)", zIndex: 0 }}></div>
-
-          {/* Foreground line (green) */}
-          <div style={{ position: "absolute", left: "4rem", top: "1.25rem", height: "6px", borderRadius: "3px", background: "#10b981", zIndex: 1, width: `calc(${Math.max(0, (currentStep - 1) / (stages.length - 1)) * 100}% - 8rem)`, transition: "width 0.5s ease" }}></div>
+          {/* Progress Track (Background + Active Fill) */}
+          <div style={{ position: "absolute", left: "4rem", right: "4rem", top: "1.25rem", height: "6px", borderRadius: "3px", boxShadow: "var(--shadow-neu-inner)", zIndex: 0, overflow: "hidden" }}>
+            <div style={{ height: "100%", background: "#10b981", borderRadius: "3px", width: `${Math.max(0, (currentStep - 1) / (stages.length - 1)) * 100}%`, transition: "width 0.5s ease" }}></div>
+          </div>
 
           {stages.map((stage, idx) => {
             const isDone = stage.state === "done";
@@ -187,11 +186,8 @@ export default function FolderView({ folderData, stages }: FolderViewProps) {
 
                 switch (stage.key) {
                   case "PR": editPath = `/purchase-requests/${docId}`; numberStr = doc.prNumber; break;
-                  case "RFQ":
-                    editPath = doc.abstract ? `/abstract/${doc.abstract.id}` : `/rfqs/${docId}`;
-                    numberStr = doc.rfqNumber;
-                    break;
-                  case "abstract": title = "Abstract of Canvass"; editPath = `/abstract/${docId}`; numberStr = doc.abstractNumber; break;
+                  case "RFQ": editPath = `/rfqs/${docId}`; numberStr = doc.rfqNumber; break;
+                  case "Abstract": title = "Abstract of Canvass"; editPath = `/abstract/${docId}`; numberStr = doc.abstractNumber; break;
                   case "PO": editPath = `/purchase-orders/${docId}`; numberStr = doc.poNumber; break;
                   case "IAR": editPath = `/acceptances/${docId}`; numberStr = doc.iarNumber; break;
                 }
@@ -284,9 +280,6 @@ export default function FolderView({ folderData, stages }: FolderViewProps) {
                         <div style={{ fontSize: "0.875rem", color: "#64748b" }}>Locks the document and prepares it for the next step.</div>
                       </div>
                       <div style={{ display: "flex", gap: "1rem" }}>
-                        <Link href={editPath} className="btn">
-                          Add suppliers
-                        </Link>
                         <Link href={editPath} className="btn" style={{ padding: "0.8rem 1.5rem", background: "#2563eb", color: "#ffffff", boxShadow: "0 4px 12px rgba(37,99,235,0.4)" }}>
                           Finalize {stage.key}
                         </Link>

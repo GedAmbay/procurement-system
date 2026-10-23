@@ -303,7 +303,7 @@ export default function SupplierEncodingPage() {
             </tbody>
             <tfoot>
               <tr>
-                <td colSpan={5} style={{ textAlign: "right", fontWeight: "700", color: "#334155", padding: "1rem 0.5rem", borderTop: "2px solid #e2e8f0", fontSize: "0.9375rem" }}>
+                <td colSpan={5} style={{ textAlign: "right", fontWeight: "700", color: "#334155", padding: "2rem 0.5rem", borderTop: "2px solid #e2e8f0", fontSize: "0.9375rem" }}>
                   Grand Total
                 </td>
                 <td style={{ textAlign: "right", fontWeight: "800", color: isOverBudget ? "#dc2626" : "#059669", padding: "1rem 0.5rem", borderTop: "2px solid #e2e8f0", fontSize: "1rem" }}>

@@ -11,11 +11,19 @@ interface abstract {
   abstractNumber: string;
   rfq: {
     pr: {
+      prNumber: string;
       purpose: string;
       totalAmount: number;
       office: { name: string; code: string };
     };
+    quotations?: {
+      totalAmount: number;
+      supplier: { name: string };
+    }[];
   };
+  purchaseOrders?: {
+    supplier: { name: string };
+  }[];
   status: string;
   createdAt: string;
 }
@@ -33,11 +41,11 @@ export default function abstractPage() {
 
   const columns = [
     {
-      key: "abstractNumber",
-      label: "abstract Number",
+      key: "prNumber",
+      label: "PR Number",
       render: (row: abstract) => (
         <div style={{ fontWeight: "700", color: "#0f172a", fontFamily: "monospace", fontSize: "0.875rem" }}>
-          {row.abstractNumber}
+          {row.rfq.pr.prNumber}
         </div>
       ),
       width: "160px",
@@ -67,15 +75,25 @@ export default function abstractPage() {
       ),
     },
     {
-      key: "abc",
-      label: "Approved Budget",
+      key: "awardedSupplier",
+      label: "Awarded Supplier",
       align: "center",
-      render: (row: abstract) => (
-        <div style={{ fontWeight: "700", color: "#059669" }}>
-          {formatCurrency(row.rfq.pr.totalAmount)}
-        </div>
-      ),
-      width: "160px",
+      render: (row: abstract) => {
+        const winningSupplier =
+          row.purchaseOrders?.[0]?.supplier?.name ||
+          (row.rfq?.quotations?.filter((q: any) => q.totalAmount > 0).length
+            ? row.rfq.quotations
+              .filter((q: any) => q.totalAmount > 0)
+              .reduce((min: any, q: any) => (q.totalAmount < min.totalAmount ? q : min))?.supplier?.name
+            : null);
+
+        return (
+          <div style={{ fontWeight: winningSupplier ? "600" : "600", color: winningSupplier ? "#0f172a" : "#D97706", fontSize: "0.875rem", fontStyle: winningSupplier ? "normal" : "italic" }}>
+            {winningSupplier || "Pending Award"}
+          </div>
+        );
+      },
+      width: "200px",
     },
     {
       key: "status",

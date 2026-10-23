@@ -94,7 +94,7 @@ export function deriveStages(pr: any): ProcurementStage[] {
       docs: rfqs
     },
     {
-      key: "abstract",
+      key: "Abstract",
       label: "Abstract of Canvass",
       state: abstractDone ? "done" : (abstractActive ? "active" : "pending"),
       docs: abstracts

@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const roleCheck = await requireRole(["ADMIN", "BAC_SECRETARIAT"]);
+  const roleCheck = await requireRole(["ADMIN", "BAC_SECRETARIAT", "END_USER"]);
   if (!roleCheck.authorized) return roleCheck.response;
 
   try {
