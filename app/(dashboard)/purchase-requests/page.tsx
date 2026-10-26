@@ -18,6 +18,7 @@ interface PR {
   status: string;
   createdAt: string;
   isDirectAcquisition?: boolean;
+  requestType?: string;
 }
 
 
@@ -35,11 +36,18 @@ export default function PurchaseRequestsPage() {
           <div style={{ fontWeight: "600", color: "#0f172a", fontFamily: "monospace", fontSize: "0.875rem" }}>
             {row.prNumber}
           </div>
-          {row.isDirectAcquisition && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-[0.65rem] font-medium bg-teal-100 text-teal-800 border border-teal-200 w-max">
-              Direct
-            </span>
-          )}
+          <div className="flex flex-wrap gap-1">
+            {row.requestType === "JOB" && (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[0.65rem] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 w-max">
+                Job Request
+              </span>
+            )}
+            {row.isDirectAcquisition && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[0.65rem] font-medium bg-teal-100 text-teal-800 border border-teal-200 w-max">
+                Direct
+              </span>
+            )}
+          </div>
         </div>
       ),
       width: "160px",

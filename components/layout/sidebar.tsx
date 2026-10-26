@@ -30,18 +30,15 @@ const navItems = [
     items: [
       { label: "Purchase Requests", href: "/purchase-requests", icon: ShoppingCart, roles: [] },
       { label: "Requests for Quotation", href: "/rfqs", icon: FileText, roles: [] },
-      { 
-        label: "Abstract", href: "/abstract", icon: ClipboardList, roles: [],
-        subItems: [{ label: "Abstract Hub", href: "/abstract" }]
+      {
+        label: "Abstract", href: "/abstract", icon: ClipboardList, roles: []
       },
       { label: "Purchase Orders", href: "/purchase-orders", icon: Package, roles: [] },
-      { 
-        label: "Acceptance", href: "/acceptances", icon: CheckSquare, roles: [],
-        subItems: [{ label: "Acceptance Hub", href: "/acceptances" }]
+      {
+        label: "Acceptance & Inspection", href: "/acceptances", icon: CheckSquare, roles: []
       },
-      { 
-        label: "Archives", href: "/archives", icon: Archive, roles: [],
-        subItems: [{ label: "Archives Hub", href: "/archives" }]
+      {
+        label: "Archives", href: "/archives", icon: Archive, roles: []
       },
     ],
   },
@@ -124,7 +121,7 @@ export default function Sidebar({ user }: SidebarProps) {
                       <span style={{ flex: 1 }}>{item.label}</span>
                       <ChevronRight size={14} className="sidebar-nav-chevron" />
                     </Link>
-                    
+
                     {item.subItems && (
                       <div
                         className={`sidebar-submenu ${expanded ? "open" : ""}`}
@@ -133,13 +130,12 @@ export default function Sidebar({ user }: SidebarProps) {
                         <div className="sidebar-submenu-inner">
                           <div className="sidebar-submenu-list">
                             {item.subItems.map((sub: any) => (
-                              <Link 
-                                key={sub.href} 
+                              <Link
+                                key={sub.href}
                                 href={sub.href}
                                 tabIndex={expanded ? 0 : -1}
-                                className={`sidebar-submenu-link ${
-                                  pathname === sub.href || pathname.startsWith(sub.href + "/") ? "active" : ""
-                                }`}
+                                className={`sidebar-submenu-link ${pathname === sub.href || pathname.startsWith(sub.href + "/") ? "active" : ""
+                                  }`}
                               >
                                 {sub.label}
                               </Link>

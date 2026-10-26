@@ -50,12 +50,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "PO ID is required" }, { status: 400 });
     }
 
-    // Generate IAR Number (e.g. AIR-26-0001)
+    // Generate AIR Number (e.g. AIR-26-0001)
     const yearPrefix = (fiscalYear || new Date().getFullYear()).toString().slice(-2);
     const count = await prisma.acceptance.count({
-      where: { iarNumber: { startsWith: `AIR-${yearPrefix}-` } },
+      where: { AIRNumber: { startsWith: `AIR-${yearPrefix}-` } },
     });
-    const iarNumber = `AIR-${yearPrefix}-${(count + 1).toString().padStart(4, "0")}`;
+    const AIRNumber = `AIR-${yearPrefix}-${(count + 1).toString().padStart(4, "0")}`;
 
     // Get PO line items and past deliveries
     const poLineItems = await prisma.poLineItem.findMany({
@@ -71,7 +71,7 @@ export async function POST(req: Request) {
 
     const acceptance = await prisma.acceptance.create({
       data: {
-        iarNumber,
+        AIRNumber,
         poId,
         fiscalYear: fiscalYear || new Date().getFullYear(),
         createdById: session?.user?.id,

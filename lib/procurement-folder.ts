@@ -57,7 +57,9 @@ export async function getProcurementFolder(prId: string) {
 export function deriveStages(pr: any): ProcurementStage[] {
   if (!pr) return [];
 
-  // Stage 1: Purchase Request
+  const isJob = pr.requestType === "JOB";
+
+  // Stage 1: Purchase Request / Job Request
   const prDone = pr.status !== "DRAFT";
 
   // Stage 2: RFQ
@@ -70,20 +72,20 @@ export function deriveStages(pr: any): ProcurementStage[] {
   const abstractDone = abstracts.some((a: any) => a.status !== "DRAFT");
   const abstractActive = rfqDone && !abstractDone;
 
-  // Stage 4: Purchase Order
+  // Stage 4: Purchase Order / Job Order
   const pos = abstracts.flatMap((a: any) => a.purchaseOrders || []);
   const poDone = pos.some((p: any) => p.status !== "DRAFT");
   const poActive = abstractDone && !poDone;
 
-  // Stage 5: Acceptance (IAR)
+  // Stage 5: Acceptance (AIR)
   const acceptances = pos.flatMap((p: any) => p.acceptances || []);
-  const iarDone = acceptances.some((a: any) => a.status !== "DRAFT");
-  const iarActive = poDone && !iarDone;
+  const AIRDone = acceptances.some((a: any) => a.status !== "DRAFT");
+  const AIRActive = poDone && !AIRDone;
 
   return [
     {
-      key: "PR",
-      label: "Purchase Request",
+      key: isJob ? "JR" : "PR",
+      label: isJob ? "Job Request" : "Purchase Request",
       state: prDone ? "done" : "active",
       docs: [pr]
     },
@@ -100,15 +102,15 @@ export function deriveStages(pr: any): ProcurementStage[] {
       docs: abstracts
     },
     {
-      key: "PO",
-      label: "Purchase Order",
+      key: isJob ? "JO" : "PO",
+      label: isJob ? "Job Order" : "Purchase Order",
       state: poDone ? "done" : (poActive ? "active" : "pending"),
       docs: pos
     },
     {
-      key: "IAR",
-      label: "Inspection & Acceptance",
-      state: iarDone ? "done" : (iarActive ? "active" : "pending"),
+      key: "AIR",
+      label: "Acceptance & Inspection",
+      state: AIRDone ? "done" : (AIRActive ? "active" : "pending"),
       docs: acceptances
     }
   ];

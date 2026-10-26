@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { requireRole } from "@/lib/auth-utils";
+import { syncAllRfqs } from "@/lib/rfq-status";
 
 export async function GET(req: NextRequest) {
   const roleCheck = await requireRole(["ANY"]);
@@ -26,6 +27,9 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    // Automatically ensure all RFQ statuses reflect supplier quotations progress
+    await syncAllRfqs();
+
     const rfqs = await prisma.rfq.findMany({
       where: whereClause,
       include: {

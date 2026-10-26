@@ -15,6 +15,7 @@ export const purchaseRequestSchema = z.object({
   fundSourceId: z.string().nullable().optional(),
   chargeToAccount: z.string().nullable().optional(),
   isDirectAcquisition: z.boolean().optional().default(false),
+  requestType: z.string().optional().default("PURCHASE"),
   lineItems: z.array(prLineItemSchema).min(1, "At least one line item is required"),
 });
 

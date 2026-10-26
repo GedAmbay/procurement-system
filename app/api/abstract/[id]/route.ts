@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { requireRole } from "@/lib/auth-utils";
+import { syncRfqStatus } from "@/lib/rfq-status";
 
 export async function GET(
   req: NextRequest,
@@ -41,6 +42,14 @@ export async function GET(
     });
 
     if (!abstract) return NextResponse.json({ error: "abstract not found" }, { status: 404 });
+
+    // Sync RFQ completion status
+    if (abstract.rfqId) {
+      const syncResult = await syncRfqStatus(abstract.rfqId);
+      if (syncResult && abstract.rfq) {
+        abstract.rfq.status = syncResult.status;
+      }
+    }
 
     return NextResponse.json(abstract);
   } catch (error) {
@@ -122,6 +131,11 @@ export async function PATCH(
       where: { id },
       data: dataToUpdate,
     });
+
+    if (updatedabstract.rfqId) {
+      await syncRfqStatus(updatedabstract.rfqId);
+    }
+
     return NextResponse.json(updatedabstract);
   } catch (error) {
     console.error("abstract Update Error:", error);

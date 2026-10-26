@@ -136,14 +136,13 @@ export default function abstractSupplierHub() {
               {statusStyle.label}
             </span>
           </div>
-          {abstract.createdBy && (
-            <div className="text-sm text-slate-500 mt-1 flex items-center gap-1">
-              <User size={14} /> Created by <strong className="text-slate-700">{abstract.createdBy.name}</strong>
-            </div>
-          )}
-          <div style={{ fontSize: "0.8125rem", color: "#64748b", marginTop: "0.25rem" }}>
-            {rfq.pr?.office?.name} &nbsp;&middot;&nbsp; {totalItems} item{totalItems !== 1 ? "s" : ""}
-            &nbsp;&middot;&nbsp; ABC: <strong style={{ color: "#059669" }}>{formatCurrency(rfq.pr?.totalAmount)}</strong>
+
+          <div style={{ fontSize: "0.8125rem", color: "#64748b", marginTop: "0.25rem", display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+            <span>{rfq.pr?.office?.name}</span>
+            <span>&middot;</span>
+            <span>{totalItems} item{totalItems !== 1 ? "s" : ""}</span>
+            <span>&middot;</span>
+            <span>ABC: <strong style={{ color: "#059669" }}>{formatCurrency(rfq.pr?.totalAmount)}</strong></span>
           </div>
         </div>
 
@@ -197,6 +196,7 @@ export default function abstractSupplierHub() {
               {lowestBid !== null ? formatCurrency(lowestBid) : <span style={{ color: "#cbd5e1", fontSize: "1rem" }}>No bids yet</span>}
             </div>
           </div>
+          <div style={{ width: "1px", height: "36px", background: "#e2e8f0" }} />
         </div>
       </div>
 

@@ -45,7 +45,7 @@ export default async function ArchivesPage(props: { searchParams: Promise<{ year
     const prs = office.purchaseRequests;
     const count = prs.length;
 
-    // Rough estimation of "finished" (has an acceptance/IAR that is not DRAFT)
+    // Rough estimation of "finished" (has an acceptance/AIR that is not DRAFT)
     let finishedCount = 0;
     for (const pr of prs) {
       let isFinished = false;

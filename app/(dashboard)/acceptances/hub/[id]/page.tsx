@@ -120,7 +120,7 @@ export default function AcceptancesHub() {
             style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}
           >
             {creating ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
-            New Delivery (IAR)
+            New Delivery (AIR)
           </button>
         </div>
       </div>
@@ -169,7 +169,7 @@ export default function AcceptancesHub() {
               <div className="py-12 text-center flex flex-col items-center">
                 <Truck size={48} className="text-slate-300 mb-3" />
                 <p className="text-slate-500 font-medium">No deliveries have been recorded yet.</p>
-                <p className="text-sm text-slate-400 mt-1">Click "New Delivery (IAR)" to start receiving items.</p>
+                <p className="text-sm text-slate-400 mt-1">Click "New Delivery (AIR)" to start receiving items.</p>
               </div>
             ) : (
               <div className="relative border-l-2 border-slate-100 ml-3 md:ml-4 space-y-8 py-4">
@@ -193,7 +193,7 @@ export default function AcceptancesHub() {
                         <div className="flex justify-between items-start mb-3">
                           <div>
                             <div className="flex items-center gap-2">
-                              <h3 className="font-bold text-slate-800 text-sm">{acc.iarNumber}</h3>
+                              <h3 className="font-bold text-slate-800 text-sm">{acc.AIRNumber}</h3>
                               <span className={`text-[9px] px-1.5 py-0.5 rounded-sm font-bold uppercase tracking-wider ${isDraft ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
                                 {acc.status}
                               </span>

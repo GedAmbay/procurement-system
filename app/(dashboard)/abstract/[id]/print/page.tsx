@@ -243,41 +243,6 @@ export default function AbstractLivePreviewPage() {
             <style>{`
               @page {
                 size: landscape;
-                margin: 0 !important;
-              }
-              @media print { 
-                .no-print, .sidebar, .topbar { display: none !important; }
-                html, body {
-                  background: white !important;
-                  margin: 0 !important;
-                  padding: 0 !important;
-                  width: 100% !important;
-                }
-                .main-content, .page-content {
-                  margin: 0 !important;
-                  padding: 0 !important;
-                  width: 100% !important;
-                  display: block !important;
-                }
-
-                /* Reset preview zoom scale and inline margin offsets during print */
-                .abstract-zoom-wrapper {
-                  transform: none !important;
-                  margin: 0 !important;
-                  padding: 0 !important;
-                  width: 100% !important;
-                  max-width: 100% !important;
-                }
-
-                /* Ensure zero padding/margin outside black border so it sits directly on printer margin */
-                .abstract-print-sheet {
-                  padding: 0 !important;
-                  margin: 0 !important;
-                  width: 100% !important;
-                  max-width: 100% !important;
-                  box-shadow: none !important;
-                  min-height: 0 !important;
-                }
               }
             `}</style>
             <div className="w-max mx-auto min-w-full flex justify-center print:block print:w-full print:min-w-0">

@@ -720,39 +720,71 @@ tbody td {
   }
 }
 
-/* ─── Print styles ─────────────────────────────────────────────────────────── */
+/* ─── Universal Print styles ─────────────────────────────────────────────────── */
+@page {
+  margin: 30px !important;
+  margin-top: 50px !important;
+  margin-bottom: 15px !important;
+}
+
 @media print {
 
+  /* Hide all non-printable UI elements */
   .sidebar,
   .topbar,
-  .no-print {
+  .no-print,
+  .print\:hidden,
+  header,
+  nav {
     display: none !important;
   }
 
-  .main-content {
-    margin-left: 0 !important;
-  }
-
+  /* Full width container resets */
   html,
   body {
-    background: white;
+    background: white !important;
     margin: 0 !important;
     padding: 0 !important;
     width: 100% !important;
+    min-width: 100% !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
-  .print-area {
-    padding: 0 !important;
+  .main-content,
+  .page-content {
     margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    display: block !important;
+  }
+
+  /* Universal reset for on-screen zoom preview wrappers */
+  .origin-top,
+  [class*="zoom-wrapper"],
+  .zoom-wrapper,
+  .print-zoom-wrapper,
+  .abstract-zoom-wrapper {
+    transform: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
   }
 
-  @page {
-    margin-top: 0.50in;
-    margin-bottom: 0.10in;
-    margin-left: 0.10in;
-    margin-right: 0.10in;
+  /* Universal document sheet: strips all screen padding/margins and shadows so the document border sits directly on the printer margin */
+  .print-area,
+  .print-sheet,
+  .abstract-print-sheet {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+    min-height: 0 !important;
+    background: white !important;
   }
 
   table {
@@ -767,9 +799,7 @@ tbody td {
   thead {
     display: table-header-group;
   }
-}
 
-@media print {
   * {
     color: black !important;
   }

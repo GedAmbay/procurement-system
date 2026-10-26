@@ -98,14 +98,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid data", details: parseResult.error.format() }, { status: 400 });
     }
 
-    const { officeId, purpose, requestedBySignatoryId, fundSourceId, chargeToAccount, isDirectAcquisition, lineItems } = parseResult.data;
+    const { officeId, purpose, requestedBySignatoryId, fundSourceId, chargeToAccount, isDirectAcquisition, requestType, lineItems } = parseResult.data;
 
     const prNumber = await generatePRNumber();
     const totalAmount = lineItems.reduce((sum: number, item: any) => sum + (item.quantity * item.unitCost), 0);
     const fiscalYear = new Date().getFullYear();
 
     const pr = await prisma.$transaction(async (tx) => {
-      const createdPr = await tx.purchaseRequest.create({
+      const createdPr: any = await tx.purchaseRequest.create({
         data: {
           prNumber,
           officeId,
@@ -117,6 +117,7 @@ export async function POST(req: NextRequest) {
           totalAmount,
           fiscalYear,
           isDirectAcquisition,
+          requestType: requestType || "PURCHASE",
           lineItems: {
             create: lineItems.map((item: any, idx: number) => ({
               itemId: item.itemId || null,
@@ -128,7 +129,7 @@ export async function POST(req: NextRequest) {
               sortOrder: idx,
             })),
           },
-        },
+        } as any,
         include: { lineItems: true, fundSource: true },
       });
 
@@ -151,7 +152,7 @@ export async function POST(req: NextRequest) {
             status: "DRAFT",
             createdById: user.id,
             lineItems: {
-              create: createdPr.lineItems.map(li => ({
+              create: createdPr.lineItems.map((li: any) => ({
                 description: li.description,
                 unit: li.unit,
                 quantity: li.quantity,
@@ -174,7 +175,7 @@ export async function POST(req: NextRequest) {
             status: "DRAFT",
             createdById: user.id,
             lineItems: {
-              create: createdPr.lineItems.map(li => ({
+              create: createdPr.lineItems.map((li: any) => ({
                 description: li.description,
                 unit: li.unit,
                 quantity: li.quantity,
@@ -192,12 +193,13 @@ export async function POST(req: NextRequest) {
           data: {
             poNumber,
             abstractId: abstract.id,
+            orderType: createdPr.requestType === "JOB" ? "JOB" : "PURCHASE",
             fiscalYear: createdPr.fiscalYear,
             totalAmount: createdPr.totalAmount,
             status: "DRAFT",
             createdById: user.id,
             lineItems: {
-              create: createdPr.lineItems.map(li => ({
+              create: createdPr.lineItems.map((li: any) => ({
                 description: li.description,
                 unit: li.unit,
                 quantity: li.quantity,
@@ -206,7 +208,7 @@ export async function POST(req: NextRequest) {
                 sortOrder: li.sortOrder
               }))
             }
-          }
+          } as any
         });
       } else {
         // Direct Acquisition: Skip RFQ & abstract, link PO directly to PR
@@ -215,12 +217,13 @@ export async function POST(req: NextRequest) {
           data: {
             poNumber,
             prId: createdPr.id,
+            orderType: createdPr.requestType === "JOB" ? "JOB" : "PURCHASE",
             fiscalYear: createdPr.fiscalYear,
             totalAmount: createdPr.totalAmount,
             status: "DRAFT",
             createdById: user.id,
             lineItems: {
-              create: createdPr.lineItems.map(li => ({
+              create: createdPr.lineItems.map((li: any) => ({
                 description: li.description,
                 unit: li.unit,
                 quantity: li.quantity,
@@ -229,7 +232,7 @@ export async function POST(req: NextRequest) {
                 sortOrder: li.sortOrder
               }))
             }
-          }
+          } as any
         });
       }
 

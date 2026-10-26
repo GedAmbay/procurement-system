@@ -17,7 +17,7 @@ const STATUS_COLORS: Record<string, { bg: string; color: string; icon: React.Rea
 interface Acceptance {
   id: string;
   poId: string;
-  iarNumber: string;
+  AIRNumber: string;
   po: { poNumber: string; supplier: { name: string } };
   status: string;
   createdAt: string;
@@ -61,11 +61,11 @@ export default function AcceptancesPage() {
 
   const columns = [
     {
-      key: "iarNumber",
-      label: "IAR Number",
+      key: "AIRNumber",
+      label: "AIR Number",
       render: (row: Acceptance) => (
         <div style={{ fontWeight: "600", color: "#0f172a", fontFamily: "monospace", fontSize: "0.875rem" }}>
-          {row.iarNumber}
+          {row.AIRNumber}
         </div>
       ),
       width: "160px",
@@ -122,8 +122,8 @@ export default function AcceptancesPage() {
     <div>
       <DataTable<Acceptance>
         key={refreshKey}
-        title="Acceptance and Inspection"
-        description="Manage Inspection and Acceptance Reports (IAR) for deliveries"
+        title="Acceptance & Inspection"
+        description="Manage Acceptance & Inspection Reports (AIR) for deliveries"
         apiPath="/api/acceptances"
         columns={columns}
         searchPlaceholder="Search ..."
@@ -131,7 +131,7 @@ export default function AcceptancesPage() {
         onView={(row) => router.push(`/acceptances/hub/${row.poId}`)}
         onEdit={(row) => router.push(`/acceptances/hub/${row.poId}`)}
         emptyIcon={<CheckSquare size={40} style={{ opacity: 0.3 }} />}
-        emptyText="No Acceptance Reports found"
+        emptyText="No Acceptance & Inspection Reports found"
         filterKey="status"
         filterTabs={[
           { label: "All", value: null },
@@ -143,7 +143,7 @@ export default function AcceptancesPage() {
       />
       {showModal && (
         <FormModal
-          title="Create New Acceptance (IAR)"
+          title="Create New Acceptance & Inspection (AIR)"
           submitLabel="Create"
           fields={[
             {

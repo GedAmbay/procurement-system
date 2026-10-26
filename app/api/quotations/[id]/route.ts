@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { requireRole } from "@/lib/auth-utils";
+import { syncRfqStatus } from "@/lib/rfq-status";
 
 export async function GET(
   req: NextRequest,
@@ -78,6 +79,9 @@ export async function PATCH(
           });
         }
       }
+
+      // 3. Automatically synchronize RFQ status based on supplier quotations completion
+      await syncRfqStatus(updatedQuotation.rfqId, tx);
 
       return updatedQuotation;
     });

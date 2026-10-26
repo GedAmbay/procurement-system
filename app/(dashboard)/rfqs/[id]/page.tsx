@@ -33,9 +33,9 @@ export default function RfqLivePreviewPage() {
   const watchSignatoryId = watch("signatoryId");
   const watchDeadline = watch("deadline");
 
-  const selectedSignatory = 
-    signatories.find(s => s.id === watchSignatoryId) || 
-    rfq?.signatory || 
+  const selectedSignatory =
+    signatories.find(s => s.id === watchSignatoryId) ||
+    rfq?.signatory ||
     signatories.find(s => s.name?.toUpperCase().includes("JEFFY"));
 
   useEffect(() => {
@@ -167,15 +167,32 @@ export default function RfqLivePreviewPage() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-lg font-bold text-slate-800">{rfq.rfqNumber} • Status: <strong className="text-slate-700">{rfq.status.replace(/_/g, ' ')}</strong></h1>
-            {rfq.createdBy && (
-              <div className="text-sm text-slate-500 mt-0.5 flex items-center gap-1">
-                <User size={14} /> Created by <strong className="text-slate-700">{rfq.createdBy.name}</strong>
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-bold text-slate-800">{rfq.rfqNumber}</h1>
+              <span className="badge" style={{
+                background: rfq.status === "COMPLETED" ? "#f0fdf4" : (rfq.status === "ISSUED" ? "#eff6ff" : "#fef3c7"),
+                color: rfq.status === "COMPLETED" ? "#16a34a" : (rfq.status === "ISSUED" ? "#2563eb" : "#b45309"),
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.25rem",
+                fontWeight: 700
+              }}>
+                {rfq.status === "COMPLETED" && <CheckCircle2 size={12} />}
+                {rfq.status.replace(/_/g, ' ')}
+              </span>
+            </div>
+
           </div>
         </div>
         <div className="flex gap-2">
+          {rfq.abstract && (
+            <Link
+              href={`/abstract/${rfq.abstract.id}`}
+              className="btn flex items-center gap-2 border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 shadow-sm"
+            >
+              Abstract Hub
+            </Link>
+          )}
           {rfq.status === "DRAFT" && (
             <button
               onClick={() => updateStatus("ISSUED")}
@@ -220,32 +237,23 @@ export default function RfqLivePreviewPage() {
         {/* Left Side: Live Print Preview */}
         <div className="flex-1 overflow-auto bg-slate-200 print:p-0 print:bg-white print:block print:!overflow-visible print:!h-auto">
           <div className="p-8 print:p-0 w-max mx-auto min-w-full flex justify-center origin-top print:block print:w-full print:min-w-0 print:!transform-none print:!mb-0" style={{ transform: `scale(${zoom})`, marginBottom: `${(zoom - 1) * 1123}px` }}>
-            <style>{`
-              @media print { 
-                .print-zoom-reset { zoom: 1 !important; } 
-                @page { margin-top: 20mm !important; }
-                @page :first { margin-top: 5mm !important; }
-                @page {margin-right:10mm}
-                @page {margin-left:10mm}
-              }
-            `}</style>
 
-            <div className="print-area text-black w-[900px] bg-white shadow-xl min-h-[1123px] p-10 print:shadow-none print:w-full print:max-w-none print:p-0 print:m-0 print:min-h-0 font-sans text-[11px]">
+            <div className="print-area text-black w-[794px] bg-white shadow-xl min-h-[1123px] p-10 print:shadow-none print:w-full print:max-w-none print:p-0 print:m-0 print:min-h-0 font-sans text-[11px]">
 
               {/* Header Layout per Template */}
-              <div className="flex justify-between items-start mb-6">
+              <div className="flex justify-between items-start mb-2">
                 <div className="font-bold italic text-[12px]">LGU of PANDAN, ANTIQUE</div>
                 <div className="w-[280px]">
-                  <div className="flex mb-1"><span className="w-40 text-right pr-2 italic">Project Reference Number</span> <span className="border-b border-black flex-1"></span></div>
-                  <div className="flex mb-1"><span className="w-40 text-right pr-2 italic">Name of the Project</span> <span className="border-b border-black flex-1"></span></div>
-                  <div className="flex mb-1"><span className="w-40 text-right pr-2 italic">Location of the Project</span> <span className="border-b border-black flex-1"></span></div>
+                  <div className="flex mt-4"><span className="w-40 text-right pr-2 italic">Project Reference Number</span> <span className="border-b border-black flex-1"></span></div>
+                  <div className="flex"><span className="w-40 text-right pr-2 italic">Name of the Project</span> <span className="border-b border-black flex-1"></span></div>
+                  <div className="flex"><span className="w-40 text-right pr-2 italic">Location of the Project</span> <span className="border-b border-black flex-1"></span></div>
                 </div>
               </div>
 
-              <div className="mb-6">
-                <div>Standard Form Number: SF-GOOD-60</div>
+              <div className="mb-2">
+                <div >Standard Form Number: SF-GOOD-60</div>
                 <div>Revised on: May 24, 2004</div>
-                <h2 className="text-[25px] mt-1">Standard Form Title: <span className="font-bold text-[25px] mt-1 italic">REQUEST FOR QUOTATION</span></h2>
+                <h2 className="text-[25px]">Standard Form Title: <span className="font-bold text-[25px] italic">REQUEST FOR QUOTATION</span></h2>
               </div>
 
               <div className="flex justify-end mb-4 text-[13px]">
@@ -294,12 +302,12 @@ export default function RfqLivePreviewPage() {
               <table className="w-full border-collapse border-[3px] border-black mb-1 table-fixed">
                 <thead>
                   <tr>
-                    <th className="border-x-[3px] border-b-[3px] border-black p-1 w-[8%] text-center align-middle">ITEM <br />NO</th>
-                    <th className="border-x-[3px] border-b-[3px] border-black p-1 text-center align-middle">ITEM & DESCRIPTION</th>
-                    <th className="border-x-[3px] border-b-[3px] border-black p-1 w-[6%] text-center align-middle">QTY</th>
-                    <th className="border-x-[3px] border-b-[3px] border-black p-1 w-[8%] text-center align-middle">UNIT</th>
-                    <th className="border-x-[3px] border-b-[3px] border-black p-1 w-[13%] text-center align-middle">UNIT<br />PRICE</th>
-                    <th className="border-x-[3px] border-b-[3px] border-black p-1 w-[13%] text-center align-middle">TOTAL<br />COST</th>
+                    <th className="border-x-[3px] border-b-[3px] border-black p-0 w-[8%] text-center align-middle">ITEM <br />NO</th>
+                    <th className="border-x-[3px] border-b-[3px] border-black p-0 text-center align-middle">ITEM & DESCRIPTION</th>
+                    <th className="border-x-[3px] border-b-[3px] border-black p-0 w-[6%] text-center align-middle">QTY</th>
+                    <th className="border-x-[3px] border-b-[3px] border-black p-0 w-[8%] text-center align-middle">UNIT</th>
+                    <th className="border-x-[3px] border-b-[3px] border-black p-0 w-[13%] text-center align-middle">UNIT<br />PRICE</th>
+                    <th className="border-x-[3px] border-b-[3px] border-black p-0 w-[13%] text-center align-middle">TOTAL<br />COST</th>
                   </tr>
                 </thead>
                 <tbody>

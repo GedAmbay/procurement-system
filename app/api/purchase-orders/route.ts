@@ -33,14 +33,14 @@ export async function GET(req: NextRequest) {
       include: {
         supplier: true,
         pr: {
-          select: { purpose: true, office: true, isDirectAcquisition: true }
+          select: { purpose: true, office: true, isDirectAcquisition: true, requestType: true } as any
         },
         abstract: {
           include: {
             rfq: {
               include: {
                 pr: {
-                  select: { purpose: true, office: true, isDirectAcquisition: true }
+                  select: { purpose: true, office: true, isDirectAcquisition: true, requestType: true } as any
                 }
               }
             }

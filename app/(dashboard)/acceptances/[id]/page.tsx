@@ -171,7 +171,7 @@ export default function AcceptanceEditor() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-lg font-bold text-slate-800">IAR: {acceptance.iarNumber}</h1>
+            <h1 className="text-lg font-bold text-slate-800">AIR: {acceptance.AIRNumber}</h1>
             <p className="text-xs text-slate-500 font-medium">{acceptance.status}</p>
             {acceptance.createdBy && (
               <div className="text-sm text-slate-500 mt-0.5 flex items-center gap-1">

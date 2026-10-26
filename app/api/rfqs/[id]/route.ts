@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { requireRole } from "@/lib/auth-utils";
+import { syncRfqStatus } from "@/lib/rfq-status";
 
 export async function GET(
   req: NextRequest,
@@ -16,6 +17,9 @@ export async function GET(
   const { id } = await context.params;
 
   try {
+    // Synchronize RFQ status with supplier quotations progress
+    await syncRfqStatus(id);
+
     const rfq = await prisma.rfq.findUnique({
       where: { id },
       include: {
@@ -26,6 +30,9 @@ export async function GET(
         },
         createdBy: true,
         signatory: true,
+        abstract: {
+          select: { id: true, abstractNumber: true, status: true }
+        },
         lineItems: { orderBy: { sortOrder: "asc" } },
         quotations: {
           include: {
@@ -92,6 +99,9 @@ export async function PATCH(
         },
         include: { supplier: true }
       });
+
+      // Synchronize RFQ status after attaching supplier
+      await syncRfqStatus(id);
 
       return NextResponse.json(newQuotation);
     }

@@ -62,14 +62,27 @@ export async function PATCH(
       return NextResponse.json({ error: "Invalid data", details: parseResult.error.format() }, { status: 400 });
     }
 
-    const { officeId, purpose, requestedBySignatoryId, fundSourceId, chargeToAccount, isDirectAcquisition, lineItems } = parseResult.data;
+    const { officeId, purpose, requestedBySignatoryId, fundSourceId, chargeToAccount, isDirectAcquisition, requestType, lineItems } = parseResult.data;
     const totalAmount = lineItems.reduce((sum: number, item: any) => sum + (item.quantity * item.unitCost), 0);
 
     const updatedPR = await prisma.$transaction(async (tx) => {
       // 1. Delete old line items
       await tx.prLineItem.deleteMany({ where: { prId: id } });
 
-      // 2. Update PR and create new line items
+      // 2. Automatically synchronize orderType on any linked PurchaseOrder records
+      await tx.purchaseOrder.updateMany({
+        where: {
+          OR: [
+            { prId: id },
+            { abstract: { rfq: { prId: id } } }
+          ]
+        },
+        data: {
+          orderType: requestType === "JOB" ? "JOB" : "PURCHASE"
+        } as any
+      });
+
+      // 3. Update PR and create new line items
       return await tx.purchaseRequest.update({
         where: { id },
         data: {
@@ -79,6 +92,7 @@ export async function PATCH(
           fundSourceId: fundSourceId || null,
           chargeToAccount,
           isDirectAcquisition,
+          requestType: requestType || "PURCHASE",
           totalAmount,
           lineItems: {
             create: lineItems.map((item: any, idx: number) => ({
@@ -91,7 +105,7 @@ export async function PATCH(
               sortOrder: idx,
             })),
           },
-        },
+        } as any,
         include: { lineItems: true },
       });
     });

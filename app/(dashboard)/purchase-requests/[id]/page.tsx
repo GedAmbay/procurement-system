@@ -25,6 +25,7 @@ interface PRFormValues {
   chargeToAccount: string;
   requestedBySignatoryId: string;
   isDirectAcquisition?: boolean;
+  requestType?: string;
   lineItems: PrLineItem[];
 }
 
@@ -57,12 +58,15 @@ export default function PurchaseRequestEditor() {
       purpose: "",
       chargeToAccount: "",
       requestedBySignatoryId: "",
+      requestType: "PURCHASE",
       lineItems: [],
     }
   });
 
   const watchAllFields = watch();
   const watchLineItems = watch("lineItems");
+  const watchRequestType = watch("requestType") || prData?.requestType || "PURCHASE";
+  const isJob = watchRequestType === "JOB";
   const { fields, append, remove, update } = useFieldArray({
     control,
     name: "lineItems",
@@ -105,6 +109,7 @@ export default function PurchaseRequestEditor() {
               purpose: pr.purpose || "",
               chargeToAccount: pr.chargeToAccount || "",
               isDirectAcquisition: pr.isDirectAcquisition || false,
+              requestType: pr.requestType || "PURCHASE",
               requestedBySignatoryId: pr.requestedBySignatoryId || "",
               lineItems: pr.lineItems.map((li: any) => ({
                 itemId: li.itemId,
@@ -128,6 +133,8 @@ export default function PurchaseRequestEditor() {
               fundSourceId: pr.fundSourceId || "",
               purpose: `[COPY] ${pr.purpose || ""}`,
               chargeToAccount: pr.chargeToAccount || "",
+              isDirectAcquisition: pr.isDirectAcquisition || false,
+              requestType: pr.requestType || "PURCHASE",
               requestedBySignatoryId: pr.requestedBySignatoryId || "",
               lineItems: pr.lineItems.map((li: any) => ({
                 itemId: li.itemId,
@@ -287,7 +294,7 @@ export default function PurchaseRequestEditor() {
           </Link>
           <div>
             <h1 className="text-lg font-bold text-slate-800">
-              {isNew ? "New Purchase Request" : `PR: ${prData?.prNumber}`}
+              {isNew ? (isJob ? "New Job Request" : "New Purchase Request") : `${isJob ? "JR" : "PR"}: ${prData?.prNumber}`}
             </h1>
 
           </div>
@@ -346,14 +353,14 @@ export default function PurchaseRequestEditor() {
         <div className="flex-1 overflow-auto bg-slate-200 print:p-0 print:bg-white print:block print:!overflow-visible print:!h-auto">
 
           <div className="p-8 print:p-0 w-max mx-auto min-w-full flex justify-center origin-top print:block print:w-full print:min-w-0 print:!transform-none print:!mb-0" style={{ transform: `scale(${zoom})`, marginBottom: `${(zoom - 1) * 1123}px` }}>
-            <div className="print-area text-black w-[900px] bg-white shadow-xl min-h-[1123px] p-10 print:shadow-none print:w-full print:max-w-none print:p-0 print:m-0 print:min-h-0">
+            <div className="print-area text-black w-[794px] bg-white shadow-xl min-h-[1123px] p-10 print:shadow-none print:w-full print:max-w-none print:p-0 print:m-0 print:min-h-0">
               {/* PR Standard Form Layout */}
               <div className="text-right font-bold text-lg mb-2">Annex 30</div>
 
               <div className="border-2 border-black">
                 {/* Title Block */}
                 <div className="text-center p-4 border-b-4 border-double border-black">
-                  <h2 className="font-extrabold text-3xl uppercase tracking-wide mb-1">Purchase Request</h2>
+                  <h2 className="font-extrabold text-3xl uppercase tracking-wide mb-1">{isJob ? "Job Request" : "Purchase Request"}</h2>
                   <div className="text-sm font-semibold underline decoration-black">
                     Municipality of Pandan, Antique
                   </div>
@@ -369,7 +376,7 @@ export default function PurchaseRequestEditor() {
                     <div className="flex"><span className="w-24 whitespace-nowrap">Section :</span> <span className="border-b border-black flex-1 text-center">{"\u00A0"}</span></div>
                   </div>
                   <div className="p-2 flex flex-col justify-between">
-                    <div className="flex mb-2"><span className="w-20">PR No.:</span> <span className="border-b border-black flex-1 text-center font-bold"></span> <span className="w-12 ml-2">Date:</span> <span className="border-b border-black flex-1 text-center"></span></div>
+                    <div className="flex mb-2"><span className="w-20">{isJob ? "JR No.:" : "PR No.:"}</span> <span className="border-b border-black flex-1 text-center font-bold"></span> <span className="w-12 ml-2">Date:</span> <span className="border-b border-black flex-1 text-center"></span></div>
                     <div className="flex mb-2"><span className="w-20">SAI No.:</span> <span className="border-b border-black flex-1 text-center">{"\u00A0"}</span> <span className="w-12 ml-2">Date:</span> <span className="border-b border-black flex-1 text-center">{"\u00A0"}</span></div>
                     <div className="flex"><span className="w-20">ALOBS No.:</span> <span className="border-b border-black flex-1 text-center">{"\u00A0"}</span> <span className="w-12 ml-2">Date:</span> <span className="border-b border-black flex-1 text-center">{"\u00A0"}</span></div>
                   </div>
@@ -490,9 +497,42 @@ export default function PurchaseRequestEditor() {
         {/* Right Side: Data Entry Form (No Print) */}
         <div className="no-print" style={{ width: "420px", flexShrink: 0, borderLeft: "1px solid #e2e8f0", background: "var(--color-page-bg)", overflowY: "auto", display: "flex", flexDirection: "column" }}>
           <div style={{ padding: "1.25rem", flex: 1 }}>
-            <h3 style={{ fontWeight: "800", color: "#0f172a", marginBottom: "1.25rem", fontSize: "1rem" }}>PR Details</h3>
+            <h3 style={{ fontWeight: "800", color: "#0f172a", marginBottom: "1.25rem", fontSize: "1rem" }}>
+              {isJob ? "Job Request Details" : "PR Details"}
+            </h3>
 
             <form style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              {/* Type Toggle: Purchase Request vs Job Request */}
+              <div>
+                <label className="form-label">Request Type</label>
+                <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-lg border border-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => !isReadOnly && setValue("requestType", "PURCHASE")}
+                    disabled={isReadOnly}
+                    className={`py-1.5 px-3 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${
+                      !isJob
+                        ? "bg-white text-blue-600 shadow-sm border border-slate-200/60"
+                        : "text-slate-500 hover:text-slate-800"
+                    }`}
+                  >
+                    <span>Purchase Request</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => !isReadOnly && setValue("requestType", "JOB")}
+                    disabled={isReadOnly}
+                    className={`py-1.5 px-3 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${
+                      isJob
+                        ? "bg-indigo-600 text-white shadow-sm"
+                        : "text-slate-500 hover:text-slate-800"
+                    }`}
+                  >
+                    <span>Job Request</span>
+                  </button>
+                </div>
+              </div>
+
               <div>
                 <label className="form-label">Requesting Office</label>
                 <select

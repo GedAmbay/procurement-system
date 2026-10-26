@@ -14,7 +14,7 @@ Not yet reviewed: the large page components (for example abstract/[id]/print/pag
 
 |**#**|**Severity**|**Finding**|**Where**|
 |---|---|---|---|
-|1|**Critical**|Acceptance (IAR) API has no authentication|api/acceptances|
+|1|**Critical**|Acceptance (AIR) API has no authentication|api/acceptances|
 |2|**Critical**|Roles are defined but mostly not enforced (authorization)|Most API routes|
 |3|**Critical**|No ownership checks (IDOR)|PR, PO, RFQ routes|
 |4|**Critical**|Unrestricted status transitions; approved records can be<br>rewritten|PR and PO routes|
@@ -22,7 +22,7 @@ Not yet reviewed: the large page components (for example abstract/[id]/print/pag
 |6|**Critical**|Seed passwords and dev.db in the package|prisma/seed.ts, dev.db|
 |7|**High**|Database is SQLite, not PostgreSQL|prisma/schema.prisma|
 |8|**High**|Weak login hardening|auth.ts, zod-schemas.ts|
-|9|**High**|IAR numbering is race-prone|api/acceptances|
+|9|**High**|AIR numbering is race-prone|api/acceptances|
 |10|**High**|Acceptance logic gaps|api/acceptances/[id]|
 |11|**High**|Inconsistent input validation|Several API routes|
 
@@ -32,9 +32,9 @@ Medium-severity items and housekeeping notes follow the detailed findings. Secti
 
 ## **3. Critical findings (fix before any real deployment)** 
 
-### **3.1 The acceptance (IAR) API has no authentication at all** 
+### **3.1 The acceptance (AIR) API has no authentication at all** 
 
-app/api/acceptances/route.ts and app/api/acceptances/[id]/route.ts never call auth(). Anyone who can reach the server, logged in or not, can list all acceptances (with PO, supplier, and office data), create IARs, and change delivery quantities and status. The PUT handler can also flip a PO to COMPLETED. The routes also return error.message to the client. 
+app/api/acceptances/route.ts and app/api/acceptances/[id]/route.ts never call auth(). Anyone who can reach the server, logged in or not, can list all acceptances (with PO, supplier, and office data), create AIRs, and change delivery quantities and status. The PUT handler can also flip a PO to COMPLETED. The routes also return error.message to the client. 
 
 LGU Procurement System - Code Review  |  Page 1 
 
@@ -96,9 +96,9 @@ LGU Procurement System - Code Review  |  Page 2
 
 - Make sure AUTH_SECRET is set in production (it is not referenced in the code, so this could not be confirmed), and set AUTH_TRUST_HOST behind a reverse proxy. 
 
-### **4.3 IAR numbering is race-prone** 
+### **4.3 AIR numbering is race-prone** 
 
-The IAR number comes from count + 1. Two people creating one at the same time can get duplicate numbers, and a delete can cause a number to be reused. Use a transaction with a unique constraint, or a counter table or sequence. 
+The AIR number comes from count + 1. Two people creating one at the same time can get duplicate numbers, and a delete can cause a number to be reused. Use a transaction with a unique constraint, or a counter table or sequence. 
 
 ### **4.4 Acceptance logic gaps** 
 
@@ -210,11 +210,11 @@ LGU Procurement System - Code Review  |  Page 4
 
 ## **9. Adding an inventory management module** 
 
-Procurement already ends at the IAR (acceptance), which is the natural link into inventory. Design the module with that connection in mind. 
+Procurement already ends at the AIR (acceptance), which is the natural link into inventory. Design the module with that connection in mind. 
 
 ### **9.1 Design guidance** 
 
-- **Flow:** an accepted IAR creates stock-in entries, and a Requisition and Issue Slip (RIS) creates stock-out entries. There is already a ris page in the project, so check what exists first. 
+- **Flow:** an accepted AIR creates stock-in entries, and a Requisition and Issue Slip (RIS) creates stock-out entries. There is already a ris page in the project, so check what exists first. 
 
 - **Use a ledger, not a stored quantity.** Record every movement (in, out, adjustment, transfer) as its own row and compute current stock from the ledger. Never just edit a quantity-onhand number. This gives an audit trail and makes errors traceable. 
 
@@ -256,7 +256,7 @@ Decide whether the module covers only supplies and materials (consumables), or a
 
 4. Build inventory using the shared helpers from day one. 
 
-5. Connect IAR to stock-in and RIS to stock-out. 
+5. Connect AIR to stock-in and RIS to stock-out. 
 
 6. Reports and PDFs for both modules. 
 
@@ -266,7 +266,7 @@ This keeps the delay small (the foundation is about one to two weeks) and avoids
 
 ## **11. What is already good** 
 
-The overall structure is reasonable. Routes are organized sensibly, transactions are used in the PR flow, bcrypt with cost 12 is a good choice, and the workflow chain (PR, RFQ, abstract, PO, IAR) is clear. The main work is closing the authorization and audit gaps. 
+The overall structure is reasonable. Routes are organized sensibly, transactions are used in the PR flow, bcrypt with cost 12 is a good choice, and the workflow chain (PR, RFQ, abstract, PO, AIR) is clear. The main work is closing the authorization and audit gaps. 
 
 ## **12. Suggested next deliverables** 
 

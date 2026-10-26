@@ -16,6 +16,7 @@ interface POFormValues {
   deliveryTerms: string;
   paymentTerms: string;
   modeOfProcurement: string; // We'll store this in remarks for now if schema doesn't have it, or just use static for demo
+  orderType: string;
 }
 
 export default function PurchaseOrderEditor() {
@@ -38,10 +39,13 @@ export default function PurchaseOrderEditor() {
       deliveryTerms: "Full Delivery",
       paymentTerms: "Full Payment",
       modeOfProcurement: "Small Value",
+      orderType: "PURCHASE",
     }
   });
 
   const watchAll = watch();
+  const watchOrderType = watch("orderType") || poData?.orderType || poData?.abstract?.rfq?.pr?.requestType || poData?.pr?.requestType || "PURCHASE";
+  const isJob = watchOrderType === "JOB";
 
   useEffect(() => {
     async function loadData() {
@@ -56,6 +60,7 @@ export default function PurchaseOrderEditor() {
           setPoData(data);
           setSuppliers(await supRes.json());
 
+          const initialOrderType = data.orderType || data.abstract?.rfq?.pr?.requestType || data.pr?.requestType || "PURCHASE";
           reset({
             supplierId: data.supplierId || "",
             deliveryDate: data.deliveryDate ? new Date(data.deliveryDate).toISOString().split('T')[0] : "",
@@ -63,6 +68,7 @@ export default function PurchaseOrderEditor() {
             deliveryTerms: data.deliveryTerms || "Full Delivery",
             paymentTerms: data.paymentTerms || "Full Payment",
             modeOfProcurement: "Small Value", // Mock field for template
+            orderType: initialOrderType,
           });
         } else {
           toast.error("Failed to load PO");
@@ -85,6 +91,7 @@ export default function PurchaseOrderEditor() {
         placeOfDelivery: data.placeOfDelivery,
         deliveryTerms: data.deliveryTerms,
         paymentTerms: data.paymentTerms,
+        orderType: data.orderType || "PURCHASE",
       };
 
       const res = await fetch(`/api/purchase-orders/${params.id}`, {
@@ -96,9 +103,9 @@ export default function PurchaseOrderEditor() {
       if (res.ok) {
         const updated = await res.json();
         setPoData((prev: any) => ({ ...prev, ...updated }));
-        toast.success("Purchase Order saved successfully");
+        toast.success(isJob ? "Job Order saved successfully" : "Purchase Order saved successfully");
       } else {
-        toast.error("Failed to save Purchase Order");
+        toast.error(isJob ? "Failed to save Job Order" : "Failed to save Purchase Order");
       }
     } catch (e) {
       toast.error("An error occurred");
@@ -158,7 +165,9 @@ export default function PurchaseOrderEditor() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-lg font-bold text-slate-800">Live Preview</h1>
+            <h1 className="text-lg font-bold text-slate-800">
+              {isJob ? "Job Order" : "Purchase Order"} • {poData.poNumber}
+            </h1>
             {poData.createdBy && (
               <div className="text-sm text-slate-500 mt-0.5 flex items-center gap-1">
                 <User size={14} /> Created by <strong className="text-slate-700">{poData.createdBy.name}</strong>
@@ -210,18 +219,13 @@ export default function PurchaseOrderEditor() {
         {/* Left Side: Live Print Preview */}
         <div className="flex-1 overflow-auto bg-slate-200 print:p-0 print:bg-white print:block print:!overflow-visible print:!h-auto">
           <div className="p-8 print:p-0 w-max mx-auto min-w-full flex justify-center origin-top print:block print:w-full print:min-w-0 print:!transform-none print:!mb-0" style={{ transform: `scale(${zoom})`, marginBottom: `${(zoom - 1) * 1123}px`, transition: "transform 0.2s ease" }}>
-            <style>{`
-              @media print { 
-                @page { margin-top: 10mm !important; margin-bottom: 10mm !important; }
-              }
-            `}</style>
             <div className="print-area text-black shadow-xl text-[14px] leading-tight print:shadow-none print:max-w-none print:m-0 [&_td]:!font-['Times_New_Roman',_Times,_serif] [&_td]:!text-[14px] [&_th]:!font-['Times_New_Roman',_Times,_serif] [&_th]:!text-[14px] [&_th]:!text-black [&_th]:!normal-case [&_th]:!tracking-normal [&_th]:!font-bold w-[980px] min-h-[1123px] bg-white p-10 print:w-full print:min-h-0 print:p-0" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
 
               <div className="border-[3px] border-black">
                 <div className="text-right italic pt-2 pr-2 text-sm">Appendix 49</div>
 
                 <div className="text-center font-bold mb-4">
-                  <div className="text-2xl font-black font-serif">PURCHASE ORDER</div>
+                  <div className="text-2xl font-black font-serif">{isJob ? "JOB ORDER" : "PURCHASE ORDER"}</div>
                   <div className="uppercase underline mt-1 text-[15px]">MUNICIPAL GOVERNMENT OF PANDAN</div>
                   <div className="text-[15px]">LGU</div>
                 </div>
@@ -233,10 +237,10 @@ export default function PurchaseOrderEditor() {
                     <div className="flex items-end mt-1"><span className="font-bold whitespace-nowrap mr-2">TIN :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight"></span></div>
                   </div>
                   <div className="col-span-3 p-1 px-2 flex flex-col justify-between">
-                    <div className="flex items-end"><span className="font-bold whitespace-nowrap mr-2">P.O. No. :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight"></span></div>
+                    <div className="flex items-end"><span className="font-bold whitespace-nowrap mr-2">{isJob ? "J.O. No. :" : "P.O. No. :"}</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{poData.poNumber}</span></div>
                     <div className="flex items-end mt-1"><span className="font-bold whitespace-nowrap mr-2">Date :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{watchAll.deliveryDate ? new Date(watchAll.deliveryDate).toLocaleDateString('en-PH') : ""}</span></div>
                     <div className="flex items-end mt-1"><span className="font-bold whitespace-nowrap mr-2">Mode of Procurement :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{watchAll.modeOfProcurement}</span></div>
-                    <div className="flex items-end mt-1"><span className="font-bold whitespace-nowrap mr-2">PR No./s :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight"></span></div>
+                    <div className="flex items-end mt-1"><span className="font-bold whitespace-nowrap mr-2">{isJob ? "JR No./s :" : "PR No./s :"}</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{linkedPrNumber !== "PENDING" ? linkedPrNumber : ""}</span></div>
                   </div>
                 </div>
 
@@ -383,9 +387,42 @@ export default function PurchaseOrderEditor() {
         {/* Right Side: Data Entry Form */}
         <div className="no-print" style={{ width: "420px", flexShrink: 0, borderLeft: "1px solid #e2e8f0", background: "var(--color-page-bg)", overflowY: "auto", display: "flex", flexDirection: "column" }}>
           <div style={{ padding: "1.25rem", flex: 1 }}>
-            <h3 style={{ fontWeight: "800", color: "#0f172a", marginBottom: "1.25rem", fontSize: "1rem" }}>PO Details</h3>
+            <h3 style={{ fontWeight: "800", color: "#0f172a", marginBottom: "1.25rem", fontSize: "1rem" }}>
+              {isJob ? "Job Order Details" : "PO Details"}
+            </h3>
 
             <form className="space-y-5">
+              {/* Type Toggle: Purchase Order vs Job Order */}
+              <div>
+                <label className="form-label">Order Type</label>
+                <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-lg border border-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => !isReadOnly && setValue("orderType", "PURCHASE")}
+                    disabled={isReadOnly}
+                    className={`py-1.5 px-3 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${
+                      !isJob
+                        ? "bg-white text-blue-600 shadow-sm border border-slate-200/60"
+                        : "text-slate-500 hover:text-slate-800"
+                    }`}
+                  >
+                    <span>Purchase Order</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => !isReadOnly && setValue("orderType", "JOB")}
+                    disabled={isReadOnly}
+                    className={`py-1.5 px-3 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${
+                      isJob
+                        ? "bg-indigo-600 text-white shadow-sm"
+                        : "text-slate-500 hover:text-slate-800"
+                    }`}
+                  >
+                    <span>Job Order</span>
+                  </button>
+                </div>
+              </div>
+
               <div>
                 <label className="form-label">Awarded Supplier</label>
                 <select
@@ -456,7 +493,7 @@ export default function PurchaseOrderEditor() {
 
           <div style={{ padding: "1rem", background: "var(--color-page-bg)", borderTop: "1px solid #e2e8f0", position: "sticky", bottom: 0, boxShadow: "0 -2px 8px rgba(163,177,198,0.2)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontWeight: "800", fontSize: "1rem", color: "#0f172a" }}>
-              <span>PO Total:</span>
+              <span>{isJob ? "JO Total:" : "PO Total:"}</span>
               <span style={{ color: "#059669" }}>{formatCurrency(poData.totalAmount)}</span>
             </div>
           </div>

@@ -22,6 +22,9 @@ export async function GET(
         createdBy: true,
         supplier: true,
         lineItems: { orderBy: { sortOrder: "asc" } },
+        pr: {
+          include: { office: true }
+        },
         abstract: {
           include: {
             rfq: {
@@ -64,20 +67,37 @@ export async function PATCH(
   try {
     const body = await req.json();
 
-    const po = await prisma.purchaseOrder.findUnique({ where: { id } });
+    const po: any = await prisma.purchaseOrder.findUnique({
+      where: { id },
+      include: { abstract: { include: { rfq: true } } }
+    });
     if (!po) return NextResponse.json({ error: "PO not found" }, { status: 404 });
+
+    const orderType = body.orderType !== undefined ? body.orderType : po.orderType;
 
     const updatedPO = await prisma.purchaseOrder.update({
       where: { id },
       data: {
         status: body.status !== undefined ? body.status : po.status,
+        orderType,
         supplierId: body.supplierId !== undefined ? body.supplierId : po.supplierId,
         placeOfDelivery: body.placeOfDelivery !== undefined ? body.placeOfDelivery : po.placeOfDelivery,
         deliveryDate: body.deliveryDate ? new Date(body.deliveryDate) : po.deliveryDate,
         deliveryTerms: body.deliveryTerms !== undefined ? body.deliveryTerms : po.deliveryTerms,
         paymentTerms: body.paymentTerms !== undefined ? body.paymentTerms : po.paymentTerms,
-      },
+      } as any,
     });
+
+    // Sync orderType change back to PR if updated
+    if (body.orderType !== undefined) {
+      const prIdToUpdate = po.prId || po.abstract?.rfq?.prId;
+      if (prIdToUpdate) {
+        await prisma.purchaseRequest.update({
+          where: { id: prIdToUpdate },
+          data: { requestType: orderType === "JOB" ? "JOB" : "PURCHASE" } as any
+        });
+      }
+    }
 
     return NextResponse.json(updatedPO);
   } catch (error) {

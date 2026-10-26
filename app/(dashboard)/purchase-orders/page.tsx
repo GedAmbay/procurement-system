@@ -9,10 +9,11 @@ import { FileText, Truck, Clock, CheckCircle2, FileSignature } from "lucide-reac
 interface PO {
   id: string;
   poNumber: string;
-  pr?: { purpose: string; office: { name: string; code: string }; isDirectAcquisition: boolean };
+  orderType?: string;
+  pr?: { purpose: string; office: { name: string; code: string }; isDirectAcquisition: boolean; requestType?: string };
   abstract?: {
     rfq: {
-      pr: { purpose: string; office: { name: string; code: string }; isDirectAcquisition: boolean }
+      pr: { purpose: string; office: { name: string; code: string }; isDirectAcquisition: boolean; requestType?: string }
     }
   };
   supplier?: { name: string };
@@ -34,19 +35,27 @@ export default function PurchaseOrdersPage() {
   const columns = [
     {
       key: "poNumber",
-      label: "PO Number",
+      label: "PO / JO Number",
       render: (row: PO) => {
         const isDirect = row.pr?.isDirectAcquisition || row.abstract?.rfq?.pr?.isDirectAcquisition;
+        const isJob = row.orderType === "JOB" || row.pr?.requestType === "JOB" || row.abstract?.rfq?.pr?.requestType === "JOB";
         return (
           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
             <div style={{ fontWeight: "700", color: "#0f172a", fontFamily: "monospace", fontSize: "0.875rem" }}>
               {row.poNumber}
             </div>
-            {isDirect && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-[0.65rem] font-medium bg-teal-100 text-teal-800 border border-teal-200 w-max">
-                Direct
-              </span>
-            )}
+            <div className="flex flex-wrap gap-1">
+              {isJob && (
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[0.65rem] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 w-max">
+                  Job Order
+                </span>
+              )}
+              {isDirect && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-[0.65rem] font-medium bg-teal-100 text-teal-800 border border-teal-200 w-max">
+                  Direct
+                </span>
+              )}
+            </div>
           </div>
         );
       },
