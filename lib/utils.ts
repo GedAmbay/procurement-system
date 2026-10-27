@@ -33,13 +33,49 @@ export function getCurrentFiscalYear(): number {
   return new Date().getFullYear();
 }
 
-export function generateDocNumber(
-  prefix: string,
-  year: number,
-  month: number,
-  sequence: number
+export function normalizePrNumber(input: string): string {
+  if (!input) return "";
+  const trimmed = input.trim();
+  const parts = trimmed.split("-");
+  if (parts.length > 1) {
+    const lastPart = parts[parts.length - 1];
+    if (/^\d+$/.test(lastPart)) {
+      parts[parts.length - 1] = lastPart.length < 3 ? lastPart.padStart(3, "0") : lastPart;
+      return parts.join("-");
+    }
+  }
+  return trimmed;
+}
+
+export function deriveRfqNumber(
+  prNumber: string,
+  fiscalYear?: number | null,
+  fundSourceCode?: string | null
 ): string {
-  return `${prefix}-${year}-${String(month).padStart(2, "0")}-${String(sequence).padStart(4, "0")}`;
+  if (!prNumber || !prNumber.trim()) return "";
+  let fundPrefix = "GF";
+  if (fundSourceCode && fundSourceCode.toUpperCase().startsWith("TF")) {
+    fundPrefix = "TF";
+  }
+  const year = fiscalYear || fiscalYearFromPrNumber(prNumber) || new Date().getFullYear();
+  const yy = String(year).slice(-2);
+  const normalized = normalizePrNumber(prNumber);
+  const parts = normalized.split("-");
+  const seq = parts[parts.length - 1] || "";
+  return `${fundPrefix}-${yy}-${seq}`;
+}
+
+export function fiscalYearFromPrNumber(prNumber: string): number | null {
+  if (!prNumber) return null;
+  const trimmed = prNumber.trim();
+  const match = trimmed.match(/^(\d{2})-/);
+  if (match) {
+    const yy = parseInt(match[1], 10);
+    if (!isNaN(yy)) {
+      return 2000 + yy;
+    }
+  }
+  return null;
 }
 
 export const ROLES = {

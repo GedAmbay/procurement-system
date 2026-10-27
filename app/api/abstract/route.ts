@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const abstracts = await prisma.abstractOfQuotation.findMany({
+    const abstracts = await prisma.abstractOfCanvass.findMany({
       where: whereClause,
       include: {
         purchaseOrders: {

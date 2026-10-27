@@ -168,7 +168,7 @@ export default function RfqLivePreviewPage() {
           </Link>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-lg font-bold text-slate-800">{rfq.rfqNumber}</h1>
+              <h1 className="text-lg font-bold text-slate-800">Live Preview</h1>
               <span className="badge" style={{
                 background: rfq.status === "COMPLETED" ? "#f0fdf4" : (rfq.status === "ISSUED" ? "#eff6ff" : "#fef3c7"),
                 color: rfq.status === "COMPLETED" ? "#16a34a" : (rfq.status === "ISSUED" ? "#2563eb" : "#b45309"),

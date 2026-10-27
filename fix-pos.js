@@ -2,7 +2,7 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
-  const abstracts = await prisma.abstractOfQuotation.findMany({
+  const abstracts = await prisma.abstractOfCanvass.findMany({
     where: { status: 'APPROVED' },
     include: { rfq: { include: { quotations: true } }, purchaseOrders: true }
   });

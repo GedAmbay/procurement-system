@@ -8,12 +8,12 @@ import { FileText, Truck, Clock, CheckCircle2, FileSignature } from "lucide-reac
 
 interface PO {
   id: string;
-  poNumber: string;
+  poNumber?: string | null;
   orderType?: string;
-  pr?: { purpose: string; office: { name: string; code: string }; isDirectAcquisition: boolean; requestType?: string };
+  pr?: { prNumber?: string | null; purpose: string; office: { name: string; code: string }; isDirectAcquisition: boolean; requestType?: string };
   abstract?: {
     rfq: {
-      pr: { purpose: string; office: { name: string; code: string }; isDirectAcquisition: boolean; requestType?: string }
+      pr: { prNumber?: string | null; purpose: string; office: { name: string; code: string }; isDirectAcquisition: boolean; requestType?: string }
     }
   };
   supplier?: { name: string };
@@ -39,10 +39,14 @@ export default function PurchaseOrdersPage() {
       render: (row: PO) => {
         const isDirect = row.pr?.isDirectAcquisition || row.abstract?.rfq?.pr?.isDirectAcquisition;
         const isJob = row.orderType === "JOB" || row.pr?.requestType === "JOB" || row.abstract?.rfq?.pr?.requestType === "JOB";
+        const linkedPrNumber = row.pr?.prNumber || row.abstract?.rfq?.pr?.prNumber;
         return (
           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
             <div style={{ fontWeight: "700", color: "#0f172a", fontFamily: "monospace", fontSize: "0.875rem" }}>
-              {row.poNumber}
+              {row.poNumber || <span style={{ color: "#94a3b8", fontStyle: "italic", fontWeight: 400 }}>No. not yet assigned</span>}
+            </div>
+            <div style={{ fontSize: "0.75rem", color: "#64748b" }}>
+              PR: {linkedPrNumber || <span style={{ color: "#94a3b8", fontStyle: "italic" }}>No. not yet assigned</span>}
             </div>
             <div className="flex flex-wrap gap-1">
               {isJob && (
@@ -148,6 +152,7 @@ export default function PurchaseOrdersPage() {
         searchPlaceholder="Search..."
         onView={(row) => router.push(`/purchase-orders/${row.id}?mode=view`)}
         onEdit={handleEdit}
+        onRowDoubleClick={handleEdit}
         onDelete={handleDelete}
         emptyIcon={<Truck size={40} style={{ opacity: 0.3 }} />}
         emptyText="No Purchase Orders found."

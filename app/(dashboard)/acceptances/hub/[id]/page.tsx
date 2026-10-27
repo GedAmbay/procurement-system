@@ -97,7 +97,7 @@ export default function AcceptancesHub() {
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
             <h1 style={{ fontSize: "1.375rem", fontWeight: "800", color: "#0f172a", margin: 0 }}>
-              Deliveries for PO: {po.poNumber}
+              Deliveries for PO: {po.poNumber || "No PO # yet"}
             </h1>
             <span className="badge" style={{ background: po.status === "COMPLETED" ? "#f0fdf4" : "#eff6ff", color: po.status === "COMPLETED" ? "#16a34a" : "#2563eb" }}>
               {po.status.replace(/_/g, " ")}
@@ -193,7 +193,9 @@ export default function AcceptancesHub() {
                         <div className="flex justify-between items-start mb-3">
                           <div>
                             <div className="flex items-center gap-2">
-                              <h3 className="font-bold text-slate-800 text-sm">{acc.AIRNumber}</h3>
+                              <h3 className="font-bold text-slate-800 text-sm">
+                                {acc.airNumber || acc.AIRNumber || <span className="text-slate-400 italic font-normal">No. not yet assigned</span>}
+                              </h3>
                               <span className={`text-[9px] px-1.5 py-0.5 rounded-sm font-bold uppercase tracking-wider ${isDraft ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
                                 {acc.status}
                               </span>

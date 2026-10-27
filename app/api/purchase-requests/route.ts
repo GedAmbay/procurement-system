@@ -3,30 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { purchaseRequestSchema } from "@/lib/zod-schemas";
 import { requireRole } from "@/lib/auth-utils";
-// Function to generate the next PR Number in YY-MM-XXXX format
-async function generatePRNumber() {
-  const now = new Date();
-  const yy = String(now.getFullYear()).slice(-2);
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
-  const prefix = `${yy}-${mm}-`;
-
-  // Find the highest PR number for the current month
-  const lastPR = await prisma.purchaseRequest.findFirst({
-    where: { prNumber: { startsWith: prefix } },
-    orderBy: { prNumber: "desc" },
-  });
-
-  let sequence = 1;
-  if (lastPR) {
-    const lastSequence = parseInt(lastPR.prNumber.split("-")[2], 10);
-    if (!isNaN(lastSequence)) {
-      sequence = lastSequence + 1;
-    }
-  }
-
-  const sequenceStr = String(sequence).padStart(4, "0");
-  return `${prefix}${sequenceStr}`;
-}
+import { normalizePrNumber, deriveRfqNumber, fiscalYearFromPrNumber } from "@/lib/utils";
 
 export async function GET(req: NextRequest) {
   const roleCheck = await requireRole(["ANY"]);
@@ -95,14 +72,47 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const parseResult = purchaseRequestSchema.safeParse(body);
     if (!parseResult.success) {
-      return NextResponse.json({ error: "Invalid data", details: parseResult.error.format() }, { status: 400 });
+      const firstIssue = parseResult.error.issues[0];
+      const fieldPath = firstIssue?.path.join(".") || "data";
+      const errorMsg = firstIssue?.message || `Invalid data for ${fieldPath}`;
+      console.warn("PR validation failed:", errorMsg, parseResult.error.format());
+      return NextResponse.json({ error: errorMsg, details: parseResult.error.format() }, { status: 400 });
     }
 
     const { officeId, purpose, requestedBySignatoryId, fundSourceId, chargeToAccount, isDirectAcquisition, requestType, lineItems } = parseResult.data;
 
-    const prNumber = await generatePRNumber();
+    const prNumber = parseResult.data.prNumber ? normalizePrNumber(parseResult.data.prNumber) : null;
+    const fiscalYear = parseResult.data.fiscalYear || (prNumber ? fiscalYearFromPrNumber(prNumber) : null) || new Date().getFullYear();
+
+    // Check PR number uniqueness if provided
+    if (prNumber) {
+      const existingPr = await prisma.purchaseRequest.findUnique({
+        where: { prNumber },
+      });
+      if (existingPr) {
+        return NextResponse.json({ error: "PR Number already exists" }, { status: 409 });
+      }
+    }
+
+    // Lookup fund source for RFQ prefix if needed
+    const fundSource = fundSourceId
+      ? await prisma.fundSource.findUnique({ where: { id: fundSourceId } })
+      : null;
+    const rfqNumber = prNumber ? deriveRfqNumber(prNumber, fiscalYear, fundSource?.code) : null;
+
+    if (!isDirectAcquisition && rfqNumber) {
+      const existingRfq = await prisma.rfq.findUnique({
+        where: { rfqNumber },
+      });
+      if (existingRfq) {
+        return NextResponse.json(
+          { error: `Derived RFQ Number (${rfqNumber}) already exists. Please verify the PR Number.` },
+          { status: 409 }
+        );
+      }
+    }
+
     const totalAmount = lineItems.reduce((sum: number, item: any) => sum + (item.quantity * item.unitCost), 0);
-    const fiscalYear = new Date().getFullYear();
 
     const pr = await prisma.$transaction(async (tx) => {
       const createdPr: any = await tx.purchaseRequest.create({
@@ -133,16 +143,6 @@ export async function POST(req: NextRequest) {
         include: { lineItems: true, fundSource: true },
       });
 
-      let fundPrefix = "GF";
-      if (createdPr.fundSource && createdPr.fundSource.code.toUpperCase().startsWith("TF")) {
-        fundPrefix = "TF";
-      }
-
-      const yy = String(createdPr.fiscalYear).slice(-2) || String(new Date().getFullYear()).slice(-2);
-      const prParts = createdPr.prNumber.split("-");
-      const xxxx = prParts[prParts.length - 1];
-      const rfqNumber = `${fundPrefix}-${yy}-${xxxx}`;
-
       if (!isDirectAcquisition) {
         const rfq = await tx.rfq.create({
           data: {
@@ -164,11 +164,10 @@ export async function POST(req: NextRequest) {
           }
         });
 
-        const abstractNumber = `${rfqNumber}-abstract`;
-
-        const abstract = await tx.abstractOfQuotation.create({
+        // Abstract references PR Number
+        const abstract = await (tx as any).abstractOfCanvass.create({
           data: {
-            abstractNumber,
+            abstractNumber: createdPr.prNumber,
             rfqId: rfq.id,
             fiscalYear: createdPr.fiscalYear,
             totalAmount: createdPr.totalAmount,
@@ -187,11 +186,10 @@ export async function POST(req: NextRequest) {
           }
         });
 
-        const poNumber = `${rfqNumber}-PO`;
-
+        // PO Number is issued manually by custodian later (starts null)
         await tx.purchaseOrder.create({
           data: {
-            poNumber,
+            poNumber: null,
             abstractId: abstract.id,
             orderType: createdPr.requestType === "JOB" ? "JOB" : "PURCHASE",
             fiscalYear: createdPr.fiscalYear,
@@ -211,11 +209,10 @@ export async function POST(req: NextRequest) {
           } as any
         });
       } else {
-        // Direct Acquisition: Skip RFQ & abstract, link PO directly to PR
-        const poNumber = `${rfqNumber}-PO-DIR`;
+        // Direct Acquisition: Skip RFQ & abstract, PO number is issued manually later (starts null)
         await tx.purchaseOrder.create({
           data: {
-            poNumber,
+            poNumber: null,
             prId: createdPr.id,
             orderType: createdPr.requestType === "JOB" ? "JOB" : "PURCHASE",
             fiscalYear: createdPr.fiscalYear,

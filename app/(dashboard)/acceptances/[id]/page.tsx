@@ -11,6 +11,7 @@ import { formatCurrency } from "@/lib/utils";
 import ConfirmModal from "@/components/ui/confirm-modal";
 
 interface AcceptanceFormValues {
+  airNumber?: string;
   invoiceNumber: string;
   invoiceDate: string;
   dateReceived: string;
@@ -40,6 +41,8 @@ export default function AcceptanceEditor() {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [unlockModalOpen, setUnlockModalOpen] = useState(false);
+  const [showAirNo, setShowAirNo] = useState(true);
+  const [showPoNo, setShowPoNo] = useState(true);
 
   const { register, handleSubmit, control, reset, watch } = useForm<AcceptanceFormValues>();
   const { fields } = useFieldArray({
@@ -61,6 +64,7 @@ export default function AcceptanceEditor() {
       setAcceptance(data);
 
       reset({
+        airNumber: data.airNumber || data.AIRNumber || "",
         invoiceNumber: data.invoiceNumber || "",
         invoiceDate: data.invoiceDate ? new Date(data.invoiceDate).toISOString().split('T')[0] : "",
         dateReceived: data.dateReceived ? new Date(data.dateReceived).toISOString().split('T')[0] : "",
@@ -101,12 +105,15 @@ export default function AcceptanceEditor() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to save");
+      }
       toast.success("Acceptance report saved successfully");
       fetchAcceptance();
       setIsUnlocked(false);
-    } catch (e) {
-      toast.error("Failed to save");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to save");
     } finally {
       setSubmitting(false);
     }
@@ -171,7 +178,9 @@ export default function AcceptanceEditor() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-lg font-bold text-slate-800">AIR: {acceptance.AIRNumber}</h1>
+            <h1 className="text-lg font-bold text-slate-800">
+              AIR: {watchAll.airNumber || acceptance.airNumber || acceptance.AIRNumber || <span className="text-slate-400 font-normal italic">No. not yet assigned</span>}
+            </h1>
             <p className="text-xs text-slate-500 font-medium">{acceptance.status}</p>
             {acceptance.createdBy && (
               <div className="text-sm text-slate-500 mt-0.5 flex items-center gap-1">
@@ -247,11 +256,11 @@ export default function AcceptanceEditor() {
                 <div className="border-t-2 border-black flex">
                   <div className="w-3/5 border-r-2 border-black p-2 flex flex-col gap-1 justify-center">
                     <div className="flex font-bold"><span className="w-44">Supplier :</span> <span className="flex-1 border-b border-black">{acceptance.po?.supplier?.name}</span></div>
-                    <div className="flex font-bold"><span className="w-44">PO No. /Date:</span> <span className="flex-1 border-b border-black">{acceptance.po?.poNumber} / {acceptance.po?.createdAt ? new Date(acceptance.po.createdAt).toLocaleDateString() : ""}</span></div>
-                    <div className="flex font-bold"><span className="w-44">Req. Office/Department:</span> <span className="flex-1 border-b border-black ">{acceptance.po?.abstract?.rfq?.pr?.office?.name}</span></div>
+                    <div className="flex font-bold"><span className="w-44">{(acceptance.po?.orderType === "JOB" || acceptance.po?.pr?.requestType === "JOB" || acceptance.po?.abstract?.rfq?.pr?.requestType === "JOB") ? "JO No. /Date:" : "PO No. /Date:"}</span> <span className="flex-1 border-b border-black">{showPoNo ? (acceptance.po?.poNumber || "") : ""}{showPoNo && acceptance.po?.createdAt ? ` / ${new Date(acceptance.po.createdAt).toLocaleDateString()}` : ""}</span></div>
+                    <div className="flex font-bold"><span className="w-44">Req. Office/Department:</span> <span className="flex-1 border-b border-black ">{acceptance.po?.abstract?.rfq?.pr?.office?.name || acceptance.po?.pr?.office?.name || ""}</span></div>
                   </div>
                   <div className="w-2/5 p-2 flex flex-col gap-1 justify-center">
-                    <div className="flex font-bold"><span className="w-28">AIR No. :</span> <span className="flex-1 border-b border-black"></span></div>
+                    <div className="flex font-bold"><span className="w-28">AIR No. :</span> <span className="flex-1 border-b border-black">{showAirNo ? (watchAll.airNumber || acceptance.airNumber || acceptance.AIRNumber || "") : ""}</span></div>
                     <div className="flex font-bold"><span className="w-28">Date :</span> <span className="flex-1 border-b border-black"></span></div>
                     <div className="flex font-bold"><span className="w-28">Invoice No. :</span> <span className="flex-1 border-b border-black">{watchAll.invoiceNumber}</span></div>
                     <div className="flex font-bold"><span className="w-28">Date :</span> <span className="flex-1 border-b border-black">{watchAll.invoiceDate ? new Date(watchAll.invoiceDate).toLocaleDateString() : ""}</span></div>
@@ -421,6 +430,105 @@ export default function AcceptanceEditor() {
             <h3 style={{ fontWeight: "800", color: "#0f172a", marginBottom: "1.25rem", fontSize: "1rem" }}>Acceptance Details</h3>
 
             <form style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              {/* Document Number Visibility Toggles */}
+              <div className="p-3 bg-white rounded-lg border border-slate-200/80 shadow-xs space-y-2.5">
+                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  Document Number Display
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <label
+                    className="text-xs font-semibold text-slate-700 cursor-pointer select-none"
+                    onClick={() => setShowAirNo(!showAirNo)}
+                  >
+                    Acceptance Report No. (AIR No.)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowAirNo(!showAirNo)}
+                    style={{
+                      width: "44px",
+                      height: "24px",
+                      borderRadius: "12px",
+                      background: showAirNo ? "#10b981" : "#cbd5e1",
+                      position: "relative",
+                      border: "none",
+                      cursor: "pointer",
+                      transition: "background 0.3s",
+                      boxShadow: "inset 0 1px 3px rgba(0,0,0,0.1)",
+                    }}
+                    title={showAirNo ? "Hide from document" : "Show on document"}
+                  >
+                    <div
+                      style={{
+                        width: "20px",
+                        height: "20px",
+                        borderRadius: "50%",
+                        background: "#fff",
+                        position: "absolute",
+                        top: "2px",
+                        left: showAirNo ? "22px" : "2px",
+                        transition: "left 0.3s",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+                      }}
+                    />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between border-t border-slate-100 pt-2">
+                  <label
+                    className="text-xs font-semibold text-slate-700 cursor-pointer select-none"
+                    onClick={() => setShowPoNo(!showPoNo)}
+                  >
+                    {(acceptance.po?.orderType === "JOB" || acceptance.po?.pr?.requestType === "JOB" || acceptance.po?.abstract?.rfq?.pr?.requestType === "JOB")
+                      ? "Job Order No. (JO No.)"
+                      : "Purchase Order No. (PO No.)"}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowPoNo(!showPoNo)}
+                    style={{
+                      width: "44px",
+                      height: "24px",
+                      borderRadius: "12px",
+                      background: showPoNo ? "#10b981" : "#cbd5e1",
+                      position: "relative",
+                      border: "none",
+                      cursor: "pointer",
+                      transition: "background 0.3s",
+                      boxShadow: "inset 0 1px 3px rgba(0,0,0,0.1)",
+                    }}
+                    title={showPoNo ? "Hide from document" : "Show on document"}
+                  >
+                    <div
+                      style={{
+                        width: "20px",
+                        height: "20px",
+                        borderRadius: "50%",
+                        background: "#fff",
+                        position: "absolute",
+                        top: "2px",
+                        left: showPoNo ? "22px" : "2px",
+                        transition: "left 0.3s",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+                      }}
+                    />
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="form-label">AIR Number (Custodian Control #)</label>
+                <input
+                  type="text"
+                  {...register("airNumber")}
+                  disabled={isReadOnly}
+                  placeholder="e.g. AIR-26-001 or control #"
+                  className="form-input font-mono"
+                />
+                <div className="text-[11px] text-slate-400 mt-1">Leave blank if not yet issued by custodian.</div>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="form-label">Invoice No.</label>

@@ -4,7 +4,7 @@ import LoaderWave from "@/components/ui/loader-wave";
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
-import { formatCurrency, LGU_INFO } from "@/lib/utils";
+import { formatCurrency, LGU_INFO, normalizePrNumber, deriveRfqNumber, fiscalYearFromPrNumber } from "@/lib/utils";
 import { Printer, Save, Send, CheckCircle2, XCircle, Plus, Minus, Trash2, ArrowLeft, Loader2, ZoomIn, ZoomOut, Lock, Unlock, FolderOpen, Calendar, User } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -19,6 +19,8 @@ interface PrLineItem {
 }
 
 interface PRFormValues {
+  prNumber: string;
+  fiscalYear?: number | "";
   officeId: string;
   fundSourceId: string;
   purpose: string;
@@ -44,6 +46,7 @@ export default function PurchaseRequestEditor() {
   const [zoom, setZoom] = useState(1);
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [targetRows, setTargetRows] = useState(21);
+  const [showPrNo, setShowPrNo] = useState(true);
 
   // Options
   const [offices, setOffices] = useState<any[]>([]);
@@ -53,6 +56,8 @@ export default function PurchaseRequestEditor() {
 
   const { register, control, handleSubmit, watch, setValue, reset } = useForm<PRFormValues>({
     defaultValues: {
+      prNumber: "",
+      fiscalYear: new Date().getFullYear(),
       officeId: user?.officeId || "",
       fundSourceId: "",
       purpose: "",
@@ -104,6 +109,8 @@ export default function PurchaseRequestEditor() {
             const pr = await prRes.json();
             setPrData(pr);
             reset({
+              prNumber: pr.prNumber || "",
+              fiscalYear: pr.fiscalYear || new Date().getFullYear(),
               officeId: pr.officeId || "",
               fundSourceId: pr.fundSourceId || "",
               purpose: pr.purpose || "",
@@ -129,6 +136,8 @@ export default function PurchaseRequestEditor() {
           if (prRes.ok) {
             const pr = await prRes.json();
             reset({
+              prNumber: "",
+              fiscalYear: pr.fiscalYear || new Date().getFullYear(),
               officeId: pr.officeId || "",
               fundSourceId: pr.fundSourceId || "",
               purpose: `[COPY] ${pr.purpose || ""}`,
@@ -220,10 +229,32 @@ export default function PurchaseRequestEditor() {
   };
 
   const onSubmit = async (data: PRFormValues) => {
-    if (data.lineItems.length === 0) {
+    if (!data.officeId) {
+      toast.error("Please select a Requesting Office");
+      return;
+    }
+    if (!data.purpose?.trim()) {
+      toast.error("Purpose is required");
+      return;
+    }
+    if (!data.lineItems || data.lineItems.length === 0) {
       toast.error("Please add at least one item");
       return;
     }
+
+    const rawPrNumber = data.prNumber?.trim();
+    const normalizedPrNumber = rawPrNumber ? normalizePrNumber(rawPrNumber) : null;
+    const payload = {
+      ...data,
+      prNumber: normalizedPrNumber,
+      fiscalYear: Number(data.fiscalYear) || (normalizedPrNumber ? fiscalYearFromPrNumber(normalizedPrNumber) : null) || new Date().getFullYear(),
+      officeId: data.officeId,
+      purpose: data.purpose.trim(),
+      fundSourceId: data.fundSourceId || null,
+      requestedBySignatoryId: data.requestedBySignatoryId || null,
+      chargeToAccount: data.chargeToAccount || null,
+    };
+
     setSubmitting(true);
     try {
       const url = isNew ? "/api/purchase-requests" : `/api/purchase-requests/${params.id}`;
@@ -232,10 +263,25 @@ export default function PurchaseRequestEditor() {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error("Failed to save");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        let errMsg = errorData.error || "Failed to save";
+        if (errorData.details) {
+          const fieldErrors: string[] = [];
+          for (const [key, val] of Object.entries(errorData.details)) {
+            if (key !== "_errors" && (val as any)?._errors?.length) {
+              fieldErrors.push(`${key}: ${(val as any)._errors.join(", ")}`);
+            }
+          }
+          if (fieldErrors.length > 0) {
+            errMsg = fieldErrors.join(" | ");
+          }
+        }
+        throw new Error(errMsg);
+      }
 
       const result = await res.json();
       toast.success(isNew ? "PR created successfully" : "PR updated successfully");
@@ -245,8 +291,8 @@ export default function PurchaseRequestEditor() {
       } else {
         setPrData(result);
       }
-    } catch (error) {
-      toast.error("An error occurred");
+    } catch (error: any) {
+      toast.error(error.message || "An error occurred");
     } finally {
       setSubmitting(false);
     }
@@ -294,7 +340,7 @@ export default function PurchaseRequestEditor() {
           </Link>
           <div>
             <h1 className="text-lg font-bold text-slate-800">
-              {isNew ? (isJob ? "New Job Request" : "New Purchase Request") : `${isJob ? "JR" : "PR"}: ${prData?.prNumber}`}
+              Live Preview
             </h1>
 
           </div>
@@ -376,7 +422,7 @@ export default function PurchaseRequestEditor() {
                     <div className="flex"><span className="w-24 whitespace-nowrap">Section :</span> <span className="border-b border-black flex-1 text-center">{"\u00A0"}</span></div>
                   </div>
                   <div className="p-2 flex flex-col justify-between">
-                    <div className="flex mb-2"><span className="w-20">{isJob ? "JR No.:" : "PR No.:"}</span> <span className="border-b border-black flex-1 text-center font-bold"></span> <span className="w-12 ml-2">Date:</span> <span className="border-b border-black flex-1 text-center"></span></div>
+                    <div className="flex mb-2"><span className="w-20">{isJob ? "JR No.:" : "PR No.:"}</span> <span className="border-b border-black flex-1 text-center font-bold">{showPrNo ? (watchAllFields.prNumber || prData?.prNumber || "") : ""}</span> <span className="w-12 ml-2">Date:</span> <span className="border-b border-black flex-1 text-center"></span></div>
                     <div className="flex mb-2"><span className="w-20">SAI No.:</span> <span className="border-b border-black flex-1 text-center">{"\u00A0"}</span> <span className="w-12 ml-2">Date:</span> <span className="border-b border-black flex-1 text-center">{"\u00A0"}</span></div>
                     <div className="flex"><span className="w-20">ALOBS No.:</span> <span className="border-b border-black flex-1 text-center">{"\u00A0"}</span> <span className="w-12 ml-2">Date:</span> <span className="border-b border-black flex-1 text-center">{"\u00A0"}</span></div>
                   </div>
@@ -498,7 +544,7 @@ export default function PurchaseRequestEditor() {
         <div className="no-print" style={{ width: "420px", flexShrink: 0, borderLeft: "1px solid #e2e8f0", background: "var(--color-page-bg)", overflowY: "auto", display: "flex", flexDirection: "column" }}>
           <div style={{ padding: "1.25rem", flex: 1 }}>
             <h3 style={{ fontWeight: "800", color: "#0f172a", marginBottom: "1.25rem", fontSize: "1rem" }}>
-              {isJob ? "Job Request Details" : "PR Details"}
+              {isJob ? "Job Request Details" : "Purchase Request Details"}
             </h3>
 
             <form style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
@@ -510,11 +556,10 @@ export default function PurchaseRequestEditor() {
                     type="button"
                     onClick={() => !isReadOnly && setValue("requestType", "PURCHASE")}
                     disabled={isReadOnly}
-                    className={`py-1.5 px-3 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${
-                      !isJob
-                        ? "bg-white text-blue-600 shadow-sm border border-slate-200/60"
-                        : "text-slate-500 hover:text-slate-800"
-                    }`}
+                    className={`py-1.5 px-3 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${!isJob
+                      ? "bg-white text-blue-600 shadow-sm border border-slate-200/60"
+                      : "text-slate-500 hover:text-slate-800"
+                      }`}
                   >
                     <span>Purchase Request</span>
                   </button>
@@ -522,13 +567,84 @@ export default function PurchaseRequestEditor() {
                     type="button"
                     onClick={() => !isReadOnly && setValue("requestType", "JOB")}
                     disabled={isReadOnly}
-                    className={`py-1.5 px-3 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${
-                      isJob
-                        ? "bg-indigo-600 text-white shadow-sm"
-                        : "text-slate-500 hover:text-slate-800"
-                    }`}
+                    className={`py-1.5 px-3 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${isJob
+                      ? "bg-indigo-600 text-white shadow-sm"
+                      : "text-slate-500 hover:text-slate-800"
+                      }`}
                   >
                     <span>Job Request</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Document Numbering */}
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-bold text-slate-800">
+                      {isJob ? "JR Number (Optional)" : "PR Number (Optional)"}
+                    </label>
+                  </div>
+                  <input
+                    type="text"
+                    {...register("prNumber")}
+                    disabled={isReadOnly}
+                    onBlur={(e) => {
+                      const val = e.target.value?.trim();
+                      if (val) {
+                        const normalized = normalizePrNumber(val);
+                        setValue("prNumber", normalized);
+                        const derivedYear = fiscalYearFromPrNumber(normalized);
+                        if (derivedYear) {
+                          setValue("fiscalYear", derivedYear);
+                        }
+                      }
+                    }}
+                    placeholder="e.g. 26-01-001"
+                    className="form-input font-mono font-bold text-sm bg-white"
+                  />
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    Leave blank if not yet assigned by custodian. Can be updated at any time.
+                  </p>
+                </div>
+
+                {/* Show/Hide Document Number on Document Toggle */}
+                <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+                  <label
+                    className="text-xs font-semibold text-slate-700 cursor-pointer select-none"
+                    onClick={() => setShowPrNo(!showPrNo)}
+                  >
+                    Print {isJob ? "JR Number" : "PR Number"} on document
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowPrNo(!showPrNo)}
+                    style={{
+                      width: "44px",
+                      height: "24px",
+                      borderRadius: "12px",
+                      background: showPrNo ? "#10b981" : "#cbd5e1",
+                      position: "relative",
+                      border: "none",
+                      cursor: "pointer",
+                      transition: "background 0.3s",
+                      boxShadow: "inset 0 1px 3px rgba(0,0,0,0.1)",
+                    }}
+                    title={showPrNo ? "Hide from document" : "Show on document"}
+                  >
+                    <div
+                      style={{
+                        width: "20px",
+                        height: "20px",
+                        borderRadius: "50%",
+                        background: "#fff",
+                        position: "absolute",
+                        top: "2px",
+                        left: showPrNo ? "22px" : "2px",
+                        transition: "left 0.3s",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+                      }}
+                    />
                   </button>
                 </div>
               </div>
@@ -543,20 +659,6 @@ export default function PurchaseRequestEditor() {
                   <option value="">Select Office...</option>
                   {offices.map(o => (
                     <option key={o.id} value={o.id}>{o.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="form-label">Fund Source</label>
-                <select
-                  {...register("fundSourceId")}
-                  className="form-select"
-                  disabled={isReadOnly}
-                >
-                  <option value="">Select Fund Source...</option>
-                  {fundSources.map(f => (
-                    <option key={f.id} value={f.id}>{f.name} ({f.code})</option>
                   ))}
                 </select>
               </div>

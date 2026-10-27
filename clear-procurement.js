@@ -10,7 +10,7 @@ async function clearProcurementData() {
     await prisma.purchaseOrder.deleteMany({});
     
     console.log("Deleting Abstracts of Quotation...");
-    await prisma.abstractOfQuotation.deleteMany({});
+    await prisma.abstractOfCanvass.deleteMany({});
     
     console.log("Deleting RFQs...");
     await prisma.rfq.deleteMany({});

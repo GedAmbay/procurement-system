@@ -24,6 +24,7 @@ interface DataTableProps<T extends { id: string; isActive?: boolean }> {
   onAdd?: () => void;
   onView?: (row: T) => void;
   onEdit?: (row: T) => void;
+  onRowDoubleClick?: (row: T) => void;
   onDuplicate?: (row: T) => void;
   onDelete?: (row: T) => Promise<void>;
   deleteModalTitle?: string;
@@ -55,6 +56,7 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
   onAdd,
   onView,
   onEdit,
+  onRowDoubleClick,
   onDuplicate,
   onDelete,
   deleteModalTitle,
@@ -428,8 +430,9 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
                       if (onView || onEdit || onDuplicate || onDelete || (customActions && customActions.length > 0)) setSelectedRow(row);
                     }}
                     onDoubleClick={() => {
-                      if (onView) onView(row);
+                      if (onRowDoubleClick) onRowDoubleClick(row);
                       else if (onEdit) onEdit(row);
+                      else if (onView) onView(row);
                     }}
                   >
                     {columns.map((col) => (

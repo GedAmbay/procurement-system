@@ -17,7 +17,8 @@ const STATUS_COLORS: Record<string, { bg: string; color: string; icon: React.Rea
 interface Acceptance {
   id: string;
   poId: string;
-  AIRNumber: string;
+  airNumber?: string | null;
+  AIRNumber?: string | null;
   po: { poNumber: string; supplier: { name: string } };
   status: string;
   createdAt: string;
@@ -47,25 +48,28 @@ export default function AcceptancesPage() {
       const res = await fetch("/api/acceptances", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ poId: data.poId })
+        body: JSON.stringify({ poId: data.poId, airNumber: data.airNumber })
       });
-      if (!res.ok) throw new Error("Failed to create acceptance");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to create acceptance");
+      }
       const acc = await res.json();
       toast.success("Acceptance created successfully");
       setShowModal(false);
       router.push(`/acceptances/${acc.id}`);
-    } catch {
-      toast.error("Error creating acceptance");
+    } catch (err: any) {
+      toast.error(err.message || "Error creating acceptance");
     }
   };
 
   const columns = [
     {
-      key: "AIRNumber",
+      key: "airNumber",
       label: "AIR Number",
       render: (row: Acceptance) => (
         <div style={{ fontWeight: "600", color: "#0f172a", fontFamily: "monospace", fontSize: "0.875rem" }}>
-          {row.AIRNumber}
+          {row.airNumber || row.AIRNumber || <span style={{ color: "#94a3b8", fontStyle: "italic", fontWeight: 400 }}>No. not yet assigned</span>}
         </div>
       ),
       width: "160px",
@@ -75,7 +79,7 @@ export default function AcceptancesPage() {
       label: "PO Number",
       render: (row: Acceptance) => (
         <div style={{ fontWeight: "600", color: "#1e293b", fontSize: "0.875rem" }}>
-          {row.po?.poNumber || "N/A"}
+          {row.po?.poNumber || <span style={{ color: "#94a3b8", fontStyle: "italic", fontWeight: 400 }}>No. not yet assigned</span>}
         </div>
       ),
       width: "200px",
@@ -147,11 +151,21 @@ export default function AcceptancesPage() {
           submitLabel="Create"
           fields={[
             {
+              key: "airNumber",
+              label: "AIR Number (Optional)",
+              type: "text",
+              placeholder: "Leave blank if not yet assigned",
+              required: false
+            },
+            {
               key: "poId",
               label: "Purchase Order",
               type: "select",
               required: true,
-              options: pos.map(po => ({ value: po.id, label: `${po.poNumber} (${po.supplier?.name || 'No Supplier'})` }))
+              options: pos.map(po => ({
+                value: po.id,
+                label: `${po.poNumber || 'No PO # yet'} (${po.supplier?.name || 'No Supplier'})`
+              }))
             }
           ]}
           onClose={() => setShowModal(false)}

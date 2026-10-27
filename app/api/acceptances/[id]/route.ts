@@ -14,6 +14,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         po: {
           include: {
             supplier: true,
+            pr: {
+              include: {
+                office: true,
+              }
+            },
             abstract: {
               include: {
                 rfq: {
@@ -60,6 +65,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     const { id } = await params;
     const body = await req.json();
     const {
+      airNumber,
       invoiceNumber,
       invoiceDate,
       dateReceived,
@@ -67,6 +73,17 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       status,
       lineItems
     } = body;
+
+    let airNumberToSave: string | null | undefined = undefined;
+    if (airNumber !== undefined) {
+      airNumberToSave = airNumber && typeof airNumber === "string" && airNumber.trim() ? airNumber.trim() : null;
+      if (airNumberToSave) {
+        const existing = await prisma.acceptance.findUnique({ where: { airNumber: airNumberToSave } });
+        if (existing && existing.id !== id) {
+          return NextResponse.json({ error: "AIR Number already in use by another acceptance report" }, { status: 409 });
+        }
+      }
+    }
 
     // Start a transaction if line items are updated
     const updatePromises = [];
@@ -90,6 +107,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     const updatedAcceptance = await prisma.acceptance.update({
       where: { id },
       data: {
+        ...(airNumberToSave !== undefined ? { airNumber: airNumberToSave } : {}),
         invoiceNumber,
         invoiceDate: invoiceDate ? new Date(invoiceDate) : null,
         dateReceived: dateReceived ? new Date(dateReceived) : null,

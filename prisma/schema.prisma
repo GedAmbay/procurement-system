@@ -21,7 +21,7 @@ model User {
   purchaseRequests       PurchaseRequest[]
   calendarEvents         CalendarEvent[]
   rfqsCreated            Rfq[]                 @relation("RfqCreatedBy")
-  abstractsCreated            AbstractOfQuotation[] @relation("abstractCreatedBy")
+  abstractsCreated       AbstractOfCanvass[]   @relation("abstractCreatedBy")
   purchaseOrdersCreated  PurchaseOrder[]       @relation("PoCreatedBy")
   acceptancesCreated     Acceptance[]          @relation("AcceptanceCreatedBy")
   office                 Office?                @relation(fields: [officeId], references: [id])
@@ -113,7 +113,7 @@ model FundSource {
 
 model PurchaseRequest {
   id                     String          @id @default(cuid())
-  prNumber               String          @unique
+  prNumber               String?         @unique
   officeId               String
   requestedById          String
   requestedBySignatoryId String?
@@ -160,7 +160,7 @@ model PrLineItem {
 
 model Rfq {
   id            String               @id @default(cuid())
-  rfqNumber     String               @unique
+  rfqNumber     String?              @unique
   prId          String
   deadline      DateTime?
   remarks       String?
@@ -172,7 +172,7 @@ model Rfq {
   updatedAt     DateTime             @updatedAt
   signatoryId   String?
   createdById   String?
-  abstract           AbstractOfQuotation?
+  abstract      AbstractOfCanvass?
   quotations    Quotation[]
   lineItems     RfqLineItem[]
   suppliers     RfqSupplier[]
@@ -239,9 +239,9 @@ model QuotationLineItem {
   @@map("quotation_line_items")
 }
 
-model AbstractOfQuotation {
+model AbstractOfCanvass {
   id             String          @id @default(cuid())
-  abstractNumber      String          @unique
+  abstractNumber String?         @unique
   rfqId          String          @unique
   recommendation String?
   totalAmount    Float           @default(0)
@@ -249,11 +249,11 @@ model AbstractOfQuotation {
   printCount     Int             @default(0)
   lastPrintedAt  DateTime?
   fiscalYear     Int
-  createdById   String?
+  createdById    String?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   rfq            Rfq             @relation(fields: [rfqId], references: [id])
-  lineItems      abstractLineItem[]
+  lineItems      AbstractLineItem[]
   purchaseOrders PurchaseOrder[]
   createdBy      User?           @relation("abstractCreatedBy", fields: [createdById], references: [id])
 
@@ -268,47 +268,47 @@ model AbstractOfQuotation {
   @@map("abstracts_of_quotation")
 }
 
-model abstractLineItem {
-  id               String              @id @default(cuid())
-  abstractId            String
+model AbstractLineItem {
+  id               String            @id @default(cuid())
+  abstractId       String
   description      String
   unit             String
   quantity         Float
   lowestUnitPrice  Float
   totalPrice       Float
   winnerSupplierId String?
-  sortOrder        Int                 @default(0)
-  abstract              AbstractOfQuotation @relation(fields: [abstractId], references: [id], onDelete: Cascade)
+  sortOrder        Int               @default(0)
+  abstract         AbstractOfCanvass @relation(fields: [abstractId], references: [id], onDelete: Cascade)
 
   @@map("abstract_line_items")
 }
 
 model PurchaseOrder {
-  id              String               @id @default(cuid())
-  poNumber        String               @unique
-  abstractId           String?
+  id              String             @id @default(cuid())
+  poNumber        String?            @unique
+  abstractId      String?
   prId            String?
-  orderType       String               @default("PURCHASE")
+  orderType       String             @default("PURCHASE")
   supplierId      String?
   deliveryTerms   String?
   paymentTerms    String?
   placeOfDelivery String?
   deliveryDate    DateTime?
-  totalAmount     Float                @default(0)
-  status          String               @default("DRAFT")
+  totalAmount     Float              @default(0)
+  status          String             @default("DRAFT")
   remarks         String?
-  printCount      Int                  @default(0)
+  printCount      Int                @default(0)
   lastPrintedAt   DateTime?
   fiscalYear      Int
   createdById     String?
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
   lineItems       PoLineItem[]
   acceptances     Acceptance[]
-  supplier        Supplier?            @relation(fields: [supplierId], references: [id])
-  abstract             AbstractOfQuotation? @relation(fields: [abstractId], references: [id])
-  pr              PurchaseRequest?     @relation(fields: [prId], references: [id])
-  createdBy       User?                @relation("PoCreatedBy", fields: [createdById], references: [id])
+  supplier        Supplier?          @relation(fields: [supplierId], references: [id])
+  abstract        AbstractOfCanvass? @relation(fields: [abstractId], references: [id])
+  pr              PurchaseRequest?   @relation(fields: [prId], references: [id])
+  createdBy       User?              @relation("PoCreatedBy", fields: [createdById], references: [id])
 
   @@map("purchase_orders")
 }
@@ -346,7 +346,7 @@ model DocumentAuditLog {
 
 model Acceptance {
   id            String    @id @default(cuid())
-  AIRNumber     String    @unique
+  airNumber     String?   @unique @map("AIRNumber")
   poId          String
   invoiceNumber String?
   invoiceDate   DateTime?

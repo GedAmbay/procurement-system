@@ -75,9 +75,21 @@ export async function PATCH(
 
     const orderType = body.orderType !== undefined ? body.orderType : po.orderType;
 
+    let poNumberToSave: string | null | undefined = undefined;
+    if (body.poNumber !== undefined) {
+      poNumberToSave = body.poNumber && typeof body.poNumber === "string" && body.poNumber.trim() ? body.poNumber.trim() : null;
+      if (poNumberToSave) {
+        const existing = await prisma.purchaseOrder.findUnique({ where: { poNumber: poNumberToSave } });
+        if (existing && existing.id !== id) {
+          return NextResponse.json({ error: "PO Number already in use by another Purchase Order" }, { status: 409 });
+        }
+      }
+    }
+
     const updatedPO = await prisma.purchaseOrder.update({
       where: { id },
       data: {
+        ...(poNumberToSave !== undefined ? { poNumber: poNumberToSave } : {}),
         status: body.status !== undefined ? body.status : po.status,
         orderType,
         supplierId: body.supplierId !== undefined ? body.supplierId : po.supplierId,

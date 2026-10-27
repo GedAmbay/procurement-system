@@ -9,11 +9,16 @@ export const prLineItemSchema = z.object({
 });
 
 export const purchaseRequestSchema = z.object({
-  officeId: z.string().min(1, "Office ID is required"),
+  prNumber: z.string().trim().optional().nullable().transform(v => v || null),
+  fiscalYear: z.preprocess(
+    (val) => (val === "" || val === null || val === undefined || Number.isNaN(val) ? undefined : Number(val)),
+    z.number().int().min(1900).max(2100).optional()
+  ),
+  officeId: z.string().min(1, "Requesting office is required"),
   purpose: z.string().min(1, "Purpose is required"),
-  requestedBySignatoryId: z.string().nullable().optional(),
-  fundSourceId: z.string().nullable().optional(),
-  chargeToAccount: z.string().nullable().optional(),
+  requestedBySignatoryId: z.string().nullable().optional().transform(v => v || null),
+  fundSourceId: z.string().nullable().optional().transform(v => v || null),
+  chargeToAccount: z.string().nullable().optional().transform(v => v || null),
   isDirectAcquisition: z.boolean().optional().default(false),
   requestType: z.string().optional().default("PURCHASE"),
   lineItems: z.array(prLineItemSchema).min(1, "At least one line item is required"),

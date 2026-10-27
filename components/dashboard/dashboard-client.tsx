@@ -18,7 +18,7 @@ interface DashboardClientProps {
     kpis: {
       totalSavings: number;
       avgProcessingDays: number;
-      nextAwardEvent: { eventDate: Date, title: string, pr: { prNumber: string } | null } | null;
+      nextAwardEvent: { eventDate: Date, title: string, pr: { prNumber: string | null } | null } | null;
     };
     pipeline: {
       logged: number;
@@ -36,7 +36,7 @@ interface DashboardClientProps {
     };
     recentPRs: {
       id: string;
-      prNumber: string;
+      prNumber: string | null;
       office: string;
       purpose: string;
       totalAmount: number;
@@ -290,7 +290,7 @@ export default function DashboardClient({ data, user }: DashboardClientProps) {
                   <tr key={pr.id}>
                     <td>
                       <Link href={`/procurement-folders/${pr.id}`} style={{ color: "#2563eb", fontWeight: "600", textDecoration: "none", fontSize: "0.875rem" }}>
-                        {pr.prNumber}
+                        {pr.prNumber || <span style={{ color: "#94a3b8", fontStyle: "italic", fontWeight: 400 }}>No. not yet assigned</span>}
                       </Link>
                     </td>
                     <td style={{ color: "#374151", fontSize: "0.875rem" }}>{pr.office}</td>

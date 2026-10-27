@@ -22,7 +22,7 @@ async function getDashboardData() {
   ] = await Promise.all([
     prisma.purchaseRequest.count(),
     prisma.rfq.count({ where: { status: "FOR_SIGNING", pr: { isDirectAcquisition: false } } }),
-    prisma.abstractOfQuotation.count({ where: { status: "FOR_SIGNING", rfq: { pr: { isDirectAcquisition: false } } } }),
+    prisma.abstractOfCanvass.count({ where: { status: "FOR_SIGNING", rfq: { pr: { isDirectAcquisition: false } } } }),
     prisma.purchaseOrder.count({ where: { status: "FOR_SIGNING" } }),
     prisma.purchaseRequest.findMany({
       take: 5,

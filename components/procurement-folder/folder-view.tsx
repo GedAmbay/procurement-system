@@ -193,17 +193,18 @@ export default function FolderView({ folderData, stages }: FolderViewProps) {
                   case "Abstract":
                     title = "Abstract of Canvass";
                     editPath = `/abstract/${docId}`;
-                    numberStr = doc.abstractNumber;
+                    numberStr = folderData.prNumber || doc.abstractNumber;
                     break;
                   case "PO":
                   case "JO":
                     editPath = `/purchase-orders/${docId}`;
-                    numberStr = doc.poNumber;
+                    numberStr = doc.poNumber || "No. not yet assigned";
                     break;
                   case "AIR":
                   case "IAR":
+                    title = "Acceptance and Inspection Report (AIR)";
                     editPath = `/acceptances/${docId}`;
-                    numberStr = doc.iarNumber || doc.AIRNumber;
+                    numberStr = doc.airNumber || doc.AIRNumber || doc.iarNumber || "No. not yet assigned";
                     break;
                 }
 

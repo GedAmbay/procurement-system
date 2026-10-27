@@ -45,7 +45,7 @@ export default function abstractPage() {
       label: "PR Number",
       render: (row: abstract) => (
         <div style={{ fontWeight: "700", color: "#0f172a", fontFamily: "monospace", fontSize: "0.875rem" }}>
-          {row.rfq.pr.prNumber}
+          {row.rfq?.pr?.prNumber || <span style={{ color: "#94a3b8", fontStyle: "italic", fontWeight: 400 }}>No. not yet assigned</span>}
         </div>
       ),
       width: "160px",
@@ -153,6 +153,7 @@ export default function abstractPage() {
         searchPlaceholder="Search..."
         onView={(row) => router.push(`/abstract/${row.id}?mode=view`)}
         onEdit={handleEdit}
+        onRowDoubleClick={handleEdit}
         onDuplicate={handleDuplicate}
         onDelete={handleDelete}
         emptyIcon={<ClipboardList size={40} style={{ opacity: 0.3 }} />}

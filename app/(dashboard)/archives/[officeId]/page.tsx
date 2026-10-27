@@ -42,7 +42,9 @@ export default function OfficeArchivePage() {
       key: "prNumber",
       label: "Folder ID (PR)",
       render: (row: FolderRecord) => (
-        <div className="font-mono font-semibold text-slate-900 text-sm">{row.prNumber}</div>
+        <div className="font-mono font-semibold text-slate-900 text-sm">
+          {row.prNumber || <span className="text-slate-400 italic font-normal">No. not yet assigned</span>}
+        </div>
       ),
       width: "160px",
     },

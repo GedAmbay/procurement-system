@@ -34,7 +34,7 @@ export default function PurchaseRequestsPage() {
       render: (row: PR) => (
         <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
           <div style={{ fontWeight: "600", color: "#0f172a", fontFamily: "monospace", fontSize: "0.875rem" }}>
-            {row.prNumber}
+            {row.prNumber || <span style={{ color: "#94a3b8", fontStyle: "italic", fontWeight: 400 }}>No. not yet assigned</span>}
           </div>
           <div className="flex flex-wrap gap-1">
             {row.requestType === "JOB" && (
@@ -147,6 +147,7 @@ export default function PurchaseRequestsPage() {
         onAdd={() => router.push("/purchase-requests/new")}
         onView={(row) => router.push(`/purchase-requests/${row.id}?mode=view`)}
         onEdit={handleEdit}
+        onRowDoubleClick={handleEdit}
         onDuplicate={handleDuplicate}
         onDelete={handleDelete}
         customActions={[

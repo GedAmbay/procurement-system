@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { formatCurrency, numberToWords } from "@/lib/utils";
 
 interface POFormValues {
+  poNumber?: string;
   supplierId: string;
   deliveryDate: string;
   placeOfDelivery: string;
@@ -30,9 +31,12 @@ export default function PurchaseOrderEditor() {
 
   const [zoom, setZoom] = useState(0.85);
   const [targetRows, setTargetRows] = useState(10);
+  const [showPoNo, setShowPoNo] = useState(true);
+  const [showPrNo, setShowPrNo] = useState(true);
 
   const { register, handleSubmit, watch, reset, setValue } = useForm<POFormValues>({
     defaultValues: {
+      poNumber: "",
       supplierId: "",
       deliveryDate: "",
       placeOfDelivery: "LGU-PANDAN",
@@ -62,6 +66,7 @@ export default function PurchaseOrderEditor() {
 
           const initialOrderType = data.orderType || data.abstract?.rfq?.pr?.requestType || data.pr?.requestType || "PURCHASE";
           reset({
+            poNumber: data.poNumber || "",
             supplierId: data.supplierId || "",
             deliveryDate: data.deliveryDate ? new Date(data.deliveryDate).toISOString().split('T')[0] : "",
             placeOfDelivery: data.placeOfDelivery || "LGU-PANDAN",
@@ -86,6 +91,7 @@ export default function PurchaseOrderEditor() {
     setSubmitting(true);
     try {
       const payload = {
+        poNumber: data.poNumber,
         supplierId: data.supplierId,
         deliveryDate: data.deliveryDate,
         placeOfDelivery: data.placeOfDelivery,
@@ -105,7 +111,8 @@ export default function PurchaseOrderEditor() {
         setPoData((prev: any) => ({ ...prev, ...updated }));
         toast.success(isJob ? "Job Order saved successfully" : "Purchase Order saved successfully");
       } else {
-        toast.error(isJob ? "Failed to save Job Order" : "Failed to save Purchase Order");
+        const errorData = await res.json().catch(() => ({}));
+        toast.error(errorData.error || (isJob ? "Failed to save Job Order" : "Failed to save Purchase Order"));
       }
     } catch (e) {
       toast.error("An error occurred");
@@ -166,13 +173,8 @@ export default function PurchaseOrderEditor() {
           </Link>
           <div>
             <h1 className="text-lg font-bold text-slate-800">
-              {isJob ? "Job Order" : "Purchase Order"} • {poData.poNumber}
+              Live Preview
             </h1>
-            {poData.createdBy && (
-              <div className="text-sm text-slate-500 mt-0.5 flex items-center gap-1">
-                <User size={14} /> Created by <strong className="text-slate-700">{poData.createdBy.name}</strong>
-              </div>
-            )}
           </div>
         </div>
         <div className="flex gap-2">
@@ -219,7 +221,7 @@ export default function PurchaseOrderEditor() {
         {/* Left Side: Live Print Preview */}
         <div className="flex-1 overflow-auto bg-slate-200 print:p-0 print:bg-white print:block print:!overflow-visible print:!h-auto">
           <div className="p-8 print:p-0 w-max mx-auto min-w-full flex justify-center origin-top print:block print:w-full print:min-w-0 print:!transform-none print:!mb-0" style={{ transform: `scale(${zoom})`, marginBottom: `${(zoom - 1) * 1123}px`, transition: "transform 0.2s ease" }}>
-            <div className="print-area text-black shadow-xl text-[14px] leading-tight print:shadow-none print:max-w-none print:m-0 [&_td]:!font-['Times_New_Roman',_Times,_serif] [&_td]:!text-[14px] [&_th]:!font-['Times_New_Roman',_Times,_serif] [&_th]:!text-[14px] [&_th]:!text-black [&_th]:!normal-case [&_th]:!tracking-normal [&_th]:!font-bold w-[980px] min-h-[1123px] bg-white p-10 print:w-full print:min-h-0 print:p-0" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+            <div className="print-area text-black shadow-xl text-[14px] leading-tight print:shadow-none print:max-w-none print:m-0 [&_td]:!font-['Times_New_Roman',_Times,_serif] [&_td]:!text-[14px] [&_th]:!font-['Times_New_Roman',_Times,_serif] [&_th]:!text-[14px] [&_th]:!text-black [&_th]:!normal-case [&_th]:!tracking-normal [&_th]:!font-bold w-[900px] min-h-[1123px] bg-white p-10 print:w-full print:min-h-0 print:p-0" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
 
               <div className="border-[3px] border-black">
                 <div className="text-right italic pt-2 pr-2 text-sm">Appendix 49</div>
@@ -237,10 +239,10 @@ export default function PurchaseOrderEditor() {
                     <div className="flex items-end mt-1"><span className="font-bold whitespace-nowrap mr-2">TIN :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight"></span></div>
                   </div>
                   <div className="col-span-3 p-1 px-2 flex flex-col justify-between">
-                    <div className="flex items-end"><span className="font-bold whitespace-nowrap mr-2">{isJob ? "J.O. No. :" : "P.O. No. :"}</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{poData.poNumber}</span></div>
+                    <div className="flex items-end"><span className="font-bold whitespace-nowrap mr-2">{isJob ? "J.O. No. :" : "P.O. No. :"}</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{showPoNo ? (watchAll.poNumber || poData?.poNumber || "") : ""}</span></div>
                     <div className="flex items-end mt-1"><span className="font-bold whitespace-nowrap mr-2">Date :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{watchAll.deliveryDate ? new Date(watchAll.deliveryDate).toLocaleDateString('en-PH') : ""}</span></div>
                     <div className="flex items-end mt-1"><span className="font-bold whitespace-nowrap mr-2">Mode of Procurement :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{watchAll.modeOfProcurement}</span></div>
-                    <div className="flex items-end mt-1"><span className="font-bold whitespace-nowrap mr-2">{isJob ? "JR No./s :" : "PR No./s :"}</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{linkedPrNumber !== "PENDING" ? linkedPrNumber : ""}</span></div>
+                    <div className="flex items-end mt-1"><span className="font-bold whitespace-nowrap mr-2">{isJob ? "JR No./s :" : "PR No./s :"}</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{showPrNo && linkedPrNumber !== "PENDING" ? linkedPrNumber : ""}</span></div>
                   </div>
                 </div>
 
@@ -400,11 +402,10 @@ export default function PurchaseOrderEditor() {
                     type="button"
                     onClick={() => !isReadOnly && setValue("orderType", "PURCHASE")}
                     disabled={isReadOnly}
-                    className={`py-1.5 px-3 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${
-                      !isJob
-                        ? "bg-white text-blue-600 shadow-sm border border-slate-200/60"
-                        : "text-slate-500 hover:text-slate-800"
-                    }`}
+                    className={`py-1.5 px-3 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${!isJob
+                      ? "bg-white text-blue-600 shadow-sm border border-slate-200/60"
+                      : "text-slate-500 hover:text-slate-800"
+                      }`}
                   >
                     <span>Purchase Order</span>
                   </button>
@@ -412,15 +413,111 @@ export default function PurchaseOrderEditor() {
                     type="button"
                     onClick={() => !isReadOnly && setValue("orderType", "JOB")}
                     disabled={isReadOnly}
-                    className={`py-1.5 px-3 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${
-                      isJob
-                        ? "bg-indigo-600 text-white shadow-sm"
-                        : "text-slate-500 hover:text-slate-800"
-                    }`}
+                    className={`py-1.5 px-3 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${isJob
+                      ? "bg-indigo-600 text-white shadow-sm"
+                      : "text-slate-500 hover:text-slate-800"
+                      }`}
                   >
                     <span>Job Order</span>
                   </button>
                 </div>
+              </div>
+
+              {/* Document Number Visibility Toggles */}
+              <div className="form-label">
+                Document Number
+              </div>
+              <div className="p-3 rounded-lg border border-slate-200/80 shadow-xs space-y-2.5">
+
+                <div className="flex items-center justify-between">
+                  <label
+                    className="text-[13px] text-slate-700 cursor-pointer select-none"
+                    onClick={() => setShowPoNo(!showPoNo)}
+                  >
+                    {isJob ? "Job Order No. (JO No.)" : "Purchase Order No. (PO No.)"}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowPoNo(!showPoNo)}
+                    style={{
+                      width: "44px",
+                      height: "24px",
+                      borderRadius: "12px",
+                      background: showPoNo ? "#10b981" : "#cbd5e1",
+                      position: "relative",
+                      border: "none",
+                      cursor: "pointer",
+                      transition: "background 0.3s",
+                      boxShadow: "inset 0 1px 3px rgba(0,0,0,0.1)",
+                    }}
+                    title={showPoNo ? "Hide from document" : "Show on document"}
+                  >
+                    <div
+                      style={{
+                        width: "20px",
+                        height: "20px",
+                        borderRadius: "50%",
+                        background: "#fff",
+                        position: "absolute",
+                        top: "2px",
+                        left: showPoNo ? "22px" : "2px",
+                        transition: "left 0.3s",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+                      }}
+                    />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between border-t border-slate-100 pt-2">
+                  <label
+                    className="text-[13px] text-slate-700 cursor-pointer select-none"
+                    onClick={() => setShowPrNo(!showPrNo)}
+                  >
+                    {isJob ? "Job Request No. (JR No.)" : "Purchase Request No. (PR No.)"}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowPrNo(!showPrNo)}
+                    style={{
+                      width: "44px",
+                      height: "24px",
+                      borderRadius: "12px",
+                      background: showPrNo ? "#10b981" : "#cbd5e1",
+                      position: "relative",
+                      border: "none",
+                      cursor: "pointer",
+                      transition: "background 0.3s",
+                      boxShadow: "inset 0 1px 3px rgba(0,0,0,0.1)",
+                    }}
+                    title={showPrNo ? "Hide from document" : "Show on document"}
+                  >
+                    <div
+                      style={{
+                        width: "20px",
+                        height: "20px",
+                        borderRadius: "50%",
+                        background: "#fff",
+                        position: "absolute",
+                        top: "2px",
+                        left: showPrNo ? "22px" : "2px",
+                        transition: "left 0.3s",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+                      }}
+                    />
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="form-label">{isJob ? "JO Number" : "PO Number"}</label>
+                <input
+                  type="text"
+                  {...register("poNumber")}
+                  disabled={isReadOnly}
+                  className="form-input font-mono"
+                  placeholder="e.g. 26-01-001 (or leave blank)"
+                />
+                <p className="text-[10px] text-slate-500 mt-1">Custodial control number (optional, can be updated at any time).</p>
               </div>
 
               <div>

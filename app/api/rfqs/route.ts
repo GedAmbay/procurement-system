@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { requireRole } from "@/lib/auth-utils";
 import { syncAllRfqs } from "@/lib/rfq-status";
+import { deriveRfqNumber } from "@/lib/utils";
 
 export async function GET(req: NextRequest) {
   const roleCheck = await requireRole(["ANY"]);
@@ -35,6 +36,7 @@ export async function GET(req: NextRequest) {
       include: {
         pr: {
           select: {
+            prNumber: true,
             purpose: true,
             totalAmount: true,
             office: { select: { name: true, code: true } }
@@ -72,34 +74,28 @@ export async function POST(req: NextRequest) {
 
     if (!pr) return NextResponse.json({ error: "PR not found" }, { status: 404 });
 
-    const yy = String(pr.fiscalYear).slice(-2) || String(new Date().getFullYear()).slice(-2);
-    const prParts = pr.prNumber.split("-");
-    const xxxx = prParts[prParts.length - 1];
-    
-    let fundPrefix = "GF";
-    if (pr.fundSource && pr.fundSource.code.toUpperCase().startsWith("TF")) {
-      fundPrefix = "TF";
-    }
-    const rfqNumber = `${fundPrefix}-${yy}-${xxxx}`;
+    const rfqNumber = pr.prNumber ? deriveRfqNumber(pr.prNumber, pr.fiscalYear, pr.fundSource?.code) : null;
+
+    const rfqData: any = {
+      rfqNumber: rfqNumber || null,
+      prId,
+      fiscalYear: pr.fiscalYear,
+      status: "DRAFT",
+      createdById: session?.user?.id ?? null,
+      lineItems: {
+        create: pr.lineItems.map(li => ({
+          description: li.description,
+          unit: li.unit,
+          quantity: li.quantity,
+          unitCost: li.unitCost,
+          totalCost: li.totalCost,
+          sortOrder: li.sortOrder
+        }))
+      }
+    };
 
     const rfq = await prisma.rfq.create({
-      data: {
-        rfqNumber,
-        prId,
-        fiscalYear: pr.fiscalYear,
-        status: "DRAFT",
-        createdById: session?.user?.id,
-        lineItems: {
-          create: pr.lineItems.map(li => ({
-            description: li.description,
-            unit: li.unit,
-            quantity: li.quantity,
-            unitCost: li.unitCost,
-            totalCost: li.totalCost,
-            sortOrder: li.sortOrder
-          }))
-        }
-      }
+      data: rfqData
     });
 
     return NextResponse.json(rfq);

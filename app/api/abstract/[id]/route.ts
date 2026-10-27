@@ -17,7 +17,7 @@ export async function GET(
   const { id } = await context.params;
 
   try {
-    const abstract = await prisma.abstractOfQuotation.findUnique({
+    const abstract = await prisma.abstractOfCanvass.findUnique({
       where: { id },
       include: {
         createdBy: true,
@@ -86,7 +86,7 @@ export async function PATCH(
     if (signatoriesData !== undefined) dataToUpdate.signatoriesData = signatoriesData;
 
     if (status === "APPROVED") {
-      const abstractToApprove = await prisma.abstractOfQuotation.findUnique({
+      const abstractToApprove = await prisma.abstractOfCanvass.findUnique({
         where: { id },
         include: { rfq: { include: { quotations: { include: { lineItems: true } } } } }
       });
@@ -127,7 +127,7 @@ export async function PATCH(
       }
     }
 
-    const updatedabstract = await prisma.abstractOfQuotation.update({
+    const updatedabstract = await prisma.abstractOfCanvass.update({
       where: { id },
       data: dataToUpdate,
     });
