@@ -430,18 +430,33 @@ export default function AcceptanceEditor() {
             <h3 style={{ fontWeight: "800", color: "#0f172a", marginBottom: "1.25rem", fontSize: "1rem" }}>Acceptance Details</h3>
 
             <form style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-              {/* Document Number Visibility Toggles */}
-              <div className="p-3 bg-white rounded-lg border border-slate-200/80 shadow-xs space-y-2.5">
-                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                  Document Number Display
+              {/* Document Numbering */}
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-bold text-slate-800">
+                      AIR Number
+                    </label>
+                  </div>
+                  <input
+                    type="text"
+                    {...register("airNumber")}
+                    disabled={isReadOnly}
+                    placeholder="e.g. 26-01-001"
+                    className="form-input font-mono font-bold text-sm bg-white"
+                  />
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    Leave blank if not yet assigned by custodian. Can be updated at any time.
+                  </p>
                 </div>
 
-                <div className="flex items-center justify-between">
+                {/* Show/Hide AIR Number on Document Toggle */}
+                <div className="flex items-center justify-between pt-2 border-t border-slate-200">
                   <label
                     className="text-xs font-semibold text-slate-700 cursor-pointer select-none"
                     onClick={() => setShowAirNo(!showAirNo)}
                   >
-                    Acceptance Report No. (AIR No.)
+                    Print AIR Number on document
                   </label>
                   <button
                     type="button"
@@ -475,14 +490,15 @@ export default function AcceptanceEditor() {
                   </button>
                 </div>
 
-                <div className="flex items-center justify-between border-t border-slate-100 pt-2">
+                {/* Show/Hide PO/JO Number on Document Toggle */}
+                <div className="flex items-center justify-between pt-2 border-t border-slate-200">
                   <label
                     className="text-xs font-semibold text-slate-700 cursor-pointer select-none"
                     onClick={() => setShowPoNo(!showPoNo)}
                   >
-                    {(acceptance.po?.orderType === "JOB" || acceptance.po?.pr?.requestType === "JOB" || acceptance.po?.abstract?.rfq?.pr?.requestType === "JOB")
-                      ? "Job Order No. (JO No.)"
-                      : "Purchase Order No. (PO No.)"}
+                    Print {(acceptance.po?.orderType === "JOB" || acceptance.po?.pr?.requestType === "JOB" || acceptance.po?.abstract?.rfq?.pr?.requestType === "JOB")
+                      ? "JO Number"
+                      : "PO Number"} on document
                   </label>
                   <button
                     type="button"
@@ -515,18 +531,6 @@ export default function AcceptanceEditor() {
                     />
                   </button>
                 </div>
-              </div>
-
-              <div>
-                <label className="form-label">AIR Number (Custodian Control #)</label>
-                <input
-                  type="text"
-                  {...register("airNumber")}
-                  disabled={isReadOnly}
-                  placeholder="e.g. AIR-26-001 or control #"
-                  className="form-input font-mono"
-                />
-                <div className="text-[11px] text-slate-400 mt-1">Leave blank if not yet issued by custodian.</div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

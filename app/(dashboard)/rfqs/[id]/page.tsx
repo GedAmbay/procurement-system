@@ -22,14 +22,17 @@ export default function RfqLivePreviewPage() {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [unlockModalOpen, setUnlockModalOpen] = useState(false);
   const [targetRows, setTargetRows] = useState(8);
+  const [showRfqNo, setShowRfqNo] = useState(true);
 
-  const { register, handleSubmit, reset, watch } = useForm({
+  const { register, handleSubmit, reset, watch, setValue } = useForm({
     defaultValues: {
+      rfqNumber: "",
       signatoryId: "",
       deadline: "",
     }
   });
 
+  const watchRfqNumber = watch("rfqNumber");
   const watchSignatoryId = watch("signatoryId");
   const watchDeadline = watch("deadline");
 
@@ -62,6 +65,7 @@ export default function RfqLivePreviewPage() {
           const activeSigId = data.signatoryId || (defaultSig ? defaultSig.id : "");
 
           reset({
+            rfqNumber: data.rfqNumber || "",
             signatoryId: activeSigId,
             deadline: data.deadline ? data.deadline.substring(0, 10) : "",
           });
@@ -79,6 +83,7 @@ export default function RfqLivePreviewPage() {
     setSubmitting(true);
     try {
       const payload = {
+        rfqNumber: data.rfqNumber?.trim() || null,
         signatoryId: data.signatoryId || null,
         deadline: data.deadline || null,
       };
@@ -116,6 +121,9 @@ export default function RfqLivePreviewPage() {
       const payload: any = { status };
       if (currentSigId) {
         payload.signatoryId = currentSigId;
+      }
+      if (watchRfqNumber !== undefined) {
+        payload.rfqNumber = watchRfqNumber?.trim() || null;
       }
       if (watchDeadline) {
         payload.deadline = watchDeadline;
@@ -259,7 +267,7 @@ export default function RfqLivePreviewPage() {
               <div className="flex justify-end mb-4 text-[13px]">
                 <div className="w-[245px]">
                   <div className="flex mb-1"><span className="w-10">Date:</span> <span className="border-b border-black flex-1 text-center"></span></div>
-                  <div className="flex mb-1"><span className="w-16">Quotation:</span> <span className="border-b border-black flex-1 text-center font-bold">{rfq.rfqNumber}</span></div>
+                  <div className="flex mb-1"><span className="w-16">Quotation:</span> <span className="border-b border-black flex-1 text-center font-bold">{showRfqNo ? (watchRfqNumber || rfq.rfqNumber || "") : ""}</span></div>
                 </div>
               </div>
 
@@ -401,6 +409,67 @@ export default function RfqLivePreviewPage() {
             <p style={{ fontSize: "0.8125rem", color: "#64748b", marginBottom: "1.5rem" }}>Update the details for the Request for Quotation.</p>
 
             <form onSubmit={handleSubmit(onSubmit)} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+              {/* Document Numbering */}
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-bold text-slate-800">
+                      RFQ Number
+                    </label>
+                  </div>
+                  <input
+                    type="text"
+                    {...register("rfqNumber")}
+                    disabled={isReadOnly}
+                    placeholder="e.g. 26-01-001"
+                    className="form-input font-mono font-bold text-sm bg-white"
+                  />
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    Leave blank if not yet assigned by custodian. Can be updated at any time.
+                  </p>
+                </div>
+
+                {/* Show/Hide Document Number on Document Toggle */}
+                <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+                  <label
+                    className="text-xs font-semibold text-slate-700 cursor-pointer select-none"
+                    onClick={() => setShowRfqNo(!showRfqNo)}
+                  >
+                    Print RFQ Number on document
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowRfqNo(!showRfqNo)}
+                    style={{
+                      width: "44px",
+                      height: "24px",
+                      borderRadius: "12px",
+                      background: showRfqNo ? "#10b981" : "#cbd5e1",
+                      position: "relative",
+                      border: "none",
+                      cursor: "pointer",
+                      transition: "background 0.3s",
+                      boxShadow: "inset 0 1px 3px rgba(0,0,0,0.1)",
+                    }}
+                    title={showRfqNo ? "Hide from document" : "Show on document"}
+                  >
+                    <div
+                      style={{
+                        width: "20px",
+                        height: "20px",
+                        borderRadius: "50%",
+                        background: "#fff",
+                        position: "absolute",
+                        top: "2px",
+                        left: showRfqNo ? "22px" : "2px",
+                        transition: "left 0.3s",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+                      }}
+                    />
+                  </button>
+                </div>
+              </div>
+
               <div>
                 <label className="form-label">Signatory</label>
                 <select

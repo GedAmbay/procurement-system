@@ -13,7 +13,8 @@ interface PO {
   pr?: { prNumber?: string | null; purpose: string; office: { name: string; code: string }; isDirectAcquisition: boolean; requestType?: string };
   abstract?: {
     rfq: {
-      pr: { prNumber?: string | null; purpose: string; office: { name: string; code: string }; isDirectAcquisition: boolean; requestType?: string }
+      pr: { prNumber?: string | null; purpose: string; office: { name: string; code: string }; isDirectAcquisition: boolean; requestType?: string };
+      quotations?: { supplier?: { name: string }; totalAmount: number }[];
     }
   };
   supplier?: { name: string };
@@ -39,14 +40,10 @@ export default function PurchaseOrdersPage() {
       render: (row: PO) => {
         const isDirect = row.pr?.isDirectAcquisition || row.abstract?.rfq?.pr?.isDirectAcquisition;
         const isJob = row.orderType === "JOB" || row.pr?.requestType === "JOB" || row.abstract?.rfq?.pr?.requestType === "JOB";
-        const linkedPrNumber = row.pr?.prNumber || row.abstract?.rfq?.pr?.prNumber;
         return (
           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
             <div style={{ fontWeight: "700", color: "#0f172a", fontFamily: "monospace", fontSize: "0.875rem" }}>
               {row.poNumber || <span style={{ color: "#94a3b8", fontStyle: "italic", fontWeight: 400 }}>No. not yet assigned</span>}
-            </div>
-            <div style={{ fontSize: "0.75rem", color: "#64748b" }}>
-              PR: {linkedPrNumber || <span style={{ color: "#94a3b8", fontStyle: "italic" }}>No. not yet assigned</span>}
             </div>
             <div className="flex flex-wrap gap-1">
               {isJob && (
@@ -68,11 +65,21 @@ export default function PurchaseOrdersPage() {
     {
       key: "supplier",
       label: "Supplier",
-      render: (row: PO) => (
-        <div style={{ fontWeight: "600", color: "#1e293b", fontSize: "0.875rem" }}>
-          {row.supplier ? row.supplier.name : <span className="text-amber-600 italic text-xs">Pending Award</span>}
-        </div>
-      ),
+      render: (row: PO) => {
+        let supplierName = row.supplier?.name;
+        if (!supplierName) {
+          const quotes = row.abstract?.rfq?.quotations?.filter((q: any) => (q.totalAmount || 0) > 0) || [];
+          if (quotes.length > 0) {
+            const lowest = quotes.reduce((prev: any, curr: any) => (prev.totalAmount < curr.totalAmount ? prev : curr));
+            supplierName = lowest?.supplier?.name;
+          }
+        }
+        return (
+          <div style={{ fontWeight: "600", color: "#1e293b", fontSize: "0.875rem" }}>
+            {supplierName ? supplierName : <span className="text-amber-600 italic text-xs">Pending Award</span>}
+          </div>
+        );
+      },
       width: "250px",
     },
     {
@@ -91,11 +98,21 @@ export default function PurchaseOrdersPage() {
       key: "totalAmount",
       label: "Amount",
       sortable: true,
-      render: (row: PO) => (
-        <div style={{ fontWeight: "700", color: "#059669" }}>
-          {formatCurrency(row.totalAmount)}
-        </div>
-      ),
+      render: (row: PO) => {
+        let amount = row.totalAmount;
+        if ((!amount || amount === 0) && row.abstract?.rfq?.quotations) {
+          const quotes = row.abstract.rfq.quotations.filter((q: any) => (q.totalAmount || 0) > 0);
+          if (quotes.length > 0) {
+            const lowest = quotes.reduce((prev: any, curr: any) => (prev.totalAmount < curr.totalAmount ? prev : curr));
+            if (lowest?.totalAmount > 0) amount = lowest.totalAmount;
+          }
+        }
+        return (
+          <div style={{ fontWeight: "700", color: "#059669" }}>
+            {formatCurrency(amount)}
+          </div>
+        );
+      },
       width: "130px",
     },
     {

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { requireRole } from "@/lib/auth-utils";
 import { syncRfqStatus } from "@/lib/rfq-status";
+import { syncAwardedSupplierToPO } from "@/lib/po-award-sync";
 
 export async function GET(
   req: NextRequest,
@@ -17,7 +18,7 @@ export async function GET(
   const { id } = await context.params;
 
   try {
-    const abstract = await prisma.abstractOfCanvass.findUnique({
+    const abstract = await (prisma as any).abstractOfCanvass.findUnique({
       where: { id },
       include: {
         createdBy: true,
@@ -85,52 +86,13 @@ export async function PATCH(
     if (reqOfficerOffice !== undefined) dataToUpdate.reqOfficerOffice = reqOfficerOffice;
     if (signatoriesData !== undefined) dataToUpdate.signatoriesData = signatoriesData;
 
-    if (status === "APPROVED") {
-      const abstractToApprove = await prisma.abstractOfCanvass.findUnique({
-        where: { id },
-        include: { rfq: { include: { quotations: { include: { lineItems: true } } } } }
-      });
-
-      if (abstractToApprove && abstractToApprove.rfq.quotations.length > 0) {
-        const validBids = abstractToApprove.rfq.quotations.filter((q: any) => q.totalAmount > 0);
-        if (validBids.length > 0) {
-          const lowestBid = validBids.reduce((prev: any, current: any) => (prev.totalAmount < current.totalAmount) ? prev : current);
-
-          const po = await prisma.purchaseOrder.findFirst({
-            where: { abstractId: id },
-            include: { lineItems: true }
-          });
-
-          if (po) {
-            await prisma.purchaseOrder.update({
-              where: { id: po.id },
-              data: {
-                supplierId: lowestBid.supplierId,
-                totalAmount: lowestBid.totalAmount
-              }
-            });
-
-            for (const poLine of po.lineItems) {
-              const quoteLine = lowestBid.lineItems.find((qli: any) => qli.sortOrder === poLine.sortOrder);
-              if (quoteLine) {
-                await prisma.poLineItem.update({
-                  where: { id: poLine.id },
-                  data: {
-                    unitPrice: quoteLine.unitPrice,
-                    totalPrice: quoteLine.totalPrice
-                  }
-                });
-              }
-            }
-          }
-        }
-      }
-    }
-
-    const updatedabstract = await prisma.abstractOfCanvass.update({
+    const updatedabstract = await (prisma as any).abstractOfCanvass.update({
       where: { id },
       data: dataToUpdate,
     });
+
+    // Automatically synchronize the awarded supplier and line items to the linked Purchase Order
+    await syncAwardedSupplierToPO(id);
 
     if (updatedabstract.rfqId) {
       await syncRfqStatus(updatedabstract.rfqId);

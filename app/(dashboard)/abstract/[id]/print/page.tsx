@@ -508,42 +508,71 @@ export default function AbstractLivePreviewPage() {
             <section>
               <h3 style={{ fontWeight: "800", color: "#0f172a", marginBottom: "1.25rem", fontSize: "1rem" }}>Abstract Details</h3>
 
-              {/* PR Number toggle */}
-              <div style={{ marginBottom: "1rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <label style={{ fontSize: "0.8125rem", fontWeight: "600", color: "#475569", cursor: "pointer" }} onClick={() => setShowPrNo(!showPrNo)}>
-                  Purchase Request No.
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setShowPrNo(!showPrNo)}
-                  style={{
-                    width: "44px", height: "24px", borderRadius: "12px",
-                    background: showPrNo ? "#10b981" : "#cbd5e1",
-                    position: "relative", border: "none", cursor: "pointer",
-                    transition: "background 0.3s",
-                    boxShadow: "inset 0 1px 3px rgba(0,0,0,0.1)"
-                  }}
-                >
-                  <div style={{
-                    width: "20px", height: "20px", borderRadius: "50%", background: "#fff",
-                    position: "absolute", top: "2px", left: showPrNo ? "22px" : "2px",
-                    transition: "left 0.3s", boxShadow: "0 1px 3px rgba(0,0,0,0.3)"
-                  }} />
-                </button>
+              {/* Document Numbering */}
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-3 mb-4">
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-bold text-slate-800">
+                      BAC Resolution No.
+                    </label>
+                  </div>
+                  <input
+                    type="text"
+                    value={bacResNo}
+                    onChange={e => setBacResNo(e.target.value)}
+                    placeholder="e.g. 2026-09-001"
+                    className="form-input font-mono font-bold text-sm bg-white"
+                  />
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    Leave blank if not yet assigned by custodian. Can be updated at any time.
+                  </p>
+                </div>
+
+                {/* Show/Hide PR Number on Document Toggle */}
+                <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+                  <label
+                    className="text-xs font-semibold text-slate-700 cursor-pointer select-none"
+                    onClick={() => setShowPrNo(!showPrNo)}
+                  >
+                    Print PR Number on document
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowPrNo(!showPrNo)}
+                    style={{
+                      width: "44px",
+                      height: "24px",
+                      borderRadius: "12px",
+                      background: showPrNo ? "#10b981" : "#cbd5e1",
+                      position: "relative",
+                      border: "none",
+                      cursor: "pointer",
+                      transition: "background 0.3s",
+                      boxShadow: "inset 0 1px 3px rgba(0,0,0,0.1)",
+                    }}
+                    title={showPrNo ? "Hide from document" : "Show on document"}
+                  >
+                    <div
+                      style={{
+                        width: "20px",
+                        height: "20px",
+                        borderRadius: "50%",
+                        background: "#fff",
+                        position: "absolute",
+                        top: "2px",
+                        left: showPrNo ? "22px" : "2px",
+                        transition: "left 0.3s",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+                      }}
+                    />
+                  </button>
+                </div>
               </div>
 
               {/* Document Date */}
               <div style={{ marginBottom: "1rem" }}>
                 <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: "600", color: "#475569", marginBottom: "0.375rem" }}>Date</label>
                 <input type="date" value={docDate} onChange={e => setDocDate(e.target.value)} className="form-input" style={{ width: "100%" }} />
-              </div>
-
-              {/* BAC Resolution No */}
-              <div>
-                <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: "600", color: "#475569", marginBottom: "0.375rem" }}>
-                  BAC Resolution No. <span style={{ fontWeight: "400", color: "#94a3b8" }}>(optional)</span>
-                </label>
-                <input type="text" value={bacResNo} onChange={e => setBacResNo(e.target.value)} className="form-input" style={{ width: "100%" }} placeholder="e.g. 2026-09-001" />
               </div>
             </section>
 

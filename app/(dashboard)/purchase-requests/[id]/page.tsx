@@ -46,7 +46,7 @@ export default function PurchaseRequestEditor() {
   const [zoom, setZoom] = useState(1);
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [targetRows, setTargetRows] = useState(21);
-  const [showPrNo, setShowPrNo] = useState(true);
+  const [showPrNo, setShowPrNo] = useState(false);
 
   // Options
   const [offices, setOffices] = useState<any[]>([]);
@@ -422,7 +422,7 @@ export default function PurchaseRequestEditor() {
                     <div className="flex"><span className="w-24 whitespace-nowrap">Section :</span> <span className="border-b border-black flex-1 text-center">{"\u00A0"}</span></div>
                   </div>
                   <div className="p-2 flex flex-col justify-between">
-                    <div className="flex mb-2"><span className="w-20">{isJob ? "JR No.:" : "PR No.:"}</span> <span className="border-b border-black flex-1 text-center font-bold">{showPrNo ? (watchAllFields.prNumber || prData?.prNumber || "") : ""}</span> <span className="w-12 ml-2">Date:</span> <span className="border-b border-black flex-1 text-center"></span></div>
+                    <div className="flex mb-2"><span className="w-20">{isJob ? "JR No.:" : "PR No.:"}</span> <span className="border-b border-black flex-1 text-center">{showPrNo ? (watchAllFields.prNumber || prData?.prNumber || "") : ""}</span> <span className="w-12 ml-2">Date:</span> <span className="border-b border-black flex-1 text-center"></span></div>
                     <div className="flex mb-2"><span className="w-20">SAI No.:</span> <span className="border-b border-black flex-1 text-center">{"\u00A0"}</span> <span className="w-12 ml-2">Date:</span> <span className="border-b border-black flex-1 text-center">{"\u00A0"}</span></div>
                     <div className="flex"><span className="w-20">ALOBS No.:</span> <span className="border-b border-black flex-1 text-center">{"\u00A0"}</span> <span className="w-12 ml-2">Date:</span> <span className="border-b border-black flex-1 text-center">{"\u00A0"}</span></div>
                   </div>
@@ -582,7 +582,7 @@ export default function PurchaseRequestEditor() {
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-xs font-bold text-slate-800">
-                      {isJob ? "JR Number (Optional)" : "PR Number (Optional)"}
+                      {isJob ? "JR Number" : "PR Number"}
                     </label>
                   </div>
                   <input

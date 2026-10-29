@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { requireRole } from "@/lib/auth-utils";
+import { syncAwardedSupplierToPO } from "@/lib/po-award-sync";
 
 export async function GET(req: NextRequest) {
   const roleCheck = await requireRole(["ANY"]);
@@ -41,6 +42,9 @@ export async function GET(req: NextRequest) {
               include: {
                 pr: {
                   select: { prNumber: true, purpose: true, office: true, isDirectAcquisition: true, requestType: true } as any
+                },
+                quotations: {
+                  include: { supplier: true }
                 }
               }
             }
@@ -49,6 +53,37 @@ export async function GET(req: NextRequest) {
       },
       orderBy: { createdAt: "desc" },
     });
+
+    // Auto-heal / sync any PO missing supplier if abstract has bids
+    const posToSync = pos.filter((p: any) => !p.supplierId && p.abstractId);
+    if (posToSync.length > 0) {
+      await Promise.all(posToSync.map((p: any) => syncAwardedSupplierToPO(p.abstractId)));
+      const refreshedPos = await prisma.purchaseOrder.findMany({
+        where: whereClause,
+        include: {
+          supplier: true,
+          pr: {
+            select: { prNumber: true, purpose: true, office: true, isDirectAcquisition: true, requestType: true } as any
+          },
+          abstract: {
+            include: {
+              rfq: {
+                include: {
+                  pr: {
+                    select: { prNumber: true, purpose: true, office: true, isDirectAcquisition: true, requestType: true } as any
+                  },
+                  quotations: {
+                    include: { supplier: true }
+                  }
+                }
+              }
+            }
+          }
+        },
+        orderBy: { createdAt: "desc" },
+      });
+      return NextResponse.json(refreshedPos);
+    }
 
     return NextResponse.json(pos);
   } catch (error) {

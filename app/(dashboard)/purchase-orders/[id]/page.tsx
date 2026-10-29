@@ -18,6 +18,7 @@ interface POFormValues {
   paymentTerms: string;
   modeOfProcurement: string; // We'll store this in remarks for now if schema doesn't have it, or just use static for demo
   orderType: string;
+  requestingOffice?: string;
 }
 
 export default function PurchaseOrderEditor() {
@@ -28,11 +29,12 @@ export default function PurchaseOrderEditor() {
   const [submitting, setSubmitting] = useState(false);
   const [poData, setPoData] = useState<any>(null);
   const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [offices, setOffices] = useState<any[]>([]);
 
   const [zoom, setZoom] = useState(0.85);
   const [targetRows, setTargetRows] = useState(10);
-  const [showPoNo, setShowPoNo] = useState(true);
-  const [showPrNo, setShowPrNo] = useState(true);
+  const [showPoNo, setShowPoNo] = useState(false);
+  const [showPrNo, setShowPrNo] = useState(false);
 
   const { register, handleSubmit, watch, reset, setValue } = useForm<POFormValues>({
     defaultValues: {
@@ -44,6 +46,7 @@ export default function PurchaseOrderEditor() {
       paymentTerms: "Full Payment",
       modeOfProcurement: "Small Value",
       orderType: "PURCHASE",
+      requestingOffice: "",
     }
   });
 
@@ -54,26 +57,47 @@ export default function PurchaseOrderEditor() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [poRes, supRes] = await Promise.all([
+        const [poRes, supRes, offRes] = await Promise.all([
           fetch(`/api/purchase-orders/${params.id}`),
-          fetch(`/api/suppliers`)
+          fetch(`/api/suppliers`),
+          fetch(`/api/offices`),
         ]);
+
+        if (offRes.ok) {
+          const allOffices = await offRes.json();
+          setOffices(allOffices);
+        }
 
         if (poRes.ok && supRes.ok) {
           const data = await poRes.json();
           setPoData(data);
-          setSuppliers(await supRes.json());
+          const allSups = await supRes.json();
+          setSuppliers(allSups);
 
+          // Find awarded quote if supplierId is not yet saved on po
+          const validQuotes = data.abstract?.rfq?.quotations?.filter((q: any) => (q.totalAmount || 0) > 0) || [];
+          const winningQuote = validQuotes.length > 0
+            ? validQuotes.reduce((prev: any, curr: any) => (prev.totalAmount < curr.totalAmount ? prev : curr))
+            : null;
+
+          const resolvedSupplierId = data.supplierId || winningQuote?.supplierId || "";
           const initialOrderType = data.orderType || data.abstract?.rfq?.pr?.requestType || data.pr?.requestType || "PURCHASE";
+          const defaultOffice =
+            data.remarks ||
+            data.abstract?.rfq?.pr?.office?.name ||
+            data.pr?.office?.name ||
+            "Municipal Civil Registrar";
+
           reset({
             poNumber: data.poNumber || "",
-            supplierId: data.supplierId || "",
+            supplierId: resolvedSupplierId,
             deliveryDate: data.deliveryDate ? new Date(data.deliveryDate).toISOString().split('T')[0] : "",
             placeOfDelivery: data.placeOfDelivery || "LGU-PANDAN",
             deliveryTerms: data.deliveryTerms || "Full Delivery",
             paymentTerms: data.paymentTerms || "Full Payment",
-            modeOfProcurement: "Small Value", // Mock field for template
+            modeOfProcurement: "Small Value",
             orderType: initialOrderType,
+            requestingOffice: defaultOffice,
           });
         } else {
           toast.error("Failed to load PO");
@@ -98,6 +122,7 @@ export default function PurchaseOrderEditor() {
         deliveryTerms: data.deliveryTerms,
         paymentTerms: data.paymentTerms,
         orderType: data.orderType || "PURCHASE",
+        requestingOffice: data.requestingOffice,
       };
 
       const res = await fetch(`/api/purchase-orders/${params.id}`, {
@@ -156,10 +181,18 @@ export default function PurchaseOrderEditor() {
   if (!poData) return <div className="p-8 text-center text-slate-500">PO not found</div>;
 
   const isReadOnly = poData.status === "COMPLETED";
-  const selectedSupplier = suppliers.find(s => s.id === watchAll.supplierId) || poData.supplier;
+
+  // Resolve awarded quote from abstract as fallback if po has not saved supplier yet
+  const validQuotes = poData.abstract?.rfq?.quotations?.filter((q: any) => (q.totalAmount || 0) > 0) || [];
+  const winningQuote = validQuotes.length > 0
+    ? validQuotes.reduce((prev: any, curr: any) => (prev.totalAmount < curr.totalAmount ? prev : curr))
+    : null;
+
+  const selectedSupplier = suppliers.find(s => s.id === watchAll.supplierId) || poData.supplier || winningQuote?.supplier;
+  const poTotalAmount = (poData.totalAmount && poData.totalAmount > 0) ? poData.totalAmount : (winningQuote?.totalAmount || 0);
 
   // Calculate exact PR number and ABC from nested relation if available
-  const linkedPrNumber = poData.abstract?.rfq?.pr?.prNumber || "PENDING";
+  const linkedPrNumber = poData.abstract?.rfq?.pr?.prNumber || poData.pr?.prNumber || "PENDING";
   const lineItems = poData.lineItems || [];
   const acceptances = poData.acceptances || [];
 
@@ -287,14 +320,24 @@ export default function PurchaseOrderEditor() {
 
                       const hasSpecs = !isSpec && idx + 1 < lineItems.length && (!lineItems[idx + 1].quantity || lineItems[idx + 1].quantity === 0);
 
+                      // Match price from winning quote if line item price on PO is not set yet
+                      const quoteLine = winningQuote?.lineItems?.find(
+                        (qli: any) =>
+                          qli.rfqLineItemId === item.id ||
+                          qli.rfqLineItem?.sortOrder === item.sortOrder ||
+                          qli.rfqLineItem?.description?.trim().toLowerCase() === item.description?.trim().toLowerCase()
+                      );
+                      const unitCost = item.unitPrice > 0 ? item.unitPrice : (quoteLine?.unitPrice || 0);
+                      const itemAmount = item.totalPrice > 0 ? item.totalPrice : (quoteLine?.totalPrice || (unitCost * (item.quantity || 0)));
+
                       return (
                         <tr key={idx}>
                           <td className="border-r border-black p-1 text-center">{displayNo}</td>
                           <td className="border-r border-black p-1 text-center">{isSpec ? "" : item.unit}</td>
                           <td className={`border-r border-black p-1 ${isSpec ? "pl-4 text-sm" : (hasSpecs ? "font-bold" : "")}`}>{item.description}</td>
                           <td className="border-r border-black p-1 text-center">{isSpec ? "" : item.quantity}</td>
-                          <td className="border-r border-black p-1 text-right">{isSpec ? "" : formatCurrency(item.unitPrice).replace('₱', '')}</td>
-                          <td className="p-1 text-right font-bold">{isSpec ? "" : formatCurrency(item.totalPrice).replace('₱', '')}</td>
+                          <td className="border-r border-black p-1 text-right">{isSpec ? "" : (unitCost > 0 ? formatCurrency(unitCost).replace('₱', '') : "")}</td>
+                          <td className="p-1 text-right font-bold">{isSpec ? "" : (itemAmount > 0 ? formatCurrency(itemAmount).replace('₱', '') : "")}</td>
                         </tr>
                       );
                     })}
@@ -314,7 +357,13 @@ export default function PurchaseOrderEditor() {
                     <tr>
                       <td className="border-r border-black"></td>
                       <td className="border-r border-black"></td>
-                      <td className="border-r border-black text-center font-bold italic py-4">Municipal Civil Registrar</td>
+                      <td className="border-r border-black text-center font-bold italic py-4">
+                        {watchAll.requestingOffice ||
+                          poData?.remarks ||
+                          poData?.abstract?.rfq?.pr?.office?.name ||
+                          poData?.pr?.office?.name ||
+                          "Municipal Civil Registrar"}
+                      </td>
                       <td className="border-r border-black"></td>
                       <td className="border-r border-black"></td>
                       <td></td>
@@ -327,8 +376,8 @@ export default function PurchaseOrderEditor() {
                     </tr>
                     <tr className="font-bold">
                       <td colSpan={2} className="p-1 px-1 text-left whitespace-nowrap text-[12px] tracking-tight">(Total Amount in Words)</td>
-                      <td colSpan={3} className="p-1 px-4 font-normal">{numberToWords(poData.totalAmount)}</td>
-                      <td className="p-1 text-right">{formatCurrency(poData.totalAmount).replace('₱', '')}</td>
+                      <td colSpan={3} className="p-1 px-4 font-normal">{poTotalAmount > 0 ? numberToWords(poTotalAmount) : ""}</td>
+                      <td className="p-1 text-right">{poTotalAmount > 0 ? formatCurrency(poTotalAmount).replace('₱', '') : ""}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -423,18 +472,33 @@ export default function PurchaseOrderEditor() {
                 </div>
               </div>
 
-              {/* Document Number Visibility Toggles */}
-              <div className="form-label">
-                Document Number
-              </div>
-              <div className="p-3 rounded-lg border border-slate-200/80 shadow-xs space-y-2.5">
+              {/* Document Numbering */}
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-bold text-slate-800">
+                      {isJob ? "JO Number" : "PO Number"}
+                    </label>
+                  </div>
+                  <input
+                    type="text"
+                    {...register("poNumber")}
+                    disabled={isReadOnly}
+                    placeholder="e.g. 26-01-001"
+                    className="form-input font-mono font-bold text-sm bg-white"
+                  />
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    Leave blank if not yet assigned by custodian. Can be updated at any time.
+                  </p>
+                </div>
 
-                <div className="flex items-center justify-between">
+                {/* Show/Hide Document Number on Document Toggle */}
+                <div className="flex items-center justify-between pt-2 border-t border-slate-200">
                   <label
-                    className="text-[13px] text-slate-700 cursor-pointer select-none"
+                    className="text-xs font-semibold text-slate-700 cursor-pointer select-none"
                     onClick={() => setShowPoNo(!showPoNo)}
                   >
-                    {isJob ? "Job Order No. (JO No.)" : "Purchase Order No. (PO No.)"}
+                    Print {isJob ? "JO Number" : "PO Number"} on document
                   </label>
                   <button
                     type="button"
@@ -468,12 +532,13 @@ export default function PurchaseOrderEditor() {
                   </button>
                 </div>
 
-                <div className="flex items-center justify-between border-t border-slate-100 pt-2">
+                {/* Show/Hide PR Number on Document Toggle */}
+                <div className="flex items-center justify-between pt-2 border-t border-slate-200">
                   <label
-                    className="text-[13px] text-slate-700 cursor-pointer select-none"
+                    className="text-xs font-semibold text-slate-700 cursor-pointer select-none"
                     onClick={() => setShowPrNo(!showPrNo)}
                   >
-                    {isJob ? "Job Request No. (JR No.)" : "Purchase Request No. (PR No.)"}
+                    Print {isJob ? "JR Number" : "PR Number"} on document
                   </label>
                   <button
                     type="button"
@@ -508,16 +573,27 @@ export default function PurchaseOrderEditor() {
                 </div>
               </div>
 
+              {/* Requesting Office / Department */}
               <div>
-                <label className="form-label">{isJob ? "JO Number" : "PO Number"}</label>
-                <input
-                  type="text"
-                  {...register("poNumber")}
-                  disabled={isReadOnly}
-                  className="form-input font-mono"
-                  placeholder="e.g. 26-01-001 (or leave blank)"
-                />
-                <p className="text-[10px] text-slate-500 mt-1">Custodial control number (optional, can be updated at any time).</p>
+                <label className="form-label">Requesting Office / Department</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    list="po-office-list"
+                    {...register("requestingOffice")}
+                    disabled={isReadOnly}
+                    className="form-input font-bold text-sm bg-white"
+                    placeholder="e.g. Municipal Civil Registrar"
+                  />
+                  <datalist id="po-office-list">
+                    {offices.map((o) => (
+                      <option key={o.id} value={o.name} />
+                    ))}
+                  </datalist>
+                </div>
+                <p className="text-[10px] text-slate-500 mt-1">
+                  Shown in the table footer. Defaults from the requesting office in the PR and can be changed anytime.
+                </p>
               </div>
 
               <div>
@@ -591,7 +667,7 @@ export default function PurchaseOrderEditor() {
           <div style={{ padding: "1rem", background: "var(--color-page-bg)", borderTop: "1px solid #e2e8f0", position: "sticky", bottom: 0, boxShadow: "0 -2px 8px rgba(163,177,198,0.2)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontWeight: "800", fontSize: "1rem", color: "#0f172a" }}>
               <span>{isJob ? "JO Total:" : "PO Total:"}</span>
-              <span style={{ color: "#059669" }}>{formatCurrency(poData.totalAmount)}</span>
+              <span style={{ color: "#059669" }}>{formatCurrency(poTotalAmount)}</span>
             </div>
           </div>
         </div>

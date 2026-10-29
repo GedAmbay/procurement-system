@@ -118,6 +118,9 @@ export async function PATCH(
     if (body.deadline !== undefined) {
       dataToUpdate.deadline = body.deadline ? new Date(body.deadline) : null;
     }
+    if (body.rfqNumber !== undefined) {
+      dataToUpdate.rfqNumber = body.rfqNumber ? body.rfqNumber.trim() : null;
+    }
     if (body.remarks !== undefined) {
       dataToUpdate.remarks = body.remarks ? body.remarks : null;
     }

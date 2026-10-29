@@ -72,9 +72,6 @@ export default function RFQPage() {
           <div style={{ fontWeight: "700", color: "#0f172a", fontFamily: "monospace", fontSize: "0.875rem" }}>
             {row.rfqNumber || <span style={{ color: "#94a3b8", fontStyle: "italic", fontWeight: 400 }}>No. not yet assigned</span>}
           </div>
-          <div style={{ fontSize: "0.75rem", color: "#64748b" }}>
-            PR: {row.pr?.prNumber || <span style={{ color: "#94a3b8", fontStyle: "italic" }}>No. not yet assigned</span>}
-          </div>
         </div>
       ),
       width: "180px",

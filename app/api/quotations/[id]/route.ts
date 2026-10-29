@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { requireRole } from "@/lib/auth-utils";
 import { syncRfqStatus } from "@/lib/rfq-status";
+import { syncAwardedSupplierByRfq } from "@/lib/po-award-sync";
 
 export async function GET(
   req: NextRequest,
@@ -82,6 +83,9 @@ export async function PATCH(
 
       // 3. Automatically synchronize RFQ status based on supplier quotations completion
       await syncRfqStatus(updatedQuotation.rfqId, tx);
+
+      // 4. Automatically synchronize awarded supplier and pricing to Purchase Order
+      await syncAwardedSupplierByRfq(updatedQuotation.rfqId, tx);
 
       return updatedQuotation;
     });

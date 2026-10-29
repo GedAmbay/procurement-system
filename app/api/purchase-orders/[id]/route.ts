@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { requireRole } from "@/lib/auth-utils";
+import { syncAwardedSupplierToPO } from "@/lib/po-award-sync";
 
 export async function GET(
   req: NextRequest,
@@ -31,6 +32,12 @@ export async function GET(
               include: {
                 pr: {
                   include: { office: true }
+                },
+                quotations: {
+                  include: {
+                    supplier: true,
+                    lineItems: true,
+                  }
                 }
               }
             }
@@ -45,6 +52,45 @@ export async function GET(
     });
 
     if (!po) return NextResponse.json({ error: "PO not found" }, { status: 404 });
+
+    // Auto-sync supplier if not assigned yet and abstract has quotations
+    if (!po.supplierId && po.abstractId) {
+      await syncAwardedSupplierToPO(po.abstractId);
+      const refreshedPo = await prisma.purchaseOrder.findUnique({
+        where: { id },
+        include: {
+          createdBy: true,
+          supplier: true,
+          lineItems: { orderBy: { sortOrder: "asc" } },
+          pr: {
+            include: { office: true }
+          },
+          abstract: {
+            include: {
+              rfq: {
+                include: {
+                  pr: {
+                    include: { office: true }
+                  },
+                  quotations: {
+                    include: {
+                      supplier: true,
+                      lineItems: true,
+                    }
+                  }
+                }
+              }
+            }
+          },
+          acceptances: {
+            include: {
+              lineItems: true
+            }
+          }
+        },
+      });
+      return NextResponse.json(refreshedPo || po);
+    }
 
     return NextResponse.json(po);
   } catch (error) {
@@ -97,6 +143,7 @@ export async function PATCH(
         deliveryDate: body.deliveryDate ? new Date(body.deliveryDate) : po.deliveryDate,
         deliveryTerms: body.deliveryTerms !== undefined ? body.deliveryTerms : po.deliveryTerms,
         paymentTerms: body.paymentTerms !== undefined ? body.paymentTerms : po.paymentTerms,
+        remarks: body.requestingOffice !== undefined ? body.requestingOffice : (body.remarks !== undefined ? body.remarks : po.remarks),
       } as any,
     });
 
