@@ -2,10 +2,11 @@
 
 import { signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
-import { Bell, LogOut, ChevronDown, User } from "lucide-react";
+import { Bell, LogOut, ChevronDown, User, PanelLeft } from "lucide-react";
 import { ROLE_LABELS } from "@/lib/utils";
 import { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
+import { useSidebar } from "@/components/layout/sidebar-context";
 
 interface TopbarProps {
   user: {
@@ -36,6 +37,7 @@ const pageTitles: Record<string, string> = {
 
 export default function Topbar({ user }: TopbarProps) {
   const pathname = usePathname();
+  const { isEditor, isRail, isOverlayOpen, toggleOverlay, toggleButtonRef } = useSidebar();
   const [showMenu, setShowMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -80,8 +82,22 @@ export default function Topbar({ user }: TopbarProps) {
 
   return (
     <div className="topbar">
-      <div>
-        <h1 style={{ fontSize: "1.75rem", fontWeight: "900", color: "#0f172a", marginLeft: "10px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+        {(isEditor || isRail) && (
+          <button
+            ref={toggleButtonRef}
+            type="button"
+            onClick={toggleOverlay}
+            aria-label={isOverlayOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-expanded={isOverlayOpen}
+            aria-controls="primary-sidebar"
+            className="w-9 h-9 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 flex items-center justify-center text-slate-700 hover:text-slate-900 transition-colors shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 shrink-0"
+            title={isOverlayOpen ? "Close navigation menu" : "Open navigation menu"}
+          >
+            <PanelLeft size={18} />
+          </button>
+        )}
+        <h1 style={{ fontSize: "1.75rem", fontWeight: "900", color: "#0f172a", marginLeft: (isEditor || isRail) ? "0" : "10px" }}>
           {getTitle()}
         </h1>
       </div>

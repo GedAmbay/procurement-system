@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { purchaseRequestSchema } from "@/lib/zod-schemas";
 import { requireRole } from "@/lib/auth-utils";
 import { normalizePrNumber, deriveRfqNumber, fiscalYearFromPrNumber } from "@/lib/utils";
+import { syncAllRfqsForPr } from "@/lib/rfq-status";
 export async function GET(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -132,7 +133,7 @@ export async function PATCH(
       }
 
       // 5. Update PR and create new line items
-      return await tx.purchaseRequest.update({
+      const updated = await tx.purchaseRequest.update({
         where: { id },
         data: {
           prNumber: newPrNumber,
@@ -159,6 +160,11 @@ export async function PATCH(
         } as any,
         include: { lineItems: true },
       });
+
+      // 6. Synchronize linked RFQs with updated PR line items
+      await syncAllRfqsForPr(id, tx);
+
+      return updated;
     });
 
     return NextResponse.json(updatedPR);

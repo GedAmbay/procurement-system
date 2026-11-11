@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { requireRole } from "@/lib/auth-utils";
-import { syncRfqStatus } from "@/lib/rfq-status";
+import { syncRfqStatus, syncRfqItemsWithPr } from "@/lib/rfq-status";
 
 export async function GET(
   req: NextRequest,
@@ -17,6 +17,9 @@ export async function GET(
   const { id } = await context.params;
 
   try {
+    // Synchronize RFQ line items with PR if items changed
+    await syncRfqItemsWithPr(id);
+
     // Synchronize RFQ status with supplier quotations progress
     await syncRfqStatus(id);
 

@@ -1,9 +1,7 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import Sidebar from "@/components/layout/sidebar";
-import Topbar from "@/components/layout/topbar";
-
-import Breadcrumb from "@/components/layout/breadcrumb";
+import { SidebarProvider } from "@/components/layout/sidebar-context";
+import DashboardShell from "@/components/layout/dashboard-shell";
 
 export default async function DashboardLayout({
   children,
@@ -14,17 +12,10 @@ export default async function DashboardLayout({
   if (!session) redirect("/login");
 
   return (
-    <div style={{ display: "flex", minHeight: "var(--full-vh)", background: "#f8fafc" }}>
-      <Sidebar user={session.user as any} />
-      <div className="main-content" style={{ flex: 1 }}>
-        <Topbar user={session.user as any} />
-        <main className="page-content" style={{ display: "flex", flexDirection: "column" }}>
-          <div>
-            <Breadcrumb />
-          </div>
-          {children}
-        </main>
-      </div>
-    </div>
+    <SidebarProvider>
+      <DashboardShell user={session.user as any}>
+        {children}
+      </DashboardShell>
+    </SidebarProvider>
   );
 }

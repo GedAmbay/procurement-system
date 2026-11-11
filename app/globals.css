@@ -76,8 +76,47 @@
   left: 0;
   bottom: 0;
   z-index: 40;
-  transition: transform 0.3s ease;
+  transition: width 200ms ease, transform 200ms ease;
   box-shadow: 4px 0 24px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar.is-rail {
+  width: 72px;
+}
+
+.sidebar.is-rail .sidebar-nav {
+  padding: 1rem 0.5rem;
+}
+
+.sidebar.is-rail .sidebar-nav-item {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 0.5rem auto;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+}
+
+.sidebar.is-rail .sidebar-nav-item.active {
+  background-color: #2563eb;
+  color: #ffffff;
+  margin-right: auto;
+  padding-right: 0;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+}
+
+.sidebar.is-rail .sidebar-nav-item::before,
+.sidebar.is-rail .sidebar-nav-item::after {
+  display: none !important;
+}
+
+.sidebar.is-overlay {
+  width: 260px;
+  z-index: 50;
+  box-shadow: 8px 0 36px rgba(0, 0, 0, 0.4);
 }
 
 .sidebar-logo {
@@ -266,12 +305,13 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-
+  .sidebar,
+  .main-content,
   .sidebar-nav-item,
   .sidebar-nav-chevron,
   .sidebar-submenu,
   .sidebar-submenu-link {
-    transition: none;
+    transition: none !important;
   }
 }
 
@@ -279,8 +319,14 @@
 .main-content {
   margin-left: 260px;
   min-height: var(--full-vh);
+  min-width: 0;
   display: flex;
   flex-direction: column;
+  transition: margin-left 200ms ease;
+}
+
+.main-content.is-rail {
+  margin-left: 72px;
 }
 
 .topbar {
@@ -301,6 +347,7 @@
 
 .page-content {
   flex: 1;
+  min-width: 0;
   padding: 1.5rem 2rem;
 }
 
@@ -473,11 +520,10 @@ thead {
 }
 
 thead th {
-  padding: 5px;
   font-size: 0.8125rem;
   font-weight: 600;
   color: #000000;
-  font-family: "Times New Roman", Times, serif;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
 tbody tr {
@@ -491,7 +537,7 @@ tbody tr:hover {
 tbody td {
   color: #000000;
   vertical-align: middle;
-  font-family: "Arial", sans-serif;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
 /* ─── Data Tables ──────────────────────────────────────────────────────────── */
@@ -512,7 +558,7 @@ tbody td {
   font-size: 0.8125rem;
   font-weight: 500;
   color: #64748b;
-  font-family: var(--font-sans);
+  font-family: Arial, Helvetica, sans-serif;
   border-bottom: 2px solid rgba(203, 213, 225, 0.4);
   text-align: left;
 }
@@ -711,20 +757,31 @@ tbody td {
     transform: translateX(-100%);
   }
 
-  .sidebar.open {
+  .sidebar.open,
+  .sidebar.is-overlay-open {
+    transform: translateX(0);
+    width: 260px !important;
+  }
+
+  .sidebar.is-rail {
+    transform: translateX(-100%);
+    width: 260px;
+  }
+
+  .sidebar.is-rail.is-overlay-open {
     transform: translateX(0);
   }
 
-  .main-content {
+  .main-content,
+  .main-content.is-rail {
     margin-left: 0;
   }
 }
 
 /* ─── Universal Print styles ─────────────────────────────────────────────────── */
 @page {
-  margin: 30px !important;
-  margin-top: 50px !important;
-  margin-bottom: 15px !important;
+  size: A4 portrait;
+  margin: 0 !important;
 }
 
 @media print {
@@ -751,6 +808,7 @@ tbody td {
     print-color-adjust: exact !important;
   }
 
+  .dashboard-container,
   .main-content,
   .page-content {
     margin: 0 !important;
@@ -758,6 +816,9 @@ tbody td {
     width: 100% !important;
     max-width: 100% !important;
     display: block !important;
+    background: white !important;
+    min-height: 0 !important;
+    height: auto !important;
   }
 
   /* Universal reset for on-screen zoom preview wrappers */
@@ -773,18 +834,35 @@ tbody td {
     max-width: 100% !important;
   }
 
-  /* Universal document sheet: strips all screen padding/margins and shadows so the document border sits directly on the printer margin */
+  /* Universal document sheet: strips screen shadows and preserves locked canvas */
   .print-area,
   .print-sheet,
+  .abstract-print-sheet {
+    box-shadow: none !important;
+    border: none !important;
+    min-height: 0 !important;
+    background: white !important;
+  }
+
+  /* Fixed locked printable width for portrait documents so print scaling behaves like Microsoft Excel / picture-type scaling without breaking layout, font reflow, or side margins */
+  .print-area:not(.abstract-print-sheet),
+  .print-sheet:not(.abstract-print-sheet) {
+    width: 890px !important;
+    min-width: 890px !important;
+    max-width: 890px !important;
+    padding: 40px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    box-sizing: border-box !important;
+  }
+
   .abstract-print-sheet {
     padding: 0 !important;
     margin: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
-    box-shadow: none !important;
-    border: none !important;
-    min-height: 0 !important;
-    background: white !important;
   }
 
   table {

@@ -389,7 +389,7 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
               <thead>
                 <tr>
                   {columns.map((col) => (
-                    <th key={col.key} style={{ width: col.width, textAlign: (col.align || "left") as any }}>
+                    <th key={col.key} style={{ width: col.width, textAlign: (col.align || "left") as any, fontFamily: "Arial, Helvetica, sans-serif" }}>
                       <div style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem" }}>
                         {col.label}
                         {col.sortable && (

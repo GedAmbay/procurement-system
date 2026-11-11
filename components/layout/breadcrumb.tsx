@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { isEditorRoute } from "@/lib/route-utils";
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -25,6 +26,11 @@ const pageTitles: Record<string, string> = {
 export default function Breadcrumb() {
   const pathname = usePathname();
 
+  // Do not show breadcrumbs on editor / live-preview routes
+  if (isEditorRoute(pathname)) {
+    return null;
+  }
+
   // Do not show breadcrumb on top-level pages
   const segments = pathname.split("/").filter(Boolean);
   if (segments.length <= 1) return null;
@@ -37,7 +43,7 @@ export default function Breadcrumb() {
 
   const rootPath = `/${segments[0]}`;
   const rootTitle = pageTitles[rootPath] || "ProcureEase";
-  
+
   const crumbs = [{ label: rootTitle, href: rootPath }];
 
   if (segments[0] === "abstract") {
@@ -47,9 +53,9 @@ export default function Breadcrumb() {
     }
   } else if (segments[0] === "acceptances") {
     if (segments[1] === "hub") {
-       crumbs.push({ label: "Delivery Hub", href: pathname });
+      crumbs.push({ label: "Delivery Hub", href: pathname });
     } else {
-       crumbs.push({ label: "Live Preview", href: pathname });
+      crumbs.push({ label: "Live Preview", href: pathname });
     }
   } else if (segments[0] === "archives") {
     if (segments.length === 2) crumbs.push({ label: "Department Folders", href: pathname });
@@ -63,11 +69,11 @@ export default function Breadcrumb() {
     <div className="print:hidden flex items-center gap-2 mb-4 text-sm font-semibold">
       {crumbs.map((crumb, index, arr) => (
         <div key={index} style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <Link 
-            href={crumb.href} 
-            style={{ 
-              color: index === arr.length - 1 ? "#1e293b" : "#64748b", 
-              textDecoration: "none" 
+          <Link
+            href={crumb.href}
+            style={{
+              color: index === arr.length - 1 ? "#1e293b" : "#64748b",
+              textDecoration: "none"
             }}
           >
             {crumb.label}
