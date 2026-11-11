@@ -5,6 +5,7 @@ import { Users, CheckCircle2, XCircle, Shield, Building2, Pencil, Trash2, UserX,
 import DataTable from "@/components/ui/data-table";
 import FormModal from "@/components/ui/form-modal";
 import ConfirmModal from "@/components/ui/confirm-modal";
+import StatusBadge from "@/components/ui/status-badge";
 import { toast } from "sonner";
 import { ROLE_LABELS } from "@/lib/utils";
 import { useSession } from "next-auth/react";
@@ -281,42 +282,7 @@ export default function UsersPage() {
       label: "Status",
       align: "center",
       width: "11%",
-      render: (row: User) =>
-        row.isActive ? (
-          <span
-            className="badge"
-            style={{
-              background: "#f0fdf4",
-              color: "#16a34a",
-              border: "1px solid #bbf7d0",
-              padding: "0.25rem 0.625rem",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "4px",
-              fontSize: "0.75rem",
-              fontWeight: 600,
-            }}
-          >
-            <CheckCircle2 size={12} /> Active
-          </span>
-        ) : (
-          <span
-            className="badge"
-            style={{
-              background: "#fef2f2",
-              color: "#dc2626",
-              border: "1px solid #fecaca",
-              padding: "0.25rem 0.625rem",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "4px",
-              fontSize: "0.75rem",
-              fontWeight: 600,
-            }}
-          >
-            <XCircle size={12} /> Inactive
-          </span>
-        ),
+      render: (row: User) => <StatusBadge status={row.isActive} />,
     },
     {
       key: "createdAt",

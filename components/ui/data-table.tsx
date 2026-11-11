@@ -1,12 +1,27 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { Search, Plus, Pencil, Trash2, CheckCircle, XCircle, Loader2, RefreshCw, Eye, Copy, X, Calendar } from "lucide-react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import {
+  Search,
+  Plus,
+  Pencil,
+  Trash2,
+  CheckCircle,
+  Loader2,
+  RotateCw,
+  Eye,
+  Copy,
+  X,
+  Calendar,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import LoaderWave from "@/components/ui/loader-wave";
 import ConfirmModal from "@/components/ui/confirm-modal";
 import { toast } from "sonner";
 
-interface Column<T> {
+export interface Column<T> {
   key: string;
   label: React.ReactNode;
   render?: (row: T) => React.ReactNode;
@@ -15,13 +30,14 @@ interface Column<T> {
   sortable?: boolean;
 }
 
-interface DataTableProps<T extends { id: string; isActive?: boolean }> {
+export interface DataTableProps<T extends { id: string; isActive?: boolean }> {
   title: string;
   description?: string;
   apiPath: string;
   columns: Column<T>[];
   searchPlaceholder?: string;
   onAdd?: () => void;
+  addLabel?: string;
   onView?: (row: T) => void;
   onEdit?: (row: T) => void;
   onRowDoubleClick?: (row: T) => void;
@@ -54,6 +70,7 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
   columns,
   searchPlaceholder = "Search...",
   onAdd,
+  addLabel,
   onView,
   onEdit,
   onRowDoubleClick,
@@ -77,47 +94,40 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [deleting, setDeleting] = useState<string | null>(null);
-  const [selectedRow, setSelectedRow] = useState<T | null>(null);
-  const [showActionBar, setShowActionBar] = useState(false);
-  const [isClosing, setIsClosing] = useState(false);
-  const actionBarRef = useRef<HTMLDivElement>(null);
+
+  // Selection states
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [showMoreActions, setShowMoreActions] = useState(false);
+
+  // Filter & Sort states
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [activeCustomFilter, setActiveCustomFilter] = useState<string | null>(null);
-  const [sortConfig, setSortConfig] = useState<{ key: string, direction: "asc" | "desc" } | null>(null);
-  const [dateRange, setDateRange] = useState<{ start: string, end: string } | null>(null);
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
+  const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: "", end: "" });
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [rowToDelete, setRowToDelete] = useState<T | null>(null);
 
+  const datePickerRef = useRef<HTMLDivElement>(null);
+  const moreActionsRef = useRef<HTMLDivElement>(null);
+
+  // Close popovers on click outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (actionBarRef.current && !actionBarRef.current.contains(event.target as Node)) {
-        setSelectedRow(null);
+      const target = event.target as Node;
+      if (datePickerRef.current && !datePickerRef.current.contains(target)) {
+        setShowDatePicker(false);
+      }
+      if (moreActionsRef.current && !moreActionsRef.current.contains(target)) {
+        setShowMoreActions(false);
       }
     }
-    if (showActionBar) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [showActionBar]);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
-  useEffect(() => {
-    if (selectedRow) {
-      setShowActionBar(true);
-      setIsClosing(false);
-    } else if (showActionBar) {
-      setIsClosing(true);
-      const timer = setTimeout(() => {
-        setShowActionBar(false);
-        setIsClosing(false);
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-  }, [selectedRow, showActionBar]);
-
+  // Fetch data
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -126,7 +136,7 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
       if (!res.ok) throw new Error("Failed to fetch");
       const json = await res.json();
       setData(json);
-    } catch (e) {
+    } catch {
       toast.error("Failed to load data");
     } finally {
       setLoading(false);
@@ -138,55 +148,100 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
     return () => clearTimeout(t);
   }, [fetchData]);
 
+  // Reset page when search or tab filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, activeFilter]);
+  }, [search, activeFilter, activeCustomFilter, dateRange, itemsPerPage]);
 
-  const filteredData = data.filter(row => {
-    // Tab Filter
-    if (filterKey && activeFilter && row[filterKey] !== activeFilter) return false;
-    
-    // Date Filter
-    if (dateFilterKey && dateRange && dateRange.start && dateRange.end) {
-      const rowDate = new Date(row[dateFilterKey] as any);
-      const startDate = new Date(dateRange.start);
-      startDate.setHours(0, 0, 0, 0);
-      const endDate = new Date(dateRange.end);
-      endDate.setHours(23, 59, 59, 999);
-      if (rowDate < startDate || rowDate > endDate) return false;
-    }
+  // Client filtering
+  const filteredData = useMemo(() => {
+    return data.filter((row) => {
+      // Tab Filter
+      if (filterKey && activeFilter !== null && row[filterKey] !== activeFilter) {
+        return false;
+      }
 
-    // Custom Filter
-    if (activeCustomFilter && customFilters) {
-      const filter = customFilters.find(f => f.label === activeCustomFilter);
-      if (filter && !filter.filterFn(row)) return false;
-    }
+      // Date Filter
+      if (dateFilterKey) {
+        if (dateRange.start) {
+          const rowDate = new Date(row[dateFilterKey] as any).getTime();
+          const startDate = new Date(dateRange.start).setHours(0, 0, 0, 0);
+          if (rowDate < startDate) return false;
+        }
+        if (dateRange.end) {
+          const rowDate = new Date(row[dateFilterKey] as any).getTime();
+          const endDate = new Date(dateRange.end).setHours(23, 59, 59, 999);
+          if (rowDate > endDate) return false;
+        }
+      }
 
-    return true;
-  });
+      // Custom Filter
+      if (activeCustomFilter && customFilters) {
+        const filter = customFilters.find((f) => f.label === activeCustomFilter);
+        if (filter && !filter.filterFn(row)) return false;
+      }
 
-  const sortedData = [...filteredData].sort((a, b) => {
-    if (!sortConfig) return 0;
-    const aValue = a[sortConfig.key as keyof T];
-    const bValue = b[sortConfig.key as keyof T];
-    if (aValue === bValue) return 0;
-    if (aValue === null || aValue === undefined) return 1;
-    if (bValue === null || bValue === undefined) return -1;
-    
-    if (typeof aValue === 'string' && typeof bValue === 'string') {
-      return sortConfig.direction === 'asc' 
-        ? aValue.localeCompare(bValue) 
-        : bValue.localeCompare(aValue);
-    }
-    
-    if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
-    if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
-    return 0;
-  });
+      return true;
+    });
+  }, [data, filterKey, activeFilter, dateFilterKey, dateRange, activeCustomFilter, customFilters]);
 
+  // Sorting
+  const sortedData = useMemo(() => {
+    if (!sortConfig) return filteredData;
+    return [...filteredData].sort((a, b) => {
+      const aValue = a[sortConfig.key as keyof T];
+      const bValue = b[sortConfig.key as keyof T];
+      if (aValue === bValue) return 0;
+      if (aValue === null || aValue === undefined) return 1;
+      if (bValue === null || bValue === undefined) return -1;
+
+      if (typeof aValue === "string" && typeof bValue === "string") {
+        return sortConfig.direction === "asc"
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      }
+
+      if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
+      if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [filteredData, sortConfig]);
+
+  // Pagination
   const totalPages = Math.max(1, Math.ceil(sortedData.length / itemsPerPage));
-  const paginatedData = sortedData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const paginatedData = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return sortedData.slice(start, start + itemsPerPage);
+  }, [sortedData, currentPage, itemsPerPage]);
 
+  // Selection handlers
+  const isAllSelected =
+    paginatedData.length > 0 &&
+    paginatedData.every((r) => selectedIds.includes(r.id));
+
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      const pageIds = new Set(paginatedData.map((r) => r.id));
+      setSelectedIds((prev) => prev.filter((id) => !pageIds.has(id)));
+    } else {
+      const combined = new Set([...selectedIds, ...paginatedData.map((r) => r.id)]);
+      setSelectedIds(Array.from(combined));
+    }
+  };
+
+  const toggleSelectOne = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  // Find first selected row for action bar single-row actions
+  const firstSelectedRow = useMemo(() => {
+    if (selectedIds.length === 0) return null;
+    return data.find((r) => r.id === selectedIds[0]) || null;
+  }, [data, selectedIds]);
+
+  // Delete handler
   const confirmDelete = async () => {
     if (!onDelete || !rowToDelete) return;
     setDeleting(rowToDelete.id);
@@ -195,6 +250,7 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
     try {
       await onDelete(row);
       toast.success(deleteSuccessToast || "Record deleted successfully");
+      setSelectedIds((prev) => prev.filter((id) => id !== row.id));
       fetchData();
     } catch (e: any) {
       toast.error(e.message || "Failed to delete record");
@@ -203,396 +259,557 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
     }
   };
 
-  const renderDateFilter = () => {
-    if (!dateFilterKey) return null;
-    return (
-      <div style={{ position: "relative" }}>
+  const handleBulkDelete = async () => {
+    if (!onDelete || selectedIds.length === 0) return;
+    if (!confirm(`Are you sure you want to delete ${selectedIds.length} selected record(s)?`)) return;
+    try {
+      for (const id of selectedIds) {
+        const item = data.find((d) => d.id === id);
+        if (item) await onDelete(item);
+      }
+      toast.success(`Deleted ${selectedIds.length} record(s)`);
+      setSelectedIds([]);
+      setShowMoreActions(false);
+      fetchData();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to delete selected records");
+    }
+  };
+
+  const hasRowActions = !!(
+    onView ||
+    onEdit ||
+    onDuplicate ||
+    onDelete ||
+    (customActions && customActions.length > 0)
+  );
+
+  return (
+    <div className="w-full max-w-full min-w-0 pb-20">
+      {/* ─── Filter & Action Controls Bar ─── */}
+      <div className="flex flex-wrap items-center gap-2.5 mb-5">
+        {/* Search Input */}
+        <div className="relative flex-1 min-w-[260px] max-w-[440px]">
+          <Search
+            size={16}
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+          />
+          <input
+            type="text"
+            placeholder={searchPlaceholder}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 placeholder:text-slate-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition shadow-sm"
+          />
+        </div>
+
+        {/* Refresh Button */}
         <button
-          onClick={() => setShowDatePicker(!showDatePicker)}
-          style={{
-            display: "flex", alignItems: "center", gap: "0.5rem",
-            background: "#ffffff", border: "1px solid #e2e8f0", padding: "0.4rem 0.75rem",
-            borderRadius: "9999px", fontSize: "0.8125rem", color: "#334155", fontWeight: "600",
-            cursor: "pointer", boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
-          }}
+          type="button"
+          onClick={fetchData}
+          title="Refresh list"
+          className="h-11 w-11 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 flex items-center justify-center shadow-sm transition-colors shrink-0"
         >
-          <Calendar size={14} color="#475569" />
-          {dateRange?.start && dateRange?.end ? (
-            `${new Date(dateRange.start).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} - ${new Date(dateRange.end).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
-          ) : (
-            "Filter by Date"
-          )}
-          {dateRange && (
-            <X size={12} style={{ marginLeft: "0.25rem", opacity: 0.5 }} onClick={(e) => { e.stopPropagation(); setDateRange(null); }} />
-          )}
+          <RotateCw size={15} className={loading ? "animate-spin" : ""} />
         </button>
 
-        {showDatePicker && (
-          <div style={{
-            position: "absolute", top: "100%", right: 0, marginTop: "0.5rem",
-            background: "white", padding: "1rem", borderRadius: "0.5rem",
-            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-            border: "1px solid #e2e8f0", zIndex: 50, width: "250px"
-          }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-              <div>
-                <label style={{ display: "block", fontSize: "0.75rem", color: "#64748b", marginBottom: "0.25rem", fontWeight: "500" }}>Start Date</label>
-                <input 
-                  type="date" 
-                  value={dateRange?.start || ""}
-                  onChange={(e) => setDateRange(prev => ({ start: e.target.value, end: prev?.end || "" }))}
-                  style={{ width: "100%", padding: "0.375rem 0.5rem", borderRadius: "0.375rem", border: "1px solid #cbd5e1", fontSize: "0.875rem" }} 
-                />
+        {/* Date Filter Dropdown */}
+        {dateFilterKey && (
+          <div className="relative" ref={datePickerRef}>
+            <button
+              type="button"
+              onClick={() => setShowDatePicker((prev) => !prev)}
+              className={`h-11 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm font-medium flex items-center gap-2 shadow-sm transition-colors whitespace-nowrap ${
+                dateRange.start || dateRange.end
+                  ? "text-blue-600 border-blue-200 bg-blue-50/50"
+                  : "text-slate-700"
+              }`}
+            >
+              <Calendar
+                size={15}
+                className={dateRange.start || dateRange.end ? "text-blue-600" : "text-slate-500"}
+              />
+              <span>
+                {dateRange.start
+                  ? `${new Date(dateRange.start).toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${
+                      dateRange.end
+                        ? new Date(dateRange.end).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                        : "..."
+                    }`
+                  : "Filter by date"}
+              </span>
+              <ChevronDown size={14} className="text-slate-400" />
+            </button>
+
+            {showDatePicker && (
+              <div className="absolute top-full left-0 mt-2 z-30 w-72 bg-white rounded-2xl shadow-xl border border-slate-200/80 p-4 animate-in fade-in zoom-in-95 duration-150">
+                <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-100">
+                  <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Date Range
+                  </span>
+                  {(dateRange.start || dateRange.end) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDateRange({ start: "", end: "" });
+                        setShowDatePicker(false);
+                      }}
+                      className="text-xs text-blue-600 hover:underline font-semibold"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                      From
+                    </label>
+                    <input
+                      type="date"
+                      value={dateRange.start}
+                      onChange={(e) =>
+                        setDateRange((prev) => ({ ...prev, start: e.target.value }))
+                      }
+                      className="w-full h-9 px-3 text-xs rounded-lg border border-slate-200 text-slate-700 outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                      To
+                    </label>
+                    <input
+                      type="date"
+                      value={dateRange.end}
+                      onChange={(e) =>
+                        setDateRange((prev) => ({ ...prev, end: e.target.value }))
+                      }
+                      className="w-full h-9 px-3 text-xs rounded-lg border border-slate-200 text-slate-700 outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowDatePicker(false)}
+                    className="w-full mt-2 h-9 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition"
+                  >
+                    Apply Filter
+                  </button>
+                </div>
               </div>
-              <div>
-                <label style={{ display: "block", fontSize: "0.75rem", color: "#64748b", marginBottom: "0.25rem", fontWeight: "500" }}>End Date</label>
-                <input 
-                  type="date"
-                  value={dateRange?.end || ""}
-                  onChange={(e) => setDateRange(prev => ({ start: prev?.start || "", end: e.target.value }))}
-                  style={{ width: "100%", padding: "0.375rem 0.5rem", borderRadius: "0.375rem", border: "1px solid #cbd5e1", fontSize: "0.875rem" }}
-                />
-              </div>
-              <button 
-                className="btn btn-primary btn-sm" 
-                onClick={() => setShowDatePicker(false)}
-                style={{ marginTop: "0.5rem" }}
+            )}
+          </div>
+        )}
+
+        {/* Extra Header Content (Custom dropdowns etc.) */}
+        {extraHeaderContent}
+
+        <div className="flex-1" />
+
+        {/* Primary Add Button */}
+        {onAdd && (
+          <button
+            type="button"
+            onClick={onAdd}
+            className="h-11 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold flex items-center gap-2 shadow-sm transition-colors shrink-0"
+          >
+            <Plus size={18} />
+            <span>{addLabel || "Add New"}</span>
+          </button>
+        )}
+      </div>
+
+      {/* ─── Status Tabs Row ─── */}
+      {filterTabs && filterKey && filterTabs.length > 0 && (
+        <div className="flex items-center justify-between border-b border-slate-200/80 mb-3 px-1">
+          <div className="flex items-center gap-6 overflow-x-auto">
+            {filterTabs.map((tab) => {
+              const count =
+                tab.value === null
+                  ? data.length
+                  : data.filter((row) => row[filterKey] === tab.value).length;
+              const isActive = activeFilter === tab.value;
+
+              return (
+                <button
+                  key={tab.label}
+                  type="button"
+                  onClick={() => setActiveFilter(tab.value)}
+                  className={`pb-3 text-sm font-semibold transition-all relative whitespace-nowrap flex items-center gap-1.5 ${
+                    isActive ? "text-blue-600 font-bold" : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                  <span
+                    className={`text-xs px-1.5 py-0.2 rounded-full font-bold ${
+                      isActive ? "bg-blue-100 text-blue-700" : "text-slate-500"
+                    }`}
+                  >
+                    ({count})
+                  </span>
+                  {isActive && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
+                  )}
+                </button>
+              );
+            })}
+
+            {/* Custom Filters (e.g. Direct Acquisition) */}
+            {customFilters &&
+              customFilters.map((filter) => {
+                const isActive = activeCustomFilter === filter.label;
+                return (
+                  <button
+                    key={filter.label}
+                    type="button"
+                    onClick={() => setActiveCustomFilter(isActive ? null : filter.label)}
+                    className={`ml-2 mb-2 px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
+                      isActive
+                        ? filter.colorClass || "bg-blue-600 text-white"
+                        : "text-slate-600 bg-slate-100 hover:bg-slate-200"
+                    }`}
+                  >
+                    {filter.label}
+                  </button>
+                );
+              })}
+          </div>
+        </div>
+      )}
+
+      {/* ─── Main Table Card ─── */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+        {loading ? (
+          <div className="py-20 flex justify-center">
+            <LoaderWave />
+          </div>
+        ) : filteredData.length === 0 ? (
+          <div className="py-16 text-center text-slate-500 flex flex-col items-center">
+            {emptyIcon ?? <Search size={40} className="text-slate-300 mb-3" />}
+            <p className="font-semibold text-slate-700">{emptyText ?? "No records found"}</p>
+            {search && (
+              <p className="text-xs text-slate-400 mt-1">Try adjusting your search query</p>
+            )}
+            {onAdd && !search && (
+              <button
+                type="button"
+                onClick={onAdd}
+                className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-sm transition"
               >
-                Apply
+                <Plus size={14} className="inline mr-1" />
+                {addLabel || "Add First Record"}
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse" style={{ minWidth: "860px" }}>
+              <thead>
+                <tr className="border-b border-slate-200/80 bg-slate-50/70 text-slate-600 text-[12px] font-bold uppercase tracking-wider select-none">
+                  {/* Checkbox column */}
+                  {hasRowActions && (
+                    <th className="w-12 px-4 py-3.5 text-center">
+                      <input
+                        type="checkbox"
+                        checked={isAllSelected}
+                        onChange={toggleSelectAll}
+                        aria-label="Select all rows"
+                        className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                      />
+                    </th>
+                  )}
+
+                  {/* Columns */}
+                  {columns.map((col) => {
+                    const isSorted = sortConfig?.key === col.key;
+                    return (
+                      <th
+                        key={col.key}
+                        style={{ width: col.width, textAlign: (col.align || "left") as any }}
+                        className={`px-4 py-3.5 ${
+                          col.sortable ? "cursor-pointer hover:text-slate-900" : ""
+                        }`}
+                        onClick={() => {
+                          if (!col.sortable) return;
+                          let nextDirection: "asc" | "desc" = "asc";
+                          if (isSorted && sortConfig?.direction === "asc") {
+                            nextDirection = "desc";
+                          }
+                          setSortConfig({ key: col.key, direction: nextDirection });
+                        }}
+                      >
+                        <div
+                          className="inline-flex items-center gap-1"
+                          style={{
+                            justifyContent:
+                              col.align === "right"
+                                ? "flex-end"
+                                : col.align === "center"
+                                ? "center"
+                                : "flex-start",
+                            width: "100%",
+                          }}
+                        >
+                          <span>{col.label}</span>
+                          {col.sortable && (
+                            <span className="text-[10px] text-slate-400">
+                              {isSorted ? (sortConfig?.direction === "asc" ? "▲" : "▼") : "▾"}
+                            </span>
+                          )}
+                        </div>
+                      </th>
+                    );
+                  })}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-sm">
+                {paginatedData.map((row) => {
+                  const isSelected = selectedIds.includes(row.id);
+
+                  return (
+                    <tr
+                      key={row.id}
+                      onDoubleClick={() => {
+                        if (onRowDoubleClick) onRowDoubleClick(row);
+                        else if (onEdit) onEdit(row);
+                        else if (onView) onView(row);
+                      }}
+                      className={`transition-colors duration-150 ${
+                        row.isActive === false ? "opacity-60" : ""
+                      } ${isSelected ? "bg-blue-50/60" : "hover:bg-slate-50/80"}`}
+                    >
+                      {/* Checkbox column */}
+                      {hasRowActions && (
+                        <td className="px-4 py-4 text-center">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleSelectOne(row.id)}
+                            aria-label={`Select row ${row.id}`}
+                            className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                          />
+                        </td>
+                      )}
+
+                      {/* Data Columns */}
+                      {columns.map((col) => (
+                        <td
+                          key={col.key}
+                          style={{ textAlign: (col.align || "left") as any }}
+                          className="px-4 py-4"
+                        >
+                          {col.render ? col.render(row) : String((row as any)[col.key] ?? "—")}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ─── Table Pagination Footer ─── */}
+        {!loading && sortedData.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-3.5 border-t border-slate-200/70 bg-white text-xs text-slate-500">
+            <div className="flex items-center gap-6">
+              <span>
+                Showing{" "}
+                <strong className="text-slate-700 font-semibold">
+                  {(currentPage - 1) * itemsPerPage + 1}–
+                  {Math.min(currentPage * itemsPerPage, sortedData.length)}
+                </strong>{" "}
+                of <strong className="text-slate-700 font-semibold">{sortedData.length}</strong>{" "}
+                records
+              </span>
+
+              <div className="hidden sm:flex items-center gap-2">
+                <span>Rows per page</span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                  className="h-8 px-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-xs outline-none focus:border-blue-500 cursor-pointer"
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Pagination Controls */}
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                aria-label="Previous page"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className="h-8 w-8 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition"
+              >
+                <ChevronLeft size={16} />
+              </button>
+
+              <div className="h-8 min-w-[32px] px-2 rounded-lg bg-blue-600 text-white font-bold text-xs flex items-center justify-center shadow-sm">
+                {currentPage}
+              </div>
+
+              <button
+                type="button"
+                aria-label="Next page"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                className="h-8 w-8 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition"
+              >
+                <ChevronRight size={16} />
               </button>
             </div>
           </div>
         )}
       </div>
-    );
-  };
 
-  return (
-    <div>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "1.25rem", flexWrap: "wrap", gap: "1rem" }}>
-        <div style={{ display: "flex", gap: "0.625rem", alignItems: "center", flexWrap: "wrap" }}>
-          {extraHeaderContent}
-          <div className="search-input" style={{ minWidth: "400px" }}>
-            <Search size={15} color="#94a3b8" style={{ flexShrink: 0 }} />
-            <input
-              type="text"
-              placeholder={searchPlaceholder}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+      {/* ─── Floating Bottom Action Bar (When rows are selected) ─── */}
+      {selectedIds.length > 0 && hasRowActions && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-slate-200/90 px-4 py-2.5 flex items-center gap-2.5 animate-in fade-in slide-in-from-bottom-4 duration-200">
+          {/* Selected count pill */}
+          <div className="flex items-center gap-2 pr-2.5 border-r border-slate-200">
+            <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold">
+              ✓
+            </div>
+            <span className="text-xs font-bold text-slate-800 whitespace-nowrap">
+              {selectedIds.length} selected
+            </span>
           </div>
-          <button
-            className="btn btn-secondary btn-sm"
-            onClick={fetchData}
-            title="Refresh"
-          >
-            <RefreshCw size={14} />
-          </button>
-          {onAdd && (
-            <button className="btn btn-primary btn-sm" onClick={onAdd}>
-              <Plus size={15} /> Add New
+
+          {/* View Button */}
+          {onView && firstSelectedRow && (
+            <button
+              type="button"
+              onClick={() => {
+                onView(firstSelectedRow);
+                setSelectedIds([]);
+              }}
+              className="h-9 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-colors whitespace-nowrap"
+            >
+              <Eye size={14} className="text-slate-500" />
+              <span>View</span>
             </button>
           )}
-          {(!filterTabs || filterTabs.length === 0) && renderDateFilter()}
-        </div>
-        {!loading && (
-          <div style={{ display: "flex", alignItems: "center", height: "36px", color: "#64748b", fontSize: "0.875rem", fontWeight: "500" }}>
-            {filteredData.length} record{filteredData.length !== 1 ? "s" : ""} {search ? `matching "${search}"` : "total"}
-          </div>
-        )}
-      </div>
 
-      {/* Filter Tabs */}
-      {filterTabs && filterKey && filterTabs.length > 0 ? (
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", borderBottom: "1px solid #e2e8f0" }}>
-          
-          <div style={{ display: "flex", gap: "1.5rem" }}>
-            {filterTabs.map((tab) => {
-              const count = tab.value === null 
-                ? data.length 
-                : data.filter(row => row[filterKey] === tab.value).length;
-              const isActive = activeFilter === tab.value;
-              
-              return (
-                <button
-                  key={tab.label}
-                  onClick={() => setActiveFilter(tab.value)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    padding: "0.75rem 0.25rem",
-                    fontSize: "0.875rem",
-                    fontWeight: isActive ? "600" : "500",
-                    color: isActive ? "#334155" : "#94a3b8",
-                    borderBottom: isActive ? "2px solid #475569" : "2px solid transparent",
-                    cursor: "pointer",
-                    transition: "all 0.2s",
-                  }}
-                >
-                  {tab.label} ({count})
-                </button>
-              );
-            })}
-            
-            {customFilters && customFilters.map(filter => {
-              const isActive = activeCustomFilter === filter.label;
-              return (
-                <button
-                  key={filter.label}
-                  onClick={() => setActiveCustomFilter(isActive ? null : filter.label)}
-                  style={{
-                    background: isActive ? (filter.colorClass ? "transparent" : "#f1f5f9") : "none",
-                    border: "none",
-                    padding: "0.4rem 0.75rem",
-                    borderRadius: "9999px",
-                    fontSize: "0.75rem",
-                    fontWeight: isActive ? "600" : "500",
-                    color: isActive ? "#0f172a" : "#64748b",
-                    cursor: "pointer",
-                    transition: "all 0.2s",
-                    alignSelf: "center",
-                    marginLeft: "1rem"
-                  }}
-                  className={isActive && filter.colorClass ? filter.colorClass : ""}
-                >
-                  {filter.label}
-                </button>
-              );
-            })}
-          </div>
-
-          {renderDateFilter()}
-        </div>
-      ) : null}
-
-      {/* Table */}
-      <div className="table-container">
-        {loading ? (
-          <LoaderWave />
-        ) : filteredData.length === 0 ? (
-          <div className="empty-state">
-            {emptyIcon ?? <Search size={40} style={{ opacity: 0.3 }} />}
-            <p style={{ fontWeight: "600", color: "#64748b", margin: "0.5rem 0 0.25rem" }}>
-              {emptyText ?? "No records found"}
-            </p>
-            {search && <p style={{ color: "#94a3b8", fontSize: "0.875rem" }}>Try adjusting your search query</p>}
-            {onAdd && !search && (
-              <button className="btn btn-primary btn-sm" onClick={onAdd} style={{ marginTop: "0.75rem" }}>
-                <Plus size={14} /> Add First Record
-              </button>
-            )}
-          </div>
-        ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table className="data-table">
-              <thead>
-                <tr>
-                  {columns.map((col) => (
-                    <th key={col.key} style={{ width: col.width, textAlign: (col.align || "left") as any, fontFamily: "Arial, Helvetica, sans-serif" }}>
-                      <div style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem" }}>
-                        {col.label}
-                        {col.sortable && (
-                          <button
-                            onClick={() => {
-                              let nextDirection: "asc" | "desc" = "asc";
-                              if (sortConfig?.key === col.key && sortConfig.direction === "asc") {
-                                nextDirection = "desc";
-                              }
-                              setSortConfig({ key: col.key, direction: nextDirection });
-                            }}
-                            style={{
-                              background: "none", border: "none", cursor: "pointer", padding: "2px",
-                              display: "flex", alignItems: "center", justifyContent: "center",
-                              opacity: sortConfig?.key === col.key ? 1 : 0.4,
-                              color: sortConfig?.key === col.key ? "#0f172a" : "#94a3b8",
-                              fontSize: "0.6rem"
-                            }}
-                          >
-                            {sortConfig?.key === col.key && sortConfig.direction === "asc" ? "▲" : "▼"}
-                          </button>
-                        )}
-                      </div>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedData.map((row) => (
-                  <tr
-                    key={row.id}
-                    style={{
-                      opacity: row.isActive === false ? 0.6 : 1,
-                      cursor: (onView || onEdit || onDuplicate || onDelete || (customActions && customActions.length > 0)) ? "pointer" : "default",
-                      backgroundColor: selectedRow?.id === row.id ? "#f1f5f9" : "transparent",
-                    }}
-                    onClick={() => {
-                      if (onView || onEdit || onDuplicate || onDelete || (customActions && customActions.length > 0)) setSelectedRow(row);
-                    }}
-                    onDoubleClick={() => {
-                      if (onRowDoubleClick) onRowDoubleClick(row);
-                      else if (onEdit) onEdit(row);
-                      else if (onView) onView(row);
-                    }}
-                  >
-                    {columns.map((col) => (
-                      <td key={col.key} style={{ textAlign: (col.align || "left") as any }}>
-                        {col.render ? col.render(row) : String((row as any)[col.key] ?? "—")}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-      
-      {/* Pagination Footer */}
-      {!loading && data.length > 0 && (
-        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", padding: "1rem 0.5rem", gap: "1rem", color: "#64748b", fontSize: "0.875rem", fontWeight: "500" }}>
-          <span>Page {currentPage} of {totalPages}</span>
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <button 
-              className="btn btn-secondary btn-sm" 
-              disabled={currentPage === 1} 
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              style={{ padding: "0.25rem 0.75rem", opacity: currentPage === 1 ? 0.5 : 1 }}
-            >
-              Prev
-            </button>
-            <button 
-              className="btn btn-secondary btn-sm" 
-              disabled={currentPage === totalPages} 
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              style={{ padding: "0.25rem 0.75rem", opacity: currentPage === totalPages ? 0.5 : 1 }}
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      )}
-      {showActionBar && (onView || onEdit || onDuplicate || onDelete || customActions) && (
-        <div ref={actionBarRef} style={{
-          position: "fixed",
-          bottom: "2rem",
-          left: "55%",
-          transform: "translateX(-50%)",
-          animation: isClosing ? "modalSlideDown 0.3s forwards cubic-bezier(0.16, 1, 0.3, 1)" : "modalSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
-          backgroundColor: "#e0e5ec",
-          color: "#334155",
-          borderRadius: "1rem",
-          display: "flex",
-          alignItems: "center",
-          boxShadow: "9px 9px 16px rgba(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5)",
-          zIndex: 50,
-          padding: "0.75rem",
-          gap: "1rem"
-        }}>
-          <div style={{
-            padding: "0.75rem 1.25rem",
-            fontSize: "0.875rem",
-            fontWeight: "600",
-            color: "#64748b",
-            display: "flex",
-            alignItems: "center",
-            backgroundColor: "#e0e5ec",
-            borderRadius: "0.75rem",
-            boxShadow: "inset 4px 4px 8px rgba(163,177,198,0.6), inset -4px -4px 8px rgba(255,255,255, 0.5)"
-          }}>
-            1 Record Selected
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            {onView && (
-              <button
-                onClick={() => { if (selectedRow) onView(selectedRow); setSelectedRow(null); }}
-                style={{ background: "#e0e5ec", border: "none", color: "#475569", padding: "0.75rem 1.5rem", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem", cursor: "pointer", fontSize: "0.75rem", borderRadius: "0.5rem", boxShadow: "4px 4px 8px rgba(163,177,198,0.6), -4px -4px 8px rgba(255,255,255, 0.5)" }}
-              >
-                <Eye size={16} /> View
-              </button>
-            )}
-            {onEdit && (
-              <button
-                onClick={() => { if (selectedRow) onEdit(selectedRow); setSelectedRow(null); }}
-                style={{ background: "#e0e5ec", border: "none", color: "#475569", padding: "0.75rem 1.5rem", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem", cursor: "pointer", fontSize: "0.75rem", borderRadius: "0.5rem", boxShadow: "4px 4px 8px rgba(163,177,198,0.6), -4px -4px 8px rgba(255,255,255, 0.5)" }}
-              >
-                <Pencil size={16} /> Edit
-              </button>
-            )}
-            {onDuplicate && (
-              <button
-                onClick={() => { if (selectedRow) onDuplicate(selectedRow); setSelectedRow(null); }}
-                style={{ background: "#e0e5ec", border: "none", color: "#475569", padding: "0.75rem 1.5rem", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem", cursor: "pointer", fontSize: "0.75rem", borderRadius: "0.5rem", boxShadow: "4px 4px 8px rgba(163,177,198,0.6), -4px -4px 8px rgba(255,255,255, 0.5)" }}
-              >
-                <Copy size={16} /> Duplicate
-              </button>
-            )}
-            {customActions && selectedRow && customActions.map((action, i) => {
-              const label = typeof action.label === "function" ? action.label(selectedRow) : action.label;
-              const icon = typeof action.icon === "function" ? action.icon(selectedRow) : action.icon;
-              const color = typeof action.color === "function" ? action.color(selectedRow) : action.color;
-              return (
-                <button
-                  key={i}
-                  onClick={() => { action.onClick(selectedRow); setSelectedRow(null); }}
-                  style={{
-                    background: "#e0e5ec",
-                    border: "none",
-                    color: (color as string) || "#475569",
-                    padding: "0.75rem 1.5rem",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: "0.25rem",
-                    cursor: "pointer",
-                    fontSize: "0.75rem",
-                    borderRadius: "0.5rem",
-                    boxShadow: "4px 4px 8px rgba(163,177,198,0.6), -4px -4px 8px rgba(255,255,255, 0.5)"
-                  }}
-                >
-                  {icon as React.ReactNode} {label as React.ReactNode}
-                </button>
-              );
-            })}
-            {onDelete && selectedRow && (
-              <button
-                onClick={() => { if (selectedRow) setRowToDelete(selectedRow); setSelectedRow(null); }}
-                disabled={deleting === selectedRow?.id}
-                style={{ background: "#e0e5ec", border: "none", color: "#ef4444", padding: "0.75rem 1.5rem", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem", cursor: "pointer", fontSize: "0.75rem", borderRadius: "0.5rem", boxShadow: "4px 4px 8px rgba(163,177,198,0.6), -4px -4px 8px rgba(255,255,255, 0.5)", opacity: deleting === selectedRow?.id ? 0.5 : 1 }}
-              >
-                {deleting === selectedRow?.id ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Trash2 size={16} />}
-                Delete
-              </button>
-            )}
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", marginLeft: "0.5rem" }}>
+          {/* Edit Button */}
+          {onEdit && firstSelectedRow && (
             <button
-              onClick={() => setSelectedRow(null)}
-              style={{ background: "#e0e5ec", border: "none", color: "#94a3b8", cursor: "pointer", padding: "0.5rem", display: "flex", borderRadius: "50%", boxShadow: "4px 4px 8px rgba(163,177,198,0.6), -4px -4px 8px rgba(255,255,255, 0.5)" }}
+              type="button"
+              onClick={() => {
+                onEdit(firstSelectedRow);
+                setSelectedIds([]);
+              }}
+              className="h-9 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-colors whitespace-nowrap"
             >
-              <X size={18} />
+              <Pencil size={14} className="text-slate-500" />
+              <span>Edit</span>
             </button>
-          </div>
+          )}
+
+          {/* More Actions Dropdown */}
+          {(onDuplicate || (customActions && customActions.length > 0) || onDelete) && (
+            <div className="relative" ref={moreActionsRef}>
+              <button
+                type="button"
+                onClick={() => setShowMoreActions((prev) => !prev)}
+                className="h-9 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-colors whitespace-nowrap"
+              >
+                <span>More Actions</span>
+                <ChevronDown size={14} className="text-slate-400" />
+              </button>
+
+              {showMoreActions && (
+                <div className="absolute bottom-full left-0 mb-2 z-50 w-44 bg-white rounded-xl shadow-xl border border-slate-200 p-1.5 animate-in fade-in zoom-in-95 duration-100">
+                  {onDuplicate && firstSelectedRow && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onDuplicate(firstSelectedRow);
+                        setSelectedIds([]);
+                        setShowMoreActions(false);
+                      }}
+                      className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                    >
+                      <Copy size={14} className="text-slate-400" />
+                      <span>Duplicate</span>
+                    </button>
+                  )}
+                  {customActions &&
+                    firstSelectedRow &&
+                    customActions.map((action, i) => {
+                      const label =
+                        typeof action.label === "function"
+                          ? action.label(firstSelectedRow)
+                          : action.label;
+                      const icon =
+                        typeof action.icon === "function"
+                          ? action.icon(firstSelectedRow)
+                          : action.icon;
+                      return (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => {
+                            action.onClick(firstSelectedRow);
+                            setSelectedIds([]);
+                            setShowMoreActions(false);
+                          }}
+                          className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                        >
+                          {icon as React.ReactNode}
+                          <span>{label as React.ReactNode}</span>
+                        </button>
+                      );
+                    })}
+                  {onDelete && (
+                    <>
+                      <div className="h-px bg-slate-100 my-1" />
+                      <button
+                        type="button"
+                        onClick={handleBulkDelete}
+                        className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-red-600 hover:bg-red-50 flex items-center gap-2"
+                      >
+                        <Trash2 size={14} />
+                        <span>Delete Selected ({selectedIds.length})</span>
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="w-px h-5 bg-slate-200 mx-1" />
+
+          {/* Cancel Selection */}
+          <button
+            type="button"
+            onClick={() => setSelectedIds([])}
+            className="h-9 px-3 rounded-xl text-xs font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors flex items-center gap-1"
+          >
+            <X size={14} />
+            <span>Cancel</span>
+          </button>
         </div>
       )}
 
-      <style>{`
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @keyframes modalSlideUp { from { transform: translate(-50%, 100%); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
-        @keyframes modalSlideDown { from { transform: translate(-50%, 0); opacity: 1; } to { transform: translate(-50%, 100%); opacity: 0; } }
-      `}</style>
-
+      {/* Delete Confirmation Modal */}
       <ConfirmModal
         isOpen={!!rowToDelete}
         onClose={() => setRowToDelete(null)}
         onConfirm={confirmDelete}
         title={deleteModalTitle || "Confirm Deletion"}
-        message={deleteModalMessage || "Are you sure you want to delete this record? This action cannot be undone."}
+        message={
+          deleteModalMessage ||
+          "Are you sure you want to delete this record? This action cannot be undone."
+        }
         confirmText={deleteConfirmText || "Delete"}
         isDestructive={true}
+        isLoading={!!deleting}
       />
-    </div >
+    </div>
   );
 }

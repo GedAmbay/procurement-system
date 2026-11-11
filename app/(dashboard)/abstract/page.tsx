@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import DataTable from "@/components/ui/data-table";
+import StatusBadge from "@/components/ui/status-badge";
 import { formatCurrency } from "@/lib/utils";
 import { Send, Clock, CheckCircle2, ClipboardList, XCircle } from "lucide-react";
 
@@ -99,14 +100,7 @@ export default function abstractPage() {
       key: "status",
       label: "Status",
       align: "center",
-      render: (row: abstract) => {
-        const conf = STATUS_COLORS[row.status] || STATUS_COLORS.DRAFT;
-        return (
-          <span className="badge" style={{ background: conf.bg, color: conf.color, display: "inline-flex", alignItems: "center", gap: "0.25rem" }}>
-            {conf.icon} {row.status.replace(/_/g, ' ')}
-          </span>
-        );
-      },
+      render: (row: abstract) => <StatusBadge status={row.status} />,
       width: "160px",
     },
     {

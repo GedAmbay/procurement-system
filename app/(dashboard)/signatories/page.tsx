@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Users, CheckCircle2, XCircle } from "lucide-react";
 import DataTable from "@/components/ui/data-table";
 import FormModal from "@/components/ui/form-modal";
+import StatusBadge from "@/components/ui/status-badge";
 import { toast } from "sonner";
 
 interface Signatory {
@@ -68,11 +69,7 @@ const columns = [
     key: "isActive",
     label: "Status",
     align: "center",
-    render: (row: Signatory) => row.isActive ? (
-      <span className="badge" style={{ background: "#f0fdf4", color: "#16a34a" }}><CheckCircle2 size={11} style={{ marginRight: "3px" }} /> Active</span>
-    ) : (
-      <span className="badge" style={{ background: "#fef2f2", color: "#dc2626" }}><XCircle size={11} style={{ marginRight: "3px" }} /> Inactive</span>
-    ),
+    render: (row: Signatory) => <StatusBadge status={row.isActive} />,
     width: "140px",
   },
 ];

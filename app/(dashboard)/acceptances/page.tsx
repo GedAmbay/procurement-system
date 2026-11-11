@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { CheckSquare, Eye, Printer, Clock, CheckCircle2 } from "lucide-react";
 import DataTable from "@/components/ui/data-table";
 import FormModal from "@/components/ui/form-modal";
+import StatusBadge from "@/components/ui/status-badge";
 import { toast } from "sonner";
 
 const STATUS_COLORS: Record<string, { bg: string; color: string; icon: React.ReactNode }> = {
@@ -98,14 +99,7 @@ export default function AcceptancesPage() {
       key: "status",
       label: "Status",
       align: "center",
-      render: (row: Acceptance) => {
-        const conf = STATUS_COLORS[row.status] || STATUS_COLORS.DRAFT;
-        return (
-          <span className="badge" style={{ background: conf.bg, color: conf.color, display: "inline-flex", alignItems: "center", gap: "0.25rem" }}>
-            {conf.icon} {row.status.replace(/_/g, ' ')}
-          </span>
-        );
-      },
+      render: (row: Acceptance) => <StatusBadge status={row.status} />,
       width: "140px",
     },
     {

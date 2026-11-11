@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import DataTable from "@/components/ui/data-table";
+import StatusBadge from "@/components/ui/status-badge";
 import { formatCurrency } from "@/lib/utils";
 import { FileText, Truck, Clock, CheckCircle2, FileSignature } from "lucide-react";
 
@@ -119,14 +120,7 @@ export default function PurchaseOrdersPage() {
       key: "status",
       label: "Status",
       align: "center",
-      render: (row: PO) => {
-        const conf = STATUS_COLORS[row.status] || STATUS_COLORS.DRAFT;
-        return (
-          <span className="badge" style={{ background: conf.bg, color: conf.color, display: "inline-flex", alignItems: "center", gap: "0.25rem" }}>
-            {conf.icon} {row.status.replace(/_/g, ' ')}
-          </span>
-        );
-      },
+      render: (row: PO) => <StatusBadge status={row.status} />,
       width: "140px",
     },
     {
