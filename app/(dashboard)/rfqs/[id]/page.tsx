@@ -233,7 +233,7 @@ export default function RfqLivePreviewPage() {
           </div>
           <div className="flex items-center gap-2.5 flex-wrap">
             <h2 className="text-lg font-bold text-slate-800">
-              {rfq.rfqNumber?.trim() ? (rfq.rfqNumber.trim().toUpperCase().startsWith("RFQ") ? rfq.rfqNumber.trim() : `RFQ ${rfq.rfqNumber.trim()}`) : "Untitled RFQ"}
+              {rfq.rfqNumber?.trim() ? (rfq.rfqNumber.trim().toUpperCase().startsWith("RFQ") ? rfq.rfqNumber.trim() : `${rfq.rfqNumber.trim()}`) : "Untitled RFQ"}
             </h2>
             {isReadOnly ? (
               <div className="flex items-center gap-2">

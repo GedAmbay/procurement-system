@@ -35,6 +35,21 @@ export default function PurchaseOrderEditor() {
   const [targetRows, setTargetRows] = useState(10);
   const [showPoNo, setShowPoNo] = useState(false);
   const [showPrNo, setShowPrNo] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+
+  const getSavedTimeText = () => {
+    if (!lastSaved) return null;
+    const now = new Date();
+    const diffSec = Math.max(0, Math.floor((now.getTime() - lastSaved.getTime()) / 1000));
+    if (diffSec < 45) return "Saved just now";
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin === 1) return "Saved 1 min ago";
+    if (diffMin < 60) return `Saved ${diffMin} min ago`;
+    const diffHours = Math.floor(diffMin / 60);
+    if (diffHours === 1) return "Saved 1 hr ago";
+    if (diffHours < 24) return `Saved ${diffHours} hr ago`;
+    return `Saved on ${lastSaved.toLocaleDateString("en-PH", { month: "short", day: "numeric" })}`;
+  };
 
   const { register, handleSubmit, watch, reset, setValue } = useForm<POFormValues>({
     defaultValues: {
@@ -71,6 +86,7 @@ export default function PurchaseOrderEditor() {
         if (poRes.ok && supRes.ok) {
           const data = await poRes.json();
           setPoData(data);
+          if (data.updatedAt) setLastSaved(new Date(data.updatedAt));
           const allSups = await supRes.json();
           setSuppliers(allSups);
 
@@ -134,6 +150,7 @@ export default function PurchaseOrderEditor() {
       if (res.ok) {
         const updated = await res.json();
         setPoData((prev: any) => ({ ...prev, ...updated }));
+        setLastSaved(new Date());
         toast.success(isJob ? "Job Order saved successfully" : "Purchase Order saved successfully");
       } else {
         const errorData = await res.json().catch(() => ({}));
@@ -156,6 +173,7 @@ export default function PurchaseOrderEditor() {
       if (res.ok) {
         toast.success(`Status updated to ${status}`);
         setPoData((prev: any) => ({ ...prev, status }));
+        setLastSaved(new Date());
       }
     } catch (e) {
       toast.error("Update failed");
@@ -197,66 +215,169 @@ export default function PurchaseOrderEditor() {
   const acceptances = poData.acceptances || [];
 
   return (
-    <div className="flex flex-col overflow-hidden print:block print:!h-auto print:!overflow-visible" style={{ height: 'calc(var(--full-vh) - 173px)' }}>
-      {/* Header */}
-      <div className="no-print flex items-center justify-between p-4 bg-white border-b border-slate-200 shadow-sm z-10">
+    <div className="flex flex-col gap-3.5 p-3 sm:p-4 bg-[#e9edf4] w-full max-w-full min-w-0 overflow-hidden flex-1 print:!block print:!h-auto print:!overflow-visible print:!m-0 print:!p-0 print:!bg-white print:!w-full print:!max-w-none" style={{ height: 'calc(var(--full-vh) - 88px)' }}>
+      {/* Header Card */}
+      <div className="no-print bg-white rounded-2xl shadow-sm border border-slate-200/60 px-5 py-3 flex items-center justify-between z-10 shrink-0">
         <div className="flex items-center gap-3">
-          <Link href="/purchase-orders" className="p-2 rounded-md hover:bg-slate-100 text-slate-500 transition-colors">
-            <ArrowLeft size={18} />
-          </Link>
-          <div>
-            <h1 className="text-lg font-bold text-slate-800">
-              Live Preview
-            </h1>
+          <div className="relative group/back">
+            <Link
+              href="/purchase-orders"
+              aria-label="Back to Purchase Orders"
+              className="w-9 h-9 rounded-full border border-slate-200 bg-white hover:bg-slate-50 flex items-center justify-center text-slate-600 transition-colors shadow-sm shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
+            >
+              <ArrowLeft size={18} />
+            </Link>
+            <div
+              role="tooltip"
+              className="pointer-events-none absolute left-0 top-full mt-1.5 hidden group-hover/back:block group-focus-within/back:block z-30 px-2.5 py-1 text-xs font-medium text-white bg-slate-900 rounded-md shadow-md whitespace-nowrap"
+            >
+              Back to Purchase Orders
+            </div>
+          </div>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h2 className="text-lg font-bold text-slate-800">
+              {poData.poNumber?.trim() ? poData.poNumber.trim() : (isJob ? "Job Order" : "Purchase Order")}
+            </h2>
+            <div className="flex items-center gap-2">
+              {poData.status === "COMPLETED" ? (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
+                  <CheckCircle2 size={12} className="text-emerald-700" />
+                  COMPLETED
+                </span>
+              ) : poData.status === "SIGNED" ? (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
+                  SIGNED
+                </span>
+              ) : poData.status === "PARTIALLY_DELIVERED" ? (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-purple-100 text-purple-800">
+                  PARTIAL DELIVERY
+                </span>
+              ) : poData.status === "ISSUED" ? (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-100 text-blue-800">
+                  ISSUED
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-100 text-amber-800">
+                  {poData.status || "DRAFT"}
+                </span>
+              )}
+
+              {getSavedTimeText() && (
+                <span className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+                  {getSavedTimeText()}
+                </span>
+              )}
+            </div>
           </div>
         </div>
-        <div className="flex gap-2">
-          <button onClick={() => window.print()} className="btn btn-secondary flex items-center gap-2">
-            <Printer size={16} /> Print
+
+        <div className="flex items-center gap-2">
+          {(poData.status === "SIGNED" || poData.status === "PARTIALLY_DELIVERED" || poData.status === "COMPLETED") && (
+            <Link
+              href={`/acceptances/hub/${poData.id}`}
+              className="flex items-center gap-2 text-slate-700 hover:text-slate-900 font-medium text-sm px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+            >
+              <Package size={17} className="text-emerald-600" />
+              <span>Delivery Hub</span>
+            </Link>
+          )}
+
+          <div className="h-5 w-px bg-slate-200 mx-1" />
+
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="border border-slate-300 hover:border-slate-400 bg-white hover:bg-slate-50 text-slate-700 p-2.5 rounded-xl shadow-sm transition-all flex items-center justify-center"
+            title="Print"
+          >
+            <Printer size={16} />
           </button>
+
           {!isReadOnly && (
-            <button onClick={handleSubmit(onSubmit)} disabled={submitting} className="btn btn-primary flex items-center gap-2">
-              <Save size={16} /> Save
+            <button
+              type="button"
+              onClick={handleSubmit(onSubmit)}
+              disabled={submitting}
+              className="border border-blue-600 hover:bg-blue-50 text-blue-600 font-semibold px-4 py-2 rounded-xl text-sm flex items-center gap-2 shadow-sm transition-all"
+            >
+              {submitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Save
             </button>
           )}
+
           {poData.status === "DRAFT" && (
-            <button onClick={() => updateStatus("ISSUED")} className="btn btn-primary bg-blue-600 hover:bg-blue-700 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => updateStatus("ISSUED")}
+              disabled={submitting}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-xl text-sm flex items-center gap-2 shadow-sm transition-all"
+            >
               <Send size={16} /> Mark Issued
             </button>
           )}
+
           {poData.status === "ISSUED" && (
-            <>
-              <button onClick={() => updateStatus("SIGNED")} className="btn btn-success" style={{ display: "flex", alignItems: "center", gap: "0.375rem", background: "#16a34a" }}>
-                <CheckCircle2 size={15} /> Mark as Signed
-              </button>
-            </>
-          )}
-          {(poData.status === "SIGNED" || poData.status === "PARTIALLY_DELIVERED" || poData.status === "COMPLETED") && (
-            <button onClick={() => router.push(`/acceptances/hub/${poData.id}`)} className="btn btn-success   btn-deliver flex items-center gap-2">
-              <Package size={16} /> Delivery Hub
+            <button
+              type="button"
+              onClick={() => updateStatus("SIGNED")}
+              disabled={submitting}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-5 py-2 rounded-xl text-sm flex items-center gap-2 shadow-sm transition-all"
+            >
+              <CheckCircle2 size={16} /> Mark as Signed
             </button>
           )}
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden relative print:block print:!h-auto print:!overflow-visible">
-        {/* View Controls */}
-        <div className="no-print absolute bottom-6 left-6 flex items-center gap-1 bg-white p-1 rounded-full shadow-md border border-slate-200 z-10 text-slate-600">
-          <button type="button" onClick={() => setZoom(z => Math.max(z - 0.1, 0.5))} className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Zoom Out"><ZoomOut size={18} /></button>
-          <button type="button" onClick={() => setZoom(1)} className="px-3 hover:bg-slate-100 rounded-full font-bold text-xs h-full transition-colors" title="Reset Zoom">{Math.round(zoom * 100)}%</button>
-          <button type="button" onClick={() => setZoom(z => Math.min(z + 0.1, 2))} className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Zoom In"><ZoomIn size={18} /></button>
-          <div className="w-[1px] h-6 bg-slate-300 mx-1"></div>
-          <button type="button" onClick={() => setTargetRows(r => Math.max(r - 1, 0))} className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Remove Row"><Minus size={18} /></button>
-          <div className="px-2 font-bold text-xs flex flex-col items-center justify-center h-full" title="Target Table Rows"><span className="leading-none">{targetRows}</span><span className="text-[9px] leading-none text-slate-400">Rows</span></div>
-          <button type="button" onClick={() => setTargetRows(r => Math.min(r + 1, 30))} className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Add Row"><Plus size={18} /></button>
+      {/* Completed Banner */}
+      {isReadOnly && (
+        <div className="no-print bg-[#ecfdf5] border border-[#a7f3d0] rounded-2xl px-5 py-2.5 flex items-center gap-2.5 text-xs text-[#065f46] shadow-sm font-medium shrink-0">
+          <CheckCircle2 size={15} className="text-[#059669] shrink-0" />
+          <span>
+            <strong className="font-bold">This {isJob ? "Job Order" : "Purchase Order"} is completed.</strong> All deliveries and acceptances are finalized.
+          </span>
         </div>
+      )}
 
+      <div className="flex flex-1 min-w-0 max-w-full w-full gap-4 overflow-hidden relative print:!block print:!h-auto print:!overflow-visible print:!m-0 print:!p-0 print:!w-full">
         {/* Left Side: Live Print Preview */}
-        <div className="flex-1 overflow-auto bg-slate-200 print:p-0 print:bg-white print:block print:!overflow-visible print:!h-auto">
-          <div className="p-8 print:p-0 w-max mx-auto min-w-full flex justify-center origin-top print:block print:w-full print:min-w-0 print:!transform-none print:!mb-0" style={{ transform: `scale(${zoom})`, marginBottom: `${(zoom - 1) * 1123}px`, transition: "transform 0.2s ease" }}>
-            <div className="print-area text-black shadow-xl text-[14px] leading-tight print:shadow-none print:max-w-none print:m-0 [&_td]:!font-['Times_New_Roman',_Times,_serif] [&_td]:!text-[14px] [&_th]:!font-['Times_New_Roman',_Times,_serif] [&_th]:!text-[14px] [&_th]:!text-black [&_th]:!normal-case [&_th]:!tracking-normal [&_th]:!font-bold w-[900px] min-h-[1123px] bg-white p-10 print:w-full print:min-h-0 print:p-0" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+        <div className="flex-1 w-0 min-w-0 max-w-full rounded-2xl bg-[#d8e1eb] overflow-hidden relative flex flex-col shadow-inner print:rounded-none print:!bg-white print:!overflow-visible print:!shadow-none print:!block print:!w-full print:!m-0 print:!p-0">
+          {/* View Controls */}
+          <div className="no-print absolute bottom-6 left-6 flex items-center gap-1 bg-white p-1 rounded-full shadow-md border border-slate-200 z-10 text-slate-600">
+            <button type="button" onClick={() => setZoom(z => Math.max(z - 0.1, 0.5))} className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Zoom Out"><ZoomOut size={18} /></button>
+            <button type="button" onClick={() => setZoom(1)} className="px-3 hover:bg-slate-100 rounded-full font-bold text-xs h-full transition-colors" title="Reset Zoom">{Math.round(zoom * 100)}%</button>
+            <button type="button" onClick={() => setZoom(z => Math.min(z + 0.1, 2))} className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Zoom In"><ZoomIn size={18} /></button>
+            <div className="w-[1px] h-6 bg-slate-300 mx-1"></div>
+            <button type="button" onClick={() => setTargetRows(r => Math.max(r - 1, 0))} className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Remove Row"><Minus size={18} /></button>
+            <div className="px-2 font-bold text-xs flex flex-col items-center justify-center h-full" title="Target Table Rows"><span className="leading-none">{targetRows}</span><span className="text-[9px] leading-none text-slate-400">Rows</span></div>
+            <button type="button" onClick={() => setTargetRows(r => Math.min(r + 1, 30))} className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Add Row"><Plus size={18} /></button>
+          </div>
 
-              <div className="border-[3px] border-black">
+          <div className="flex-1 w-full min-w-0 max-w-full overflow-auto p-4 sm:p-6 md:p-8 print:!p-0 print:!m-0 print:!bg-white print:!block print:!overflow-visible print:!h-auto print:!w-full">
+            <div className="w-fit min-w-full flex justify-center print:!block print:!w-full">
+              <div
+                className="po-zoom-wrapper origin-top print:!block print:!w-full print:min-w-0 print:!transform-none print:!m-0 print:!p-0"
+                style={{
+                  width: `${Math.round(900 * zoom + 64)}px`,
+                  minHeight: `${Math.round(1123 * zoom + 64)}px`,
+                  display: "flex",
+                  justifyContent: "center",
+                  padding: "1.5rem 2rem 3rem 2rem",
+                }}
+              >
+                <div
+                  style={{
+                    width: "900px",
+                    transform: `scale(${zoom})`,
+                    transformOrigin: "top center",
+                    transition: "transform 0.15s ease-out",
+                    marginBottom: `${Math.max(0, (zoom - 1) * 1123)}px`,
+                  }}
+                  className="print:!transform-none print:!w-full print:!mb-0"
+                >
+                  <div className="print-area text-black shadow-xl text-[14px] leading-tight print:shadow-none print:max-w-none print:m-0 [&_td]:!font-['Times_New_Roman',_Times,_serif] [&_td]:!text-[14px] [&_th]:!font-['Times_New_Roman',_Times,_serif] [&_th]:!text-[14px] [&_th]:!text-black [&_th]:!normal-case [&_th]:!tracking-normal [&_th]:!font-bold w-[900px] min-h-[1123px] bg-white p-10 print:w-full print:min-h-0 print:p-0" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+
+                    <div className="border-[3px] border-black">
                 <div className="text-right italic pt-2 pr-2 text-sm">Appendix 49</div>
 
                 <div className="text-center font-bold mb-4">
@@ -434,15 +555,31 @@ export default function PurchaseOrderEditor() {
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Right Side: Data Entry Form */}
-        <div className="no-print" style={{ width: "420px", flexShrink: 0, borderLeft: "1px solid #e2e8f0", background: "var(--color-page-bg)", overflowY: "auto", display: "flex", flexDirection: "column" }}>
-          <div style={{ padding: "1.25rem", flex: 1 }}>
-            <h3 style={{ fontWeight: "800", color: "#0f172a", marginBottom: "1.25rem", fontSize: "1rem" }}>
+      {/* Guaranteed scroll spacer */}
+      <div
+        style={{ height: "80px", minHeight: "80px", width: "100%", flexShrink: 0 }}
+        className="no-print pointer-events-none"
+        aria-hidden="true"
+      />
+    </div>
+  </div>
+
+        {/* Right Side: Form Panel */}
+        <div className="no-print w-[360px] lg:w-[400px] xl:w-[440px] shrink-0 bg-white rounded-2xl shadow-sm border border-slate-200/60 p-5 flex flex-col overflow-y-auto">
+          <div className="mb-4">
+            <h2 className="text-base font-bold text-slate-900">
               {isJob ? "Job Order Details" : "PO Details"}
-            </h3>
+            </h2>
+            <p className="text-xs text-slate-500 mt-1">
+              {isReadOnly
+                ? "Read-only while the order is completed."
+                : `Update the details for the ${isJob ? "Job Order" : "Purchase Order"}.`}
+            </p>
+          </div>
 
-            <form className="space-y-5">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 flex-1">
               {/* Type Toggle: Purchase Order vs Job Order */}
               <div>
                 <label className="form-label">Order Type</label>
@@ -661,17 +798,19 @@ export default function PurchaseOrderEditor() {
                 </div>
               </div>
 
+              <div className="pt-2 text-[11px] text-slate-400 flex items-center gap-1.5">
+                <CheckCircle2 size={13} className="text-emerald-500" />
+                <span>Details save automatically with the document.</span>
+              </div>
             </form>
-          </div>
 
-          <div style={{ padding: "1rem", background: "var(--color-page-bg)", borderTop: "1px solid #e2e8f0", position: "sticky", bottom: 0, boxShadow: "0 -2px 8px rgba(163,177,198,0.2)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontWeight: "800", fontSize: "1rem", color: "#0f172a" }}>
+            {/* Sticky Total in right panel footer */}
+            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between font-bold text-sm text-slate-800">
               <span>{isJob ? "JO Total:" : "PO Total:"}</span>
-              <span style={{ color: "#059669" }}>{formatCurrency(poTotalAmount)}</span>
+              <span className="text-emerald-600 text-base font-extrabold">{formatCurrency(poTotalAmount)}</span>
             </div>
           </div>
         </div>
       </div>
-    </div>
   );
 }

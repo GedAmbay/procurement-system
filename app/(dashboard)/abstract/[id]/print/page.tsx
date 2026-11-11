@@ -3,7 +3,7 @@ import LoaderWave from "@/components/ui/loader-wave";
 
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Printer, Loader2, ZoomIn, ZoomOut, Users, Edit3, Minus, Plus, Save, CheckCircle2, Lock, Unlock } from "lucide-react";
+import { ArrowLeft, Printer, Loader2, ZoomIn, ZoomOut, Users, Edit3, Minus, Plus, Save, CheckCircle2, Lock, Unlock, LayoutGrid } from "lucide-react";
 import Link from "next/link";
 import { formatCurrency, LGU_INFO } from "@/lib/utils";
 import { toast } from "sonner";
@@ -15,6 +15,7 @@ export default function AbstractLivePreviewPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [zoom, setZoom] = useState(0.65);
   const [targetRows, setTargetRows] = useState(15);
 
@@ -50,6 +51,7 @@ export default function AbstractLivePreviewPage() {
           const d = await abstractRes.json();
           abstractResData = d;
           setData(d);
+          if (d.updatedAt) setLastSaved(new Date(d.updatedAt));
           if (d.rfq?.pr) {
             setReqOfficerName(d.reqOfficerName || d.rfq.pr.requestedBy || "");
             setReqOfficerOffice(d.reqOfficerOffice || d.rfq.pr.office?.name || "");
@@ -117,6 +119,7 @@ export default function AbstractLivePreviewPage() {
 
       const updated = await res.json();
       setData((prev: any) => ({ ...prev, ...updated }));
+      setLastSaved(new Date());
       toast.success(newStatus ? `Abstract ${newStatus.toLowerCase()} successfully!` : "Changes saved");
       if (newStatus) setIsUnlocked(false);
     } catch (error) {
@@ -170,94 +173,202 @@ export default function AbstractLivePreviewPage() {
 
   const isReadOnly = data.status !== "DRAFT" && !isUnlocked;
 
-  return (
-    <div className="flex flex-col overflow-hidden print:block print:!h-auto print:!overflow-visible" style={{ height: 'calc(var(--full-vh) - 173px)' }}>
+  const getSavedTimeText = () => {
+    if (!lastSaved) return null;
+    const now = new Date();
+    const diffSec = Math.max(0, Math.floor((now.getTime() - lastSaved.getTime()) / 1000));
+    if (diffSec < 45) return "Saved just now";
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin === 1) return "Saved 1 min ago";
+    if (diffMin < 60) return `Saved ${diffMin} min ago`;
+    const diffHours = Math.floor(diffMin / 60);
+    if (diffHours === 1) return "Saved 1 hr ago";
+    if (diffHours < 24) return `Saved ${diffHours} hr ago`;
+    return `Saved on ${lastSaved.toLocaleDateString("en-PH", { month: "short", day: "numeric" })}`;
+  };
 
-      {/* ─── Header Bar ─── */}
-      <div className="no-print" style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "0.75rem 1.25rem",
-        background: "var(--color-page-bg)",
-        borderBottom: "1px solid #e2e8f0",
-        boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
-        zIndex: 10, flexShrink: 0,
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <Link href={`/abstract/${params.id}`} style={{
-            display: "flex", alignItems: "center", justifyContent: "center",
-            width: "34px", height: "34px", borderRadius: "50%",
-            background: "var(--color-page-bg)", boxShadow: "var(--shadow-neu-drop)",
-            color: "#64748b", textDecoration: "none",
-          }}>
-            <ArrowLeft size={16} />
-          </Link>
-          <div>
-            <h1 style={{ fontWeight: "700", color: "#0f172a" }}>Live Preview</h1>
+  return (
+    <div className="flex flex-col gap-3.5 p-3 sm:p-4 bg-[#e9edf4] w-full max-w-full min-w-0 overflow-hidden flex-1 print:!block print:!h-auto print:!overflow-visible print:!m-0 print:!p-0 print:!bg-white print:!w-full print:!max-w-none" style={{ height: 'calc(var(--full-vh) - 88px)' }}>
+      {/* Header Card */}
+      <div className="no-print bg-white rounded-2xl shadow-sm border border-slate-200/60 px-5 py-3 flex items-center justify-between z-10 shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="relative group/back">
+            <Link
+              href={`/abstract/${params.id}`}
+              aria-label="Back to Abstract Hub"
+              className="w-9 h-9 rounded-full border border-slate-200 bg-white hover:bg-slate-50 flex items-center justify-center text-slate-600 transition-colors shadow-sm shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
+            >
+              <ArrowLeft size={18} />
+            </Link>
+            <div
+              role="tooltip"
+              className="pointer-events-none absolute left-0 top-full mt-1.5 hidden group-hover/back:block group-focus-within/back:block z-30 px-2.5 py-1 text-xs font-medium text-white bg-slate-900 rounded-md shadow-md whitespace-nowrap"
+            >
+              Back to Abstract Hub
+            </div>
+          </div>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h2 className="text-lg font-bold text-slate-800">
+              {data.abstractNumber?.trim()
+                ? data.abstractNumber.trim()
+                : (data.bacResNo?.trim() ? `Res. ${data.bacResNo.trim()}` : "Abstract of Canvass")}
+            </h2>
+            {isReadOnly ? (
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
+                  <Lock size={12} className="text-emerald-700" />
+                  {data.status || "FINAL"}
+                </span>
+                {getSavedTimeText() && (
+                  <span className="text-xs text-slate-500 font-medium">{getSavedTimeText()}</span>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-100 text-amber-800">
+                  {data.status || "DRAFT"}
+                </span>
+                {getSavedTimeText() && (
+                  <span className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+                    {getSavedTimeText()}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <button onClick={() => window.print()} className="btn flex items-center gap-2 border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 shadow-sm">
-            <Printer size={14} /> Print
-          </button>
 
-          {data.status === "DRAFT" && (
+        <div className="flex items-center gap-2">
+          {/* Abstract Hub Button */}
+          <Link
+            href={`/abstract/${params.id}`}
+            className="flex items-center gap-2 text-slate-700 hover:text-slate-900 font-medium text-sm px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+          >
+            <LayoutGrid size={17} className="text-slate-600" />
+            <span>Abstract Hub</span>
+          </Link>
+
+          <div className="h-5 w-px bg-slate-200 mx-1" />
+
+          {isReadOnly ? (
             <>
-              <button onClick={() => saveChanges()} disabled={submitting} className="btn btn-primary flex items-center gap-2">
-                <Save size={14} /> Save
+              <button
+                type="button"
+                onClick={() => setIsUnlocked(true)}
+                className="border border-slate-300 hover:border-slate-400 bg-white hover:bg-slate-50 text-slate-700 font-semibold px-4 py-2 rounded-xl text-sm flex items-center gap-2 shadow-sm transition-all"
+              >
+                <Unlock size={16} /> Unlock
               </button>
-              <button onClick={() => saveChanges("ISSUED")} disabled={submitting} className="btn btn-primary bg-blue-600 hover:bg-blue-700 flex items-center gap-2">
-                <CheckCircle2 size={14} /> Finalize
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-xl text-sm flex items-center gap-2 shadow-sm transition-all"
+              >
+                <Printer size={16} /> Print
               </button>
             </>
-          )}
-
-          {data.status !== "DRAFT" && (
-            <button type="button" onClick={() => setIsUnlocked(!isUnlocked)} className={`btn ${isUnlocked ? 'btn-secondary' : 'btn-primary'} flex items-center gap-2`}>
-              {isUnlocked ? <><Lock size={14} /> Lock</> : <><Unlock size={14} /> Unlock</>}
-            </button>
-          )}
-          {isUnlocked && (
-            <button onClick={() => saveChanges()} disabled={submitting} className="btn btn-primary flex items-center gap-2">
-              <Save size={14} /> Save Changes
-            </button>
+          ) : (
+            <>
+              {isUnlocked && (
+                <button
+                  type="button"
+                  onClick={() => setIsUnlocked(false)}
+                  className="border border-slate-300 hover:border-slate-400 bg-white hover:bg-slate-50 text-slate-700 font-semibold px-4 py-2 rounded-xl text-sm flex items-center gap-2 shadow-sm transition-all"
+                >
+                  <Lock size={16} /> Lock
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="border border-slate-300 hover:border-slate-400 bg-white hover:bg-slate-50 text-slate-700 p-2.5 rounded-xl shadow-sm transition-all flex items-center justify-center"
+                title="Print"
+              >
+                <Printer size={16} />
+              </button>
+              <button
+                type="button"
+                onClick={() => saveChanges()}
+                disabled={submitting}
+                className="border border-blue-600 hover:bg-blue-50 text-blue-600 font-semibold px-4 py-2 rounded-xl text-sm flex items-center gap-2 shadow-sm transition-all"
+              >
+                {submitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Save
+              </button>
+              {data.status === "DRAFT" && (
+                <button
+                  type="button"
+                  onClick={() => saveChanges("ISSUED")}
+                  disabled={submitting}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-xl text-sm flex items-center gap-2 shadow-sm transition-all"
+                >
+                  {submitting ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />} Finalize
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>
 
-      <div className="flex flex-1 w-full min-w-0 max-w-full overflow-hidden relative print:block print:!h-auto">
-
-        {/* Zoom Controls (Bottom Left) */}
-        <div className="no-print absolute bottom-6 left-6 flex items-center gap-1 bg-white p-1 rounded-full shadow-md border border-slate-200 z-10 text-slate-600">
-          <button type="button" onClick={() => setZoom(z => Math.max(z - 0.1, 0.4))} className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Zoom Out"><ZoomOut size={18} /></button>
-          <button type="button" onClick={() => setZoom(1)} className="px-3 hover:bg-slate-100 rounded-full font-bold text-xs h-full transition-colors" title="Reset Zoom">{Math.round(zoom * 100)}%</button>
-          <button type="button" onClick={() => setZoom(z => Math.min(z + 0.1, 2))} className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Zoom In"><ZoomIn size={18} /></button>
-          <div className="w-[1px] h-6 bg-slate-300 mx-1"></div>
-          <button type="button" onClick={() => setTargetRows(r => Math.max(r - 1, 0))} className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Remove Row"><Minus size={18} /></button>
-          <div className="px-2 font-bold text-xs flex flex-col items-center justify-center h-full" title="Target Table Rows"><span className="leading-none">{targetRows}</span><span className="text-[9px] leading-none text-slate-400">Rows</span></div>
-          <button type="button" onClick={() => setTargetRows(r => r + 1)} className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Add Row"><Plus size={18} /></button>
+      {isReadOnly && (
+        <div className="no-print bg-[#ecfdf5] border border-[#a7f3d0] rounded-2xl px-5 py-2.5 flex items-center gap-2.5 text-xs text-[#065f46] shadow-sm font-medium shrink-0">
+          <Lock size={15} className="text-[#059669] shrink-0" />
+          <span>
+            <strong className="font-bold">This Abstract of Canvass is finalized and locked.</strong> Unlock it to make changes.
+          </span>
         </div>
+      )}
 
+      <div className="flex flex-1 min-w-0 max-w-full w-full gap-4 overflow-hidden relative print:!block print:!h-auto print:!overflow-visible print:!m-0 print:!p-0 print:!w-full">
         {/* ─── Left: Live Preview ─── */}
-        <div className="flex-1 relative min-w-0 bg-slate-200 print:bg-white print:static print:block print:!overflow-visible print:!h-auto">
-          <div className="absolute inset-0 overflow-auto print:static print:overflow-visible">
+        <div className="flex-1 w-0 min-w-0 max-w-full rounded-2xl bg-[#d8e1eb] overflow-hidden relative flex flex-col shadow-inner print:rounded-none print:!bg-white print:!overflow-visible print:!shadow-none print:!block print:!w-full print:!m-0 print:!p-0">
+          {/* Zoom Controls (Bottom Left) */}
+          <div className="no-print absolute bottom-6 left-6 flex items-center gap-1 bg-white p-1 rounded-full shadow-md border border-slate-200 z-10 text-slate-600">
+            <button type="button" onClick={() => setZoom(z => Math.max(z - 0.1, 0.4))} className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Zoom Out"><ZoomOut size={18} /></button>
+            <button type="button" onClick={() => setZoom(1)} className="px-3 hover:bg-slate-100 rounded-full font-bold text-xs h-full transition-colors" title="Reset Zoom">{Math.round(zoom * 100)}%</button>
+            <button type="button" onClick={() => setZoom(z => Math.min(z + 0.1, 2))} className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Zoom In"><ZoomIn size={18} /></button>
+            <div className="w-[1px] h-6 bg-slate-300 mx-1"></div>
+            <button type="button" onClick={() => setTargetRows(r => Math.max(r - 1, 0))} className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Remove Row"><Minus size={18} /></button>
+            <div className="px-2 font-bold text-xs flex flex-col items-center justify-center h-full" title="Target Table Rows"><span className="leading-none">{targetRows}</span><span className="text-[9px] leading-none text-slate-400">Rows</span></div>
+            <button type="button" onClick={() => setTargetRows(r => r + 1)} className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Add Row"><Plus size={18} /></button>
+          </div>
+
+          <div className="flex-1 w-full min-w-0 max-w-full overflow-auto p-4 sm:p-6 md:p-8 print:!p-0 print:!m-0 print:!bg-white print:!block print:!overflow-visible print:!h-auto print:!w-full">
             <style>{`
               @page {
                 size: landscape;
               }
             `}</style>
-            <div className="w-max mx-auto min-w-full flex justify-center print:block print:w-full print:min-w-0">
-              <div className="abstract-zoom-wrapper p-2 print:p-0 origin-top print:!transform-none print:!m-0"
+            <div className="w-fit min-w-full flex justify-center print:!block print:!w-full">
+              <div
+                className="abstract-zoom-wrapper origin-top print:!block print:!w-full print:min-w-0 print:!transform-none print:!m-0 print:!p-0"
                 style={{
-                  transform: `scale(${zoom})`,
-                  marginBottom: `${(zoom - 1) * 816}px`,
-                  marginLeft: `${(zoom - 1) * 1248 / 2}px`,
-                  marginRight: `${(zoom - 1) * 1248 / 2}px`
-                }}>
-                <div style={{
-                  background: "#fff",
-                  color: "#000",
-                  fontFamily: "Arial, sans-serif", fontSize: "13px",
-                }} className="abstract-print-sheet print-area w-[1448px] shadow-xl min-h-[816px] p-[40px] print:!p-0 block print:shadow-none print:!w-full print:!max-w-none print:!m-0 print:!min-h-0">
+                  width: `${Math.round(1448 * zoom + 64)}px`,
+                  minHeight: `${Math.round(816 * zoom + 64)}px`,
+                  display: "flex",
+                  justifyContent: "center",
+                  padding: "1.5rem 2rem 3rem 2rem",
+                }}
+              >
+                <div
+                  style={{
+                    width: "1448px",
+                    transform: `scale(${zoom})`,
+                    transformOrigin: "top center",
+                    transition: "transform 0.15s ease-out",
+                    marginBottom: `${Math.max(0, (zoom - 1) * 816)}px`,
+                  }}
+                  className="print:!transform-none print:!w-full print:!mb-0"
+                >
+                  <div
+                    style={{
+                      background: "#fff",
+                      color: "#000",
+                      fontFamily: "Arial, sans-serif",
+                      fontSize: "13px",
+                    }}
+                    className="abstract-print-sheet print-area w-[1448px] shadow-xl min-h-[816px] p-[40px] print:!p-0 block print:shadow-none print:!w-full print:!max-w-none print:!m-0 print:!min-h-0"
+                  >
                   <div style={{ border: "1px solid #000", padding: "10px 0" }}>
 
                     {/* Doc Header */}
@@ -493,20 +604,31 @@ export default function AbstractLivePreviewPage() {
               </div>
             </div>
           </div>
+
+            {/* Guaranteed scroll spacer */}
+            <div
+              style={{ height: "80px", minHeight: "80px", width: "100%", flexShrink: 0 }}
+              className="no-print pointer-events-none"
+              aria-hidden="true"
+            />
+          </div>
         </div>
 
-        {/* ─── Right: Form Panel ─── */}
-        <div className="no-print" style={{
-          width: "450px", flexShrink: 0,
-          borderLeft: "1px solid #e2e8f0",
-          background: "var(--color-page-bg)",
-          overflowY: "auto", display: "flex", flexDirection: "column",
-        }}>
-          <div style={{ padding: "2.25rem", display: "flex", flexDirection: "column", gap: "1.5rem", pointerEvents: isReadOnly ? "none" : "auto", opacity: isReadOnly ? 0.7 : 1 }}>
+        {/* Right Side: Form Panel */}
+        <div className="no-print w-[360px] lg:w-[400px] xl:w-[440px] shrink-0 bg-white rounded-2xl shadow-sm border border-slate-200/60 p-5 flex flex-col overflow-y-auto">
+          <div className="mb-4">
+            <h2 className="text-base font-bold text-slate-900">Abstract Details</h2>
+            <p className="text-xs text-slate-500 mt-1">
+              {isReadOnly
+                ? "Read-only while the document is finalized."
+                : "Update the details and signatories for the Abstract."}
+            </p>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", pointerEvents: isReadOnly ? "none" : "auto", opacity: isReadOnly ? 0.7 : 1 }}>
 
             {/* ── Document Details ── */}
             <section>
-              <h3 style={{ fontWeight: "800", color: "#0f172a", marginBottom: "1.25rem", fontSize: "1rem" }}>Abstract Details</h3>
 
               {/* Document Numbering */}
               <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-3 mb-4">
@@ -715,6 +837,11 @@ export default function AbstractLivePreviewPage() {
                 </div>
               )}
             </section>
+
+            <div className="pt-2 text-[11px] text-slate-400 flex items-center gap-1.5">
+              <CheckCircle2 size={13} className="text-emerald-500" />
+              <span>Details save automatically with the document.</span>
+            </div>
           </div>
         </div>
       </div>
