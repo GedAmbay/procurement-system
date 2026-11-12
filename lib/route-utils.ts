@@ -9,7 +9,7 @@ const EDITOR_ROUTE_PATTERNS = [
   /^\/purchase-requests\/[^\/]+$/,        // PR live preview / edit
   /^\/purchase-orders\/[^\/]+$/,          // PO live preview / edit
   /^\/acceptances\/[^\/]+$/,              // Acceptance & Inspection document
-  /^\/abstract\/[^\/]+(\/preview|\/print)?$/, // Abstract live preview
+  /^\/abstract\/[^\/]+\/(preview|print)$/,    // Abstract live preview / print only
 ];
 
 export function isEditorRoute(pathname: string | null | undefined): boolean {

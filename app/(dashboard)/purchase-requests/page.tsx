@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FileText, Printer, Eye, CheckCircle2, XCircle, Clock, Send, FolderOpen, User } from "lucide-react";
+import { FileText, Printer, Eye, CheckCircle2, XCircle, Clock, Send, FolderOpen, User, ExternalLink } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import DataTable from "@/components/ui/data-table";
@@ -33,9 +33,13 @@ export default function PurchaseRequestsPage() {
       label: "PR Number",
       render: (row: PR) => (
         <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-          <div style={{ fontWeight: "600", color: "#0f172a", fontFamily: "monospace", fontSize: "0.875rem" }}>
-            {row.prNumber || <span style={{ color: "#94a3b8", fontStyle: "italic", fontWeight: 400 }}>No. not yet assigned</span>}
-          </div>
+          <Link
+            href={`/purchase-requests/${row.id}`}
+            className="inline-flex items-center gap-1.5 font-bold font-mono text-sm text-blue-600 hover:text-blue-700 hover:underline group"
+          >
+            <span>{row.prNumber || "Draft (No Number)"}</span>
+            <ExternalLink size={13} className="text-blue-500 opacity-70 group-hover:opacity-100" />
+          </Link>
           <div className="flex flex-wrap gap-1">
             {row.requestType === "JOB" && (
               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[0.65rem] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 w-max">

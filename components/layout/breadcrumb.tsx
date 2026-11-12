@@ -37,7 +37,7 @@ export default function Breadcrumb() {
 
   // Do not show global breadcrumb for archives and procurement-folders 
   // because they have their own specific data-driven breadcrumbs.
-  if (segments[0] === "archives" || segments[0] === "procurement-folders") {
+  if (segments[0] === "archives" || segments[0] === "procurement-folders" || segments[0] === "abstract") {
     return null;
   }
 

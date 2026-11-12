@@ -369,241 +369,241 @@ export default function AbstractLivePreviewPage() {
                     }}
                     className="abstract-print-sheet print-area w-[1448px] shadow-xl min-h-[816px] p-[40px] print:!p-0 block print:shadow-none print:!w-full print:!max-w-none print:!m-0 print:!min-h-0"
                   >
-                  <div style={{ border: "1px solid #000", padding: "10px 0" }}>
+                    <div style={{ border: "1px solid #000", padding: "10px 0" }}>
 
-                    {/* Doc Header */}
-                    <div style={{ textAlign: "center", marginBottom: "6px" }}>
-                      <div>Republic of the Philippines</div>
-                      <div>Province of Antique</div>
-                      <div>Municipality of Pandan</div>
-                    </div>
-                    <div style={{ textAlign: "center", marginBottom: "8px" }}>
-                      <div style={{ fontSize: "20px", fontWeight: "900", letterSpacing: "0.05em" }}>ABSTRACT OF CANVASS</div>
-                    </div>
-
-                    {/* PR No & Date */}
-                    <div style={{ display: "flex", justifyContent: "center", gap: "48px", marginBottom: "8px", fontSize: "13px" }}>
-                      <div>
-                        Purchase Request No.:&nbsp;
-                        <span style={{ borderBottom: "1px solid #000", display: "inline-block", minWidth: "80px", paddingBottom: "1px" }}>
-                          &nbsp;{showPrNo ? pr?.prNumber : ""}&nbsp;
-                        </span>
+                      {/* Doc Header */}
+                      <div style={{ textAlign: "center", marginBottom: "6px" }}>
+                        <div>Republic of the Philippines</div>
+                        <div>Province of Antique</div>
+                        <div>Municipality of Pandan</div>
                       </div>
-                      <div>
-                        Dated:&nbsp;
-                        <span style={{ borderBottom: "1px solid #000", display: "inline-block", minWidth: "80px", paddingBottom: "1px" }}>
-                          &nbsp;{docDate ? fmtDate(docDate) : ""}&nbsp;
-                        </span>
+                      <div style={{ textAlign: "center", marginBottom: "8px" }}>
+                        <div style={{ fontSize: "20px", fontWeight: "700", letterSpacing: "0.05em" }}>ABSTRACT OF CANVASS</div>
                       </div>
-                    </div>
 
-                    {/* Main Table */}
-                    <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "15px" }}>
-                      <tbody>
-                        <tr>
-                          <th style={{ ...headerCell, width: "26px" }} rowSpan={3}>NO.</th>
-                          <th style={{ ...headerCell, width: "35%" }} rowSpan={3}>DESCRIPTION</th>
-                          <th style={{ ...headerCell, width: "38px" }} rowSpan={3}>QTY</th>
-                          <th style={{ ...headerCell, width: "34px" }} rowSpan={3}>UNIT</th>
-                          <th style={{ ...headerCell }} colSpan={displayQuotes.length * 2}>SUPPLIER&apos;S NAME</th>
-                        </tr>
-                        <tr>
-                          {displayQuotes.map((q: any, i: number) => (
-                            <th key={i} style={{ ...headerCell, fontSize: "13px" }} colSpan={2}>
-                              {q ? q.supplier?.name?.toUpperCase() : `SUPPLIER ${i + 1}`}
-                            </th>
-                          ))}
-                        </tr>
-                        <tr>
-                          {displayQuotes.map((_: any, i: number) => (
-                            <React.Fragment key={i}>
-                              <th key={`up-${i}`} style={{ ...headerCell, width: "8%", fontSize: "13px" }}>UNIT PRICE</th>
-                              <th key={`tp-${i}`} style={{ ...headerCell, width: "8%", fontSize: "13px" }}>TOTAL PRICE</th>
-                            </React.Fragment>
-                          ))}
-                        </tr>
-                      </tbody>
-                      <tbody>
-                        {lineItems.map((item: any, idx: number) => {
-                          const isRec = recommendedQuote !== undefined;
-                          const hasBreak = pageBreaks.includes(idx);
+                      {/* PR No & Date */}
+                      <div style={{ display: "flex", justifyContent: "center", gap: "48px", marginBottom: "8px", fontSize: "13px" }}>
+                        <div>
+                          Purchase Request No.:&nbsp;
+                          <span style={{ borderBottom: "1px solid #000", display: "inline-block", minWidth: "80px", paddingBottom: "1px" }}>
+                            &nbsp;{showPrNo ? pr?.prNumber : ""}&nbsp;
+                          </span>
+                        </div>
+                        <div>
+                          Dated:&nbsp;
+                          <span style={{ borderBottom: "1px solid #000", display: "inline-block", minWidth: "80px", paddingBottom: "1px" }}>
+                            &nbsp;{docDate ? fmtDate(docDate) : ""}&nbsp;
+                          </span>
+                        </div>
+                      </div>
 
-                          const isSpec = !item.quantity || item.quantity === 0;
-                          let displayNo = "";
-                          if (!isSpec) {
-                            let count = 0;
-                            for (let i = 0; i <= idx; i++) {
-                              if (Number(lineItems[i].quantity) > 0) count++;
+                      {/* Main Table */}
+                      <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "15px" }}>
+                        <tbody>
+                          <tr>
+                            <th style={{ ...headerCell, width: "26px" }} rowSpan={3}>NO.</th>
+                            <th style={{ ...headerCell, width: "35%" }} rowSpan={3}>DESCRIPTION</th>
+                            <th style={{ ...headerCell, width: "38px" }} rowSpan={3}>QTY</th>
+                            <th style={{ ...headerCell, width: "34px" }} rowSpan={3}>UNIT</th>
+                            <th style={{ ...headerCell }} colSpan={displayQuotes.length * 2}>SUPPLIER&apos;S NAME</th>
+                          </tr>
+                          <tr>
+                            {displayQuotes.map((q: any, i: number) => (
+                              <th key={i} style={{ ...headerCell, fontSize: "13px" }} colSpan={2}>
+                                {q ? q.supplier?.name?.toUpperCase() : `SUPPLIER ${i + 1}`}
+                              </th>
+                            ))}
+                          </tr>
+                          <tr>
+                            {displayQuotes.map((_: any, i: number) => (
+                              <React.Fragment key={i}>
+                                <th key={`up-${i}`} style={{ ...headerCell, width: "8%", fontSize: "13px" }}>UNIT PRICE</th>
+                                <th key={`tp-${i}`} style={{ ...headerCell, width: "8%", fontSize: "13px" }}>TOTAL PRICE</th>
+                              </React.Fragment>
+                            ))}
+                          </tr>
+                        </tbody>
+                        <tbody>
+                          {lineItems.map((item: any, idx: number) => {
+                            const isRec = recommendedQuote !== undefined;
+                            const hasBreak = pageBreaks.includes(idx);
+
+                            const isSpec = !item.quantity || item.quantity === 0;
+                            let displayNo = "";
+                            if (!isSpec) {
+                              let count = 0;
+                              for (let i = 0; i <= idx; i++) {
+                                if (Number(lineItems[i].quantity) > 0) count++;
+                              }
+                              displayNo = count.toString();
                             }
-                            displayNo = count.toString();
-                          }
 
-                          const hasSpecs = !isSpec && idx + 1 < lineItems.length && (!lineItems[idx + 1].quantity || lineItems[idx + 1].quantity === 0);
+                            const hasSpecs = !isSpec && idx + 1 < lineItems.length && (!lineItems[idx + 1].quantity || lineItems[idx + 1].quantity === 0);
 
-                          return (
-                            <tr key={item.id} className={`group ${hasBreak ? 'break-before-page' : ''}`} style={hasBreak ? { pageBreakBefore: 'always', breakBefore: 'page' } : {}}>
-                              <td style={{ ...cell, textAlign: "center", fontWeight: "700", verticalAlign: "top", position: "relative" }}>
-                                <div className="absolute top-0 left-[-24px] h-[24px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer no-print z-50 -translate-y-1/2" onClick={() => togglePageBreak(idx)}>
-                                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white shadow-sm ${hasBreak ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'}`} title={hasBreak ? "Remove Page Break" : "Insert Page Break Above"}>
-                                    {hasBreak ? <Minus size={12} /> : <Plus size={12} />}
-                                  </div>
-                                </div>
-                                {hasBreak && (
-                                  <div className="absolute top-0 left-0 w-[1168px] h-0 border-t-[3px] border-dashed border-red-400 z-40 no-print" style={{ pointerEvents: 'none' }}></div>
-                                )}
-                                {displayNo}
-                              </td>
-                              <td style={{ ...cell, fontWeight: isSpec ? "normal" : (hasSpecs ? "bold" : "normal"), paddingLeft: isSpec ? "1.5rem" : "0.5rem" }}>{item.description}</td>
-                              <td style={{ ...cell, textAlign: "center" }}>{isSpec ? "" : item.quantity}</td>
-                              <td style={{ ...cell, textAlign: "center" }}>{isSpec ? "" : item.unit}</td>
-                              {displayQuotes.map((q: any, qi: number) => {
-                                const prices = q ? getItemPrice(q, item.id) : { unitPrice: 0, totalPrice: 0 };
-                                return (
-                                  <React.Fragment key={qi}>
-                                    <td key={`up-${qi}`} style={{ ...cell, textAlign: "right" }}>
-                                      {isSpec ? "" : fmt2(prices.unitPrice)}
-                                    </td>
-                                    <td key={`tp-${qi}`} style={{ ...cell, textAlign: "right" }}>
-                                      {isSpec ? "" : fmt2(prices.totalPrice)}
-                                    </td>
-                                  </React.Fragment>
-                                );
-                              })}
-                            </tr>
-                          );
-                        })}
-
-                        {Array.from({ length: Math.max(0, targetRows - lineItems.length) }).map((_, i) => {
-                          const idx = `fill-${i}`;
-                          const hasBreak = pageBreaks.includes(idx);
-                          return (
-                            <tr key={idx} className={`group ${hasBreak ? 'break-before-page' : ''}`} style={hasBreak ? { pageBreakBefore: 'always', breakBefore: 'page', height: "24px" } : { height: "24px" }}>
-                              <td style={{ ...cell, position: "relative" }}>
-                                <div className="absolute top-0 left-[-24px] h-[24px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer no-print z-50 -translate-y-1/2" onClick={() => togglePageBreak(idx)}>
-                                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white shadow-sm ${hasBreak ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'}`} title={hasBreak ? "Remove Page Break" : "Insert Page Break Above"}>
-                                    {hasBreak ? <Minus size={12} /> : <Plus size={12} />}
-                                  </div>
-                                </div>
-                                {hasBreak && (
-                                  <div className="absolute top-0 left-0 w-[1168px] h-0 border-t-[3px] border-dashed border-red-400 z-40 no-print" style={{ pointerEvents: 'none' }}></div>
-                                )}
-                              </td>
-                              <td style={cell}></td><td style={cell}></td><td style={cell}></td>
-                              {displayQuotes.map((_: any, qi: number) => (
-                                <React.Fragment key={qi}><td key={`fu-${qi}`} style={cell}></td><td key={`ft-${qi}`} style={cell}></td></React.Fragment>
-                              ))}
-                            </tr>
-                          );
-                        })}
-
-                        {/* TOTAL row */}
-                        <tr className={`group ${pageBreaks.includes('total') ? 'break-before-page' : ''}`} style={pageBreaks.includes('total') ? { pageBreakBefore: 'always', breakBefore: 'page' } : {}}>
-                          <td style={{ ...headerCell, borderTop: "2px solid #000", textAlign: "center", position: "relative" }} colSpan={4}>
-                            <div className="absolute top-0 left-[-24px] h-[24px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer no-print z-50 -translate-y-1/2" onClick={() => togglePageBreak('total')}>
-                              <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white shadow-sm ${pageBreaks.includes('total') ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'}`} title={pageBreaks.includes('total') ? "Remove Page Break" : "Insert Page Break Above"}>
-                                {pageBreaks.includes('total') ? <Minus size={12} /> : <Plus size={12} />}
-                              </div>
-                            </div>
-                            {pageBreaks.includes('total') && (
-                              <div className="absolute top-0 left-0 w-[1168px] h-0 border-t-[3px] border-dashed border-red-400 z-40 no-print" style={{ pointerEvents: 'none' }}></div>
-                            )}
-                            TOTAL AMOUNT
-                          </td>
-                          {displayQuotes.map((q: any, qi: number) => {
-                            const isWinner = q && recommendedQuote && q.id === recommendedQuote.id;
                             return (
-                              <td key={`tot-${qi}`} colSpan={2} style={{ ...cell, borderTop: "2px solid #000", textAlign: "right", fontWeight: isWinner ? "700" : "normal", fontSize: isWinner ? "14px" : "13px" }}>
-                                {q && q.totalAmount > 0 ? fmt2(q.totalAmount) : ""}
-                              </td>
+                              <tr key={item.id} className={`group ${hasBreak ? 'break-before-page' : ''}`} style={hasBreak ? { pageBreakBefore: 'always', breakBefore: 'page' } : {}}>
+                                <td style={{ ...cell, textAlign: "center", fontWeight: "700", verticalAlign: "top", position: "relative" }}>
+                                  <div className="absolute top-0 left-[-24px] h-[24px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer no-print z-50 -translate-y-1/2" onClick={() => togglePageBreak(idx)}>
+                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white shadow-sm ${hasBreak ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'}`} title={hasBreak ? "Remove Page Break" : "Insert Page Break Above"}>
+                                      {hasBreak ? <Minus size={12} /> : <Plus size={12} />}
+                                    </div>
+                                  </div>
+                                  {hasBreak && (
+                                    <div className="absolute top-0 left-0 w-[1168px] h-0 border-t-[3px] border-dashed border-red-400 z-40 no-print" style={{ pointerEvents: 'none' }}></div>
+                                  )}
+                                  {displayNo}
+                                </td>
+                                <td style={{ ...cell, fontWeight: isSpec ? "normal" : (hasSpecs ? "bold" : "normal"), paddingLeft: isSpec ? "1.5rem" : "0.5rem" }}>{item.description}</td>
+                                <td style={{ ...cell, textAlign: "center" }}>{isSpec ? "" : item.quantity}</td>
+                                <td style={{ ...cell, textAlign: "center" }}>{isSpec ? "" : item.unit}</td>
+                                {displayQuotes.map((q: any, qi: number) => {
+                                  const prices = q ? getItemPrice(q, item.id) : { unitPrice: 0, totalPrice: 0 };
+                                  return (
+                                    <React.Fragment key={qi}>
+                                      <td key={`up-${qi}`} style={{ ...cell, textAlign: "right" }}>
+                                        {isSpec ? "" : fmt2(prices.unitPrice)}
+                                      </td>
+                                      <td key={`tp-${qi}`} style={{ ...cell, textAlign: "right" }}>
+                                        {isSpec ? "" : fmt2(prices.totalPrice)}
+                                      </td>
+                                    </React.Fragment>
+                                  );
+                                })}
+                              </tr>
                             );
                           })}
-                        </tr>
-                      </tbody>
-                    </table>
 
-                    {/* BAC Res No */}
-                    <div className={`print:break-inside-avoid group ${pageBreaks.includes('signatures') ? 'break-before-page' : ''}`} style={pageBreaks.includes('signatures') ? { pageBreakBefore: 'always', breakBefore: 'page', position: 'relative' } : { position: 'relative' }}>
-                      <div className="absolute top-0 left-[-24px] h-[24px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer no-print z-50 -translate-y-1/2" onClick={() => togglePageBreak('signatures')}>
-                        <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white shadow-sm ${pageBreaks.includes('signatures') ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'}`} title={pageBreaks.includes('signatures') ? "Remove Page Break" : "Insert Page Break Above"}>
-                          {pageBreaks.includes('signatures') ? <Minus size={12} /> : <Plus size={12} />}
-                        </div>
-                      </div>
-                      {pageBreaks.includes('signatures') && (
-                        <div className="absolute top-0 left-0 w-[1168px] h-0 border-t-[3px] border-dashed border-red-400 z-40 no-print" style={{ pointerEvents: 'none' }}></div>
-                      )}
-                      <div style={{ fontSize: "13px", marginBottom: "8px", padding: "0 24px" }}>
-                        BAC Resolution No.:&nbsp;
-                        <span style={{ borderBottom: "1px solid #000", display: "inline-block", minWidth: "100px" }}>
-                          &nbsp;{bacResNo}&nbsp;
-                        </span>
-                      </div>
-                    </div>
+                          {Array.from({ length: Math.max(0, targetRows - lineItems.length) }).map((_, i) => {
+                            const idx = `fill-${i}`;
+                            const hasBreak = pageBreaks.includes(idx);
+                            return (
+                              <tr key={idx} className={`group ${hasBreak ? 'break-before-page' : ''}`} style={hasBreak ? { pageBreakBefore: 'always', breakBefore: 'page', height: "24px" } : { height: "24px" }}>
+                                <td style={{ ...cell, position: "relative" }}>
+                                  <div className="absolute top-0 left-[-24px] h-[24px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer no-print z-50 -translate-y-1/2" onClick={() => togglePageBreak(idx)}>
+                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white shadow-sm ${hasBreak ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'}`} title={hasBreak ? "Remove Page Break" : "Insert Page Break Above"}>
+                                      {hasBreak ? <Minus size={12} /> : <Plus size={12} />}
+                                    </div>
+                                  </div>
+                                  {hasBreak && (
+                                    <div className="absolute top-0 left-0 w-[1168px] h-0 border-t-[3px] border-dashed border-red-400 z-40 no-print" style={{ pointerEvents: 'none' }}></div>
+                                  )}
+                                </td>
+                                <td style={cell}></td><td style={cell}></td><td style={cell}></td>
+                                {displayQuotes.map((_: any, qi: number) => (
+                                  <React.Fragment key={qi}><td key={`fu-${qi}`} style={cell}></td><td key={`ft-${qi}`} style={cell}></td></React.Fragment>
+                                ))}
+                              </tr>
+                            );
+                          })}
 
-                    {/* Certification Paragraph */}
-                    <div className="print:break-inside-avoid" style={{ fontSize: "14px", lineHeight: "1.6", marginBottom: "50px", textAlign: "justify", padding: "0 24px" }}>
-                      &nbsp;&nbsp;&nbsp;&nbsp;We, the undersigned the BAC Chairman, Members and Requisitioning Officer, do hereby certify that the foregoing is the true and correct ABSTRACT OF CANVASS of the Request for Quotation received on <strong>{fmtDate(dateReceived)}</strong> by BAC Secretariat and was opened by Bids and Awards Committee of Pandan, Antique on <strong>{fmtDate(dateAwarded)}</strong> for&nbsp;
-                      <span style={{ borderBottom: "1px solid #000" }}><strong>&nbsp;{pr?.purpose}&nbsp;</strong></span>
-                      &nbsp;needed for use in the Office of the <strong>{reqOfficerOffice || "___________________"}</strong>, Pandan, Antique.
-                      The offer <strong><span>{recommendedQuote ? recommendedQuote.supplier?.name?.toUpperCase() : "___________________"}</span></strong> for items herein and respectively checked and articles/materials are hereby ACCEPTED AND AWARDED OF PRICE RECOMMENDATION. Recommending approval of the award in favor of the dealer quoted most advantageous offers indicating in the column above.
-                    </div>
+                          {/* TOTAL row */}
+                          <tr className={`group ${pageBreaks.includes('total') ? 'break-before-page' : ''}`} style={pageBreaks.includes('total') ? { pageBreakBefore: 'always', breakBefore: 'page' } : {}}>
+                            <td style={{ ...headerCell, borderTop: "2px solid #000", textAlign: "center", position: "relative" }} colSpan={4}>
+                              <div className="absolute top-0 left-[-24px] h-[24px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer no-print z-50 -translate-y-1/2" onClick={() => togglePageBreak('total')}>
+                                <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white shadow-sm ${pageBreaks.includes('total') ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'}`} title={pageBreaks.includes('total') ? "Remove Page Break" : "Insert Page Break Above"}>
+                                  {pageBreaks.includes('total') ? <Minus size={12} /> : <Plus size={12} />}
+                                </div>
+                              </div>
+                              {pageBreaks.includes('total') && (
+                                <div className="absolute top-0 left-0 w-[1168px] h-0 border-t-[3px] border-dashed border-red-400 z-40 no-print" style={{ pointerEvents: 'none' }}></div>
+                              )}
+                              TOTAL AMOUNT
+                            </td>
+                            {displayQuotes.map((q: any, qi: number) => {
+                              const isWinner = q && recommendedQuote && q.id === recommendedQuote.id;
+                              return (
+                                <td key={`tot-${qi}`} colSpan={2} style={{ ...cell, borderTop: "2px solid #000", textAlign: "right", fontWeight: isWinner ? "700" : "normal", fontSize: isWinner ? "14px" : "13px" }}>
+                                  {q && q.totalAmount > 0 ? fmt2(q.totalAmount) : ""}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        </tbody>
+                      </table>
 
-                    <div className="print:break-inside-avoid" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px", flexWrap: "nowrap", rowGap: "32px" }}>
-                      {bacChairman && (
-                        <div
-                          onClick={() => { setEditingSigId(bacChairman.id); setShowAllSigs(false); }}
-                          style={{ flex: "1 1 auto", textAlign: "center", padding: "4px", cursor: "pointer", borderRadius: "6px", backgroundColor: editingSigId === bacChairman.id ? "rgba(37,99,235,0.08)" : "transparent" }}
-                          title="Click to edit"
-                        >
-                          <div style={{ fontWeight: "700", fontSize: "12px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{bacChairman.name}</div>
-                          <div style={{ fontSize: "12px", }}>{bacChairman.position}</div>
-                          <div style={{ fontSize: "12px" }}>BAC Chairman</div>
-                        </div>
-                      )}
-                      {bacMembers.map((m: any) => (
-                        <div
-                          key={m.id}
-                          onClick={() => { setEditingSigId(m.id); setShowAllSigs(false); }}
-                          style={{ flex: "1 1 auto", textAlign: "center", padding: "4px", cursor: "pointer", borderRadius: "6px", backgroundColor: editingSigId === m.id ? "rgba(37,99,235,0.08)" : "transparent" }}
-                          title="Click to edit"
-                        >
-                          <div style={{ fontWeight: "700", fontSize: "12px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{m.name}</div>
-                          <div style={{ fontSize: "12px" }}>{m.position}</div>
-                          <div style={{ fontSize: "12px" }}>{m.label || "BAC Member"}</div>
-                        </div>
-                      ))}
-                      <div
-                        onClick={() => { setEditingSigId("req"); setShowAllSigs(false); }}
-                        style={{ flex: "1 1 auto", textAlign: "center", padding: "4px", cursor: "pointer", borderRadius: "6px", backgroundColor: editingSigId === "req" ? "rgba(37,99,235,0.08)" : "transparent" }}
-                        title="Click to edit"
-                      >
-                        <div style={{ fontWeight: "700", fontSize: "12px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{reqOfficerName || "___________________"}</div>
-                        <div style={{ fontSize: "12px" }}>Requisitioning Officer</div>
-                      </div>
-                    </div>
-
-                    {/* Approved by */}
-                    <div className="print:break-inside-avoid" style={{ display: "flex", justifyContent: "flex-end", marginTop: "6px", padding: "0 24px", marginBottom: "10px" }}>
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
-                        <div style={{ fontSize: "13px", marginBottom: "30px" }}>Approved:</div>
-                        {hope ? (
-                          <div style={{ textAlign: "center", minWidth: "180px" }}>
-                            <div style={{ fontWeight: "700", fontSize: "12px", textTransform: "uppercase" }}>{hope.name}</div>
-                            <div style={{ fontSize: "12px" }}>{hope.position}</div>
+                      {/* BAC Res No */}
+                      <div className={`print:break-inside-avoid group ${pageBreaks.includes('signatures') ? 'break-before-page' : ''}`} style={pageBreaks.includes('signatures') ? { pageBreakBefore: 'always', breakBefore: 'page', position: 'relative' } : { position: 'relative' }}>
+                        <div className="absolute top-0 left-[-24px] h-[24px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer no-print z-50 -translate-y-1/2" onClick={() => togglePageBreak('signatures')}>
+                          <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white shadow-sm ${pageBreaks.includes('signatures') ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'}`} title={pageBreaks.includes('signatures') ? "Remove Page Break" : "Insert Page Break Above"}>
+                            {pageBreaks.includes('signatures') ? <Minus size={12} /> : <Plus size={12} />}
                           </div>
-                        ) : (
-                          <div style={{ textAlign: "center", minWidth: "180px" }}>
-                            <div style={{ borderBottom: "1px solid #000", width: "180px", marginBottom: "2px" }}></div>
-                            <div style={{ fontSize: "13px" }}>Municipal Mayor</div>
+                        </div>
+                        {pageBreaks.includes('signatures') && (
+                          <div className="absolute top-0 left-0 w-[1168px] h-0 border-t-[3px] border-dashed border-red-400 z-40 no-print" style={{ pointerEvents: 'none' }}></div>
+                        )}
+                        <div style={{ fontSize: "13px", marginBottom: "8px", padding: "0 24px" }}>
+                          BAC Resolution No.:&nbsp;
+                          <span style={{ borderBottom: "1px solid #000", display: "inline-block", minWidth: "100px" }}>
+                            &nbsp;{bacResNo}&nbsp;
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Certification Paragraph */}
+                      <div className="print:break-inside-avoid" style={{ fontSize: "14px", lineHeight: "1.6", marginBottom: "50px", textAlign: "justify", padding: "0 24px" }}>
+                        &nbsp;&nbsp;&nbsp;&nbsp;We, the undersigned the BAC Chairman, Members and Requisitioning Officer, do hereby certify that the foregoing is the true and correct ABSTRACT OF CANVASS of the Request for Quotation received on <strong>{fmtDate(dateReceived)}</strong> by BAC Secretariat and was opened by Bids and Awards Committee of Pandan, Antique on <strong>{fmtDate(dateAwarded)}</strong> for&nbsp;
+                        <span style={{ borderBottom: "1px solid #000" }}><strong>&nbsp;{pr?.purpose}&nbsp;</strong></span>
+                        &nbsp;needed for use in the Office of the <strong>{reqOfficerOffice || "___________________"}</strong>, Pandan, Antique.
+                        The offer <strong><span>{recommendedQuote ? recommendedQuote.supplier?.name?.toUpperCase() : "___________________"}</span></strong> for items herein and respectively checked and articles/materials are hereby ACCEPTED AND AWARDED OF PRICE RECOMMENDATION. Recommending approval of the award in favor of the dealer quoted most advantageous offers indicating in the column above.
+                      </div>
+
+                      <div className="print:break-inside-avoid" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px", flexWrap: "nowrap", rowGap: "32px" }}>
+                        {bacChairman && (
+                          <div
+                            onClick={() => { setEditingSigId(bacChairman.id); setShowAllSigs(false); }}
+                            style={{ flex: "1 1 auto", textAlign: "center", padding: "4px", cursor: "pointer", borderRadius: "6px", backgroundColor: editingSigId === bacChairman.id ? "rgba(37,99,235,0.08)" : "transparent" }}
+                            title="Click to edit"
+                          >
+                            <div style={{ fontWeight: "700", fontSize: "12px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{bacChairman.name}</div>
+                            <div style={{ fontSize: "12px", }}>{bacChairman.position}</div>
+                            <div style={{ fontSize: "12px" }}>BAC Chairman</div>
                           </div>
                         )}
+                        {bacMembers.map((m: any) => (
+                          <div
+                            key={m.id}
+                            onClick={() => { setEditingSigId(m.id); setShowAllSigs(false); }}
+                            style={{ flex: "1 1 auto", textAlign: "center", padding: "4px", cursor: "pointer", borderRadius: "6px", backgroundColor: editingSigId === m.id ? "rgba(37,99,235,0.08)" : "transparent" }}
+                            title="Click to edit"
+                          >
+                            <div style={{ fontWeight: "700", fontSize: "12px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{m.name}</div>
+                            <div style={{ fontSize: "12px" }}>{m.position}</div>
+                            <div style={{ fontSize: "12px" }}>{m.label || "BAC Member"}</div>
+                          </div>
+                        ))}
+                        <div
+                          onClick={() => { setEditingSigId("req"); setShowAllSigs(false); }}
+                          style={{ flex: "1 1 auto", textAlign: "center", padding: "4px", cursor: "pointer", borderRadius: "6px", backgroundColor: editingSigId === "req" ? "rgba(37,99,235,0.08)" : "transparent" }}
+                          title="Click to edit"
+                        >
+                          <div style={{ fontWeight: "700", fontSize: "12px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{reqOfficerName || "___________________"}</div>
+                          <div style={{ fontSize: "12px" }}>Requisitioning Officer</div>
+                        </div>
                       </div>
-                    </div>
 
+                      {/* Approved by */}
+                      <div className="print:break-inside-avoid" style={{ display: "flex", justifyContent: "flex-end", marginTop: "6px", padding: "0 24px", marginBottom: "10px" }}>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+                          <div style={{ fontSize: "13px", marginBottom: "30px" }}>Approved:</div>
+                          {hope ? (
+                            <div style={{ textAlign: "center", minWidth: "180px" }}>
+                              <div style={{ fontWeight: "700", fontSize: "12px", textTransform: "uppercase" }}>{hope.name}</div>
+                              <div style={{ fontSize: "12px" }}>{hope.position}</div>
+                            </div>
+                          ) : (
+                            <div style={{ textAlign: "center", minWidth: "180px" }}>
+                              <div style={{ borderBottom: "1px solid #000", width: "180px", marginBottom: "2px" }}></div>
+                              <div style={{ fontSize: "13px" }}>Municipal Mayor</div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
             {/* Guaranteed scroll spacer */}
             <div

@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import DataTable from "@/components/ui/data-table";
 import StatusBadge from "@/components/ui/status-badge";
 import { formatCurrency } from "@/lib/utils";
-import { Send, Clock, CheckCircle2, ClipboardList, XCircle } from "lucide-react";
+import { Send, Clock, CheckCircle2, ClipboardList, XCircle, ExternalLink } from "lucide-react";
 
 interface abstract {
   id: string;
@@ -45,9 +46,13 @@ export default function abstractPage() {
       key: "prNumber",
       label: "PR Number",
       render: (row: abstract) => (
-        <div style={{ fontWeight: "700", color: "#0f172a", fontFamily: "monospace", fontSize: "0.875rem" }}>
-          {row.rfq?.pr?.prNumber || <span style={{ color: "#94a3b8", fontStyle: "italic", fontWeight: 400 }}>No. not yet assigned</span>}
-        </div>
+        <Link
+          href={`/abstract/${row.id}`}
+          className="inline-flex items-center gap-1.5 font-bold font-mono text-sm text-blue-600 hover:text-blue-700 hover:underline group"
+        >
+          <span>{row.rfq?.pr?.prNumber || row.abstractNumber || "Draft (No Number)"}</span>
+          <ExternalLink size={13} className="text-blue-500 opacity-70 group-hover:opacity-100" />
+        </Link>
       ),
       width: "160px",
     },

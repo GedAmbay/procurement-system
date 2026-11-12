@@ -43,7 +43,7 @@ export async function PATCH(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  const roleCheck = await requireRole(["ADMIN", "BAC_SECRETARIAT"]);
+  const roleCheck = await requireRole(["ADMIN", "BAC_SECRETARIAT", "END_USER", "ANY"]);
   if (!roleCheck.authorized) return roleCheck.response;
 
   const session = await auth();
@@ -53,46 +53,106 @@ export async function PATCH(
 
   try {
     const body = await req.json();
-    const { submittedAt, remarks, lineItems } = body;
+    const { submittedAt, remarks, lineItems, status: rawStatus } = body;
 
-    const totalAmount = lineItems?.reduce((sum: number, item: any) => sum + (item.totalPrice || 0), 0) || 0;
+    let parsedSubmittedAt: Date | null = null;
+    if (submittedAt) {
+      const d = new Date(submittedAt);
+      if (!isNaN(d.getTime())) {
+        parsedSubmittedAt = d;
+      }
+    }
+
+    const isNoBid = rawStatus === "NO_BID";
+
+    const sanitizedLineItems = Array.isArray(lineItems)
+      ? lineItems.map((item: any) => {
+        const unitPrice = isNoBid ? 0 : (isNaN(Number(item.unitPrice)) ? 0 : Number(item.unitPrice));
+        const totalPrice = isNoBid ? 0 : (isNaN(Number(item.totalPrice))
+          ? unitPrice * (Number(item.quantity) || 0)
+          : Number(item.totalPrice));
+        return {
+          id: item.id || undefined,
+          rfqLineItemId: item.rfqLineItemId || undefined,
+          unitPrice,
+          totalPrice,
+        };
+      })
+      : [];
+
+    const totalAmount = sanitizedLineItems.reduce((sum: number, item: any) => sum + (item.totalPrice || 0), 0);
+
+    const determinedStatus = isNoBid
+      ? "NO_BID"
+      : rawStatus === "RETURNED" || (parsedSubmittedAt && totalAmount > 0)
+      ? "RETURNED"
+      : rawStatus || "PENDING";
 
     const updated = await prisma.$transaction(async (tx) => {
       // 1. Update quotation headers
-      const updatedQuotation = await tx.quotation.update({
+      const updatedQuotation = await (tx.quotation as any).update({
         where: { id },
         data: {
-          submittedAt: submittedAt ? new Date(submittedAt) : null,
-          remarks,
+          status: determinedStatus,
+          submittedAt: parsedSubmittedAt,
+          remarks: remarks || null,
           totalAmount,
         }
       });
 
-      // 2. Update all quotation line items
-      if (lineItems && Array.isArray(lineItems)) {
-        for (const item of lineItems) {
-          await tx.quotationLineItem.update({
-            where: { id: item.id },
-            data: {
-              unitPrice: Number(item.unitPrice),
-              totalPrice: Number(item.totalPrice),
-            }
-          });
+      // 2. Fetch existing quotation line items to safely update or create
+      const existingItems = await tx.quotationLineItem.findMany({
+        where: { quotationId: id }
+      });
+
+      if (sanitizedLineItems.length > 0) {
+        for (const item of sanitizedLineItems) {
+          // Match by id or by rfqLineItemId
+          const existing = item.id
+            ? existingItems.find((e) => e.id === item.id)
+            : (item.rfqLineItemId ? existingItems.find((e) => e.rfqLineItemId === item.rfqLineItemId) : null);
+
+          if (existing) {
+            await tx.quotationLineItem.update({
+              where: { id: existing.id },
+              data: {
+                unitPrice: item.unitPrice,
+                totalPrice: item.totalPrice,
+              }
+            });
+          } else if (item.rfqLineItemId) {
+            await tx.quotationLineItem.create({
+              data: {
+                quotationId: id,
+                rfqLineItemId: item.rfqLineItemId,
+                unitPrice: item.unitPrice,
+                totalPrice: item.totalPrice,
+              }
+            });
+          }
         }
       }
 
       // 3. Automatically synchronize RFQ status based on supplier quotations completion
-      await syncRfqStatus(updatedQuotation.rfqId, tx);
+      try {
+        await syncRfqStatus(updatedQuotation.rfqId, tx);
+      } catch (e) {
+        console.warn("syncRfqStatus warning in quotation update:", e);
+      }
 
       // 4. Automatically synchronize awarded supplier and pricing to Purchase Order
-      await syncAwardedSupplierByRfq(updatedQuotation.rfqId, tx);
+      try {
+        await syncAwardedSupplierByRfq(updatedQuotation.rfqId, tx);
+      } catch (e) {
+        console.warn("syncAwardedSupplierByRfq warning in quotation update:", e);
+      }
 
       return updatedQuotation;
     });
 
     return NextResponse.json(updated);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Quotation Update Error:", error);
-    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+    return NextResponse.json({ error: error?.message || "Internal error" }, { status: 500 });
   }
 }

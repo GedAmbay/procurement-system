@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { requireRole } from "@/lib/auth-utils";
 import { syncRfqStatus } from "@/lib/rfq-status";
 import { syncAwardedSupplierToPO } from "@/lib/po-award-sync";
+import { evaluateAbstractBids, checkFinalizeEligibility } from "@/lib/money";
 
 export async function GET(
   req: NextRequest,
@@ -52,7 +53,17 @@ export async function GET(
       }
     }
 
-    return NextResponse.json(abstract);
+    const rfqLineItems = abstract.rfq?.lineItems || [];
+    const quotations = abstract.rfq?.quotations || [];
+
+    const evaluation = evaluateAbstractBids(quotations, rfqLineItems);
+    const eligibility = checkFinalizeEligibility(quotations, rfqLineItems);
+
+    return NextResponse.json({
+      ...abstract,
+      evaluation,
+      eligibility,
+    });
   } catch (error) {
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }

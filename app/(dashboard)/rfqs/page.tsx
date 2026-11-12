@@ -518,10 +518,18 @@ export default function RFQPage() {
           </div>
         ) : filteredRfqs.length === 0 ? (
           <div className="py-16 text-center text-slate-500 flex flex-col items-center">
-            <PackageSearch size={40} className="text-slate-300 mb-3" />
-            <p className="font-semibold text-slate-700">No requests for quotation found.</p>
-            <p className="text-xs text-slate-400 mt-1">Try adjusting your filters or search criteria.</p>
-            {prs.length === 0 && (
+            {search.trim() ? (
+              <Search size={40} className="text-slate-300 mb-3" />
+            ) : (
+              <PackageSearch size={40} className="text-slate-300 mb-3" />
+            )}
+            <p className="font-semibold text-slate-700">
+              {search.trim() ? "No Records Found" : "No requests for quotation found."}
+            </p>
+            <p className="text-xs text-slate-400 mt-1">
+              {search.trim() ? "Try adjusting your search query" : "Try adjusting your filters or search criteria."}
+            </p>
+            {prs.length === 0 && !search.trim() && (
               <button
                 type="button"
                 onClick={openAddModal}
@@ -548,7 +556,7 @@ export default function RFQPage() {
                   </th>
 
                   {/* Quotation / PR */}
-                  <th className="px-4 py-3.5">Quotation No.</th>
+                  <th className="px-4 py-3.5">Quotation Number</th>
 
                   {/* Requesting Office */}
                   <th className="px-4 py-3.5">Requesting Office</th>

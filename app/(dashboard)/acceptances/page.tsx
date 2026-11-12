@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckSquare, Eye, Printer, Clock, CheckCircle2 } from "lucide-react";
+import Link from "next/link";
+import { CheckSquare, Eye, Printer, Clock, CheckCircle2, ExternalLink } from "lucide-react";
 import DataTable from "@/components/ui/data-table";
 import FormModal from "@/components/ui/form-modal";
 import StatusBadge from "@/components/ui/status-badge";
@@ -69,9 +70,13 @@ export default function AcceptancesPage() {
       key: "airNumber",
       label: "AIR Number",
       render: (row: Acceptance) => (
-        <div style={{ fontWeight: "600", color: "#0f172a", fontFamily: "monospace", fontSize: "0.875rem" }}>
-          {row.airNumber || row.AIRNumber || <span style={{ color: "#94a3b8", fontStyle: "italic", fontWeight: 400 }}>No. not yet assigned</span>}
-        </div>
+        <Link
+          href={`/acceptances/${row.id}`}
+          className="inline-flex items-center gap-1.5 font-bold font-mono text-sm text-blue-600 hover:text-blue-700 hover:underline group"
+        >
+          <span>{row.airNumber || row.AIRNumber || "Draft (No Number)"}</span>
+          <ExternalLink size={13} className="text-blue-500 opacity-70 group-hover:opacity-100" />
+        </Link>
       ),
       width: "160px",
     },
@@ -79,9 +84,19 @@ export default function AcceptancesPage() {
       key: "poNumber",
       label: "PO Number",
       render: (row: Acceptance) => (
-        <div style={{ fontWeight: "600", color: "#1e293b", fontSize: "0.875rem" }}>
-          {row.po?.poNumber || <span style={{ color: "#94a3b8", fontStyle: "italic", fontWeight: 400 }}>No. not yet assigned</span>}
-        </div>
+        row.po?.poNumber && row.poId ? (
+          <Link
+            href={`/purchase-orders/${row.poId}`}
+            className="inline-flex items-center gap-1.5 font-medium font-mono text-xs text-blue-600 hover:text-blue-700 hover:underline group"
+          >
+            <span>{row.po.poNumber}</span>
+            <ExternalLink size={12} className="text-blue-500 opacity-70 group-hover:opacity-100" />
+          </Link>
+        ) : (
+          <div style={{ fontWeight: "600", color: "#1e293b", fontSize: "0.875rem" }}>
+            {row.po?.poNumber || <span style={{ color: "#94a3b8", fontStyle: "italic", fontWeight: 400 }}>No. not yet assigned</span>}
+          </div>
+        )
       ),
       width: "200px",
     },

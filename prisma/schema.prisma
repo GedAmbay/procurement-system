@@ -213,6 +213,7 @@ model Quotation {
   id          String              @id @default(cuid())
   rfqId       String
   supplierId  String
+  status      String              @default("PENDING") // PENDING, RETURNED, NO_BID
   submittedAt DateTime?
   totalAmount Float               @default(0)
   remarks     String?

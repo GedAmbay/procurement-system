@@ -1,13 +1,29 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth-utils";
 import { auth } from "@/auth";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const roleCheck = await requireRole(["ANY"]);
   if (!roleCheck.authorized) return roleCheck.response;
+
+  const url = new URL(req.url);
+  const search = url.searchParams.get("search") || "";
+
+  const whereClause: any = {};
+  if (search) {
+    whereClause.OR = [
+      { airNumber: { contains: search } },
+      { po: { poNumber: { contains: search } } },
+      { po: { supplier: { name: { contains: search } } } },
+      { po: { abstract: { rfq: { pr: { office: { name: { contains: search } } } } } } },
+      { po: { abstract: { rfq: { pr: { office: { code: { contains: search } } } } } } },
+    ];
+  }
+
   try {
     const acceptances = await prisma.acceptance.findMany({
+      where: whereClause,
       include: {
         po: {
           include: {

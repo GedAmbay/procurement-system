@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { FileText, ArrowLeft, FolderOpen, ChevronRight, User } from "lucide-react";
+import { FileText, ArrowLeft, FolderOpen, ChevronRight, User, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import DataTable from "@/components/ui/data-table";
 import { formatCurrency } from "@/lib/utils";
@@ -42,9 +42,13 @@ export default function OfficeArchivePage() {
       key: "prNumber",
       label: "Folder ID (PR)",
       render: (row: FolderRecord) => (
-        <div className="font-mono font-semibold text-slate-900 text-sm">
-          {row.prNumber || <span className="text-slate-400 italic font-normal">No. not yet assigned</span>}
-        </div>
+        <Link
+          href={`/procurement-folders/${row.id}`}
+          className="inline-flex items-center gap-1.5 font-bold font-mono text-sm text-blue-600 hover:text-blue-700 hover:underline group"
+        >
+          <span>{row.prNumber || "Draft (No Number)"}</span>
+          <ExternalLink size={13} className="text-blue-500 opacity-70 group-hover:opacity-100" />
+        </Link>
       ),
       width: "160px",
     },

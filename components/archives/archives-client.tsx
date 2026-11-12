@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronRight, FolderOpen, Clock, CheckCircle2 } from "lucide-react";
+import { ChevronRight, FolderOpen, Clock, CheckCircle2, Search } from "lucide-react";
 
 interface ArchiveStats {
   id: string;
@@ -107,69 +107,81 @@ export default function ArchivesClient({ archives, fiscalYear, availableYears }:
       </div>
 
       {/* Grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.5rem" }}>
-        {sorted.map(office => {
-          const isEmpty = office.count === 0;
+      {sorted.length === 0 ? (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 py-16 text-center text-slate-500 flex flex-col items-center">
+          <Search size={40} className="text-slate-300 mb-3" />
+          <p className="font-semibold text-slate-700">
+            {searchQuery.trim() ? "No Records Found" : "No archives found"}
+          </p>
+          {searchQuery.trim() && (
+            <p className="text-xs text-slate-400 mt-1">Try adjusting your search query</p>
+          )}
+        </div>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.5rem" }}>
+          {sorted.map(office => {
+            const isEmpty = office.count === 0;
 
-          return (
-            <div
-              key={office.id}
-              className={isEmpty ? "card" : "card stat-card"}
-              onClick={() => {
-                if (!isEmpty) router.push(`/archives/${office.id}`);
-              }}
-              style={{
-                cursor: isEmpty ? "default" : "pointer",
-                padding: "1.5rem",
-                display: "flex", flexDirection: "column"
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
-                <div>
-                  <h3 style={{ fontSize: "1.125rem", fontWeight: 700, color: isEmpty ? "#64748b" : "#1e293b", margin: "0 0 0.25rem 0", lineHeight: 1.2 }}>
-                    {office.name}
-                  </h3>
-                  {office.head && (
-                    <div style={{ fontSize: "0.875rem", color: "#94a3b8" }}>
-                      {office.head}
-                    </div>
+            return (
+              <div
+                key={office.id}
+                className={isEmpty ? "card" : "card stat-card"}
+                onClick={() => {
+                  if (!isEmpty) router.push(`/archives/${office.id}`);
+                }}
+                style={{
+                  cursor: isEmpty ? "default" : "pointer",
+                  padding: "1.5rem",
+                  display: "flex", flexDirection: "column"
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
+                  <div>
+                    <h3 style={{ fontSize: "1.125rem", fontWeight: 700, color: isEmpty ? "#64748b" : "#1e293b", margin: "0 0 0.25rem 0", lineHeight: 1.2 }}>
+                      {office.name}
+                    </h3>
+                    {office.head && (
+                      <div style={{ fontSize: "0.875rem", color: "#94a3b8" }}>
+                        {office.head}
+                      </div>
+                    )}
+                  </div>
+                  {!isEmpty && (
+                    <ChevronRight size={16} color="#64748b" style={{ marginTop: "4px", flexShrink: 0 }} />
                   )}
                 </div>
-                {!isEmpty && (
-                  <ChevronRight size={16} color="#64748b" style={{ marginTop: "4px", flexShrink: 0 }} />
+
+                {isEmpty ? (
+                  <div className="inset" style={{ padding: "0.75rem 1rem", marginTop: "auto" }}>
+                    <span style={{ fontSize: "0.875rem", color: "#94a3b8" }}>No folders in FY {fiscalYear}</span>
+                  </div>
+                ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "1rem" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.875rem", color: "#64748b" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                          <FolderOpen size={16} /> Total Folders
+                        </div>
+                        <div style={{ fontWeight: 600, color: "#1e293b" }}>{office.count}</div>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.875rem", color: "#64748b" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                          <Clock size={16} /> Active
+                        </div>
+                        <div style={{ fontWeight: 600, color: "#d97706" }}>{office.activeCount}</div>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.875rem", color: "#64748b" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                          <CheckCircle2 size={16} /> Finished
+                        </div>
+                        <div style={{ fontWeight: 600, color: "#10b981" }}>{office.finishedCount}</div>
+                      </div>
+                    </div>
                 )}
               </div>
-
-              {isEmpty ? (
-                <div className="inset" style={{ padding: "0.75rem 1rem", marginTop: "auto" }}>
-                  <span style={{ fontSize: "0.875rem", color: "#94a3b8" }}>No folders in FY {fiscalYear}</span>
-                </div>
-              ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "1rem" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.875rem", color: "#64748b" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        <FolderOpen size={16} /> Total Folders
-                      </div>
-                      <div style={{ fontWeight: 600, color: "#1e293b" }}>{office.count}</div>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.875rem", color: "#64748b" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        <Clock size={16} /> Active
-                      </div>
-                      <div style={{ fontWeight: 600, color: "#d97706" }}>{office.activeCount}</div>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.875rem", color: "#64748b" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        <CheckCircle2 size={16} /> Finished
-                      </div>
-                      <div style={{ fontWeight: 600, color: "#10b981" }}>{office.finishedCount}</div>
-                    </div>
-                  </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

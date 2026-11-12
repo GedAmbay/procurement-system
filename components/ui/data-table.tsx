@@ -25,6 +25,7 @@ export interface Column<T> {
   key: string;
   label: React.ReactNode;
   render?: (row: T) => React.ReactNode;
+  accessor?: (row: T) => any;
   width?: string;
   align?: "left" | "center" | "right" | (string & {});
   sortable?: boolean;
@@ -156,6 +157,51 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
   // Client filtering
   const filteredData = useMemo(() => {
     return data.filter((row) => {
+      // Search Filter
+      if (search && search.trim()) {
+        const query = search.trim().toLowerCase();
+        const matches = columns.some((col) => {
+          if (col.accessor) {
+            try {
+              const val = col.accessor(row);
+              if (val !== null && val !== undefined && (typeof val === "string" || typeof val === "number")) {
+                return String(val).toLowerCase().includes(query);
+              }
+            } catch {}
+          }
+          const val = (row as any)[col.key];
+          if (val !== null && val !== undefined && (typeof val === "string" || typeof val === "number")) {
+            return String(val).toLowerCase().includes(query);
+          }
+          return false;
+        }) || (function checkObj(obj: any, depth = 0): boolean {
+          if (!obj || depth > 2) return false;
+          return Object.values(obj).some((val) => {
+            if (val === null || val === undefined) return false;
+            if (typeof val === "string" || typeof val === "number") {
+              return String(val).toLowerCase().includes(query);
+            }
+            if (typeof val === "object" && !Array.isArray(val)) {
+              return checkObj(val, depth + 1);
+            }
+            if (Array.isArray(val)) {
+              return val.some((item) => {
+                if (typeof item === "string" || typeof item === "number") {
+                  return String(item).toLowerCase().includes(query);
+                }
+                if (typeof item === "object") {
+                  return checkObj(item, depth + 1);
+                }
+                return false;
+              });
+            }
+            return false;
+          });
+        })(row);
+
+        if (!matches) return false;
+      }
+
       // Tab Filter
       if (filterKey && activeFilter !== null && row[filterKey] !== activeFilter) {
         return false;
@@ -183,7 +229,7 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
 
       return true;
     });
-  }, [data, filterKey, activeFilter, dateFilterKey, dateRange, activeCustomFilter, customFilters]);
+  }, [data, filterKey, activeFilter, dateFilterKey, dateRange, activeCustomFilter, customFilters, search, columns]);
 
   // Sorting
   const sortedData = useMemo(() => {
@@ -484,12 +530,18 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
           </div>
         ) : filteredData.length === 0 ? (
           <div className="py-16 text-center text-slate-500 flex flex-col items-center">
-            {emptyIcon ?? <Search size={40} className="text-slate-300 mb-3" />}
-            <p className="font-semibold text-slate-700">{emptyText ?? "No records found"}</p>
-            {search && (
+            {search?.trim() ? (
+              <Search size={40} className="text-slate-300 mb-3" />
+            ) : (
+              emptyIcon ?? <Search size={40} className="text-slate-300 mb-3" />
+            )}
+            <p className="font-semibold text-slate-700">
+              {search?.trim() ? "No Records Found" : (emptyText ?? "No records found")}
+            </p>
+            {search?.trim() && (
               <p className="text-xs text-slate-400 mt-1">Try adjusting your search query</p>
             )}
-            {onAdd && !search && (
+            {onAdd && !search?.trim() && (
               <button
                 type="button"
                 onClick={onAdd}
