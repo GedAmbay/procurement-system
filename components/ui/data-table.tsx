@@ -16,6 +16,8 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Building2,
+  Check,
 } from "lucide-react";
 import LoaderWave from "@/components/ui/loader-wave";
 import ConfirmModal from "@/components/ui/confirm-modal";
@@ -61,6 +63,7 @@ export interface DataTableProps<T extends { id: string; isActive?: boolean }> {
   filterKey?: keyof T;
   filterTabs?: { label: string; value: string | null }[];
   dateFilterKey?: keyof T;
+  departmentFilterKey?: keyof T | ((row: T) => string | undefined | null);
   customFilters?: { label: string; filterFn: (row: T) => boolean; colorClass?: string }[];
 }
 
@@ -89,6 +92,7 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
   filterKey,
   filterTabs,
   dateFilterKey,
+  departmentFilterKey,
   customFilters,
 }: DataTableProps<T>) {
   const [data, setData] = useState<T[]>([]);
@@ -108,9 +112,12 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: "", end: "" });
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDept, setSelectedDept] = useState<string>("");
+  const [showDeptDropdown, setShowDeptDropdown] = useState(false);
   const [rowToDelete, setRowToDelete] = useState<T | null>(null);
 
   const datePickerRef = useRef<HTMLDivElement>(null);
+  const deptDropdownRef = useRef<HTMLDivElement>(null);
   const moreActionsRef = useRef<HTMLDivElement>(null);
 
   // Close popovers on click outside
@@ -120,6 +127,9 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
       if (datePickerRef.current && !datePickerRef.current.contains(target)) {
         setShowDatePicker(false);
       }
+      if (deptDropdownRef.current && !deptDropdownRef.current.contains(target)) {
+        setShowDeptDropdown(false);
+      }
       if (moreActionsRef.current && !moreActionsRef.current.contains(target)) {
         setShowMoreActions(false);
       }
@@ -127,6 +137,29 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Compute unique departments for filter
+  const departments = useMemo(() => {
+    if (!departmentFilterKey) return [];
+    const set = new Set<string>();
+    data.forEach((row) => {
+      let deptName: string | undefined | null = "";
+      if (typeof departmentFilterKey === "function") {
+        deptName = departmentFilterKey(row);
+      } else {
+        const val = (row as any)[departmentFilterKey];
+        if (val && typeof val === "object") {
+          deptName = val.name || val.code;
+        } else if (typeof val === "string") {
+          deptName = val;
+        }
+      }
+      if (deptName && typeof deptName === "string" && deptName.trim()) {
+        set.add(deptName.trim());
+      }
+    });
+    return Array.from(set).sort();
+  }, [data, departmentFilterKey]);
 
   // Fetch data
   const fetchData = useCallback(async () => {
@@ -152,7 +185,7 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
   // Reset page when search or tab filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, activeFilter, activeCustomFilter, dateRange, itemsPerPage]);
+  }, [search, activeFilter, activeCustomFilter, dateRange, selectedDept, itemsPerPage]);
 
   // Client filtering
   const filteredData = useMemo(() => {
@@ -167,7 +200,7 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
               if (val !== null && val !== undefined && (typeof val === "string" || typeof val === "number")) {
                 return String(val).toLowerCase().includes(query);
               }
-            } catch {}
+            } catch { }
           }
           const val = (row as any)[col.key];
           if (val !== null && val !== undefined && (typeof val === "string" || typeof val === "number")) {
@@ -221,6 +254,22 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
         }
       }
 
+      // Department Filter
+      if (selectedDept && departmentFilterKey) {
+        let rowDept = "";
+        if (typeof departmentFilterKey === "function") {
+          rowDept = departmentFilterKey(row) || "";
+        } else {
+          const val = (row as any)[departmentFilterKey];
+          if (val && typeof val === "object") {
+            rowDept = val.name || val.code || "";
+          } else if (typeof val === "string") {
+            rowDept = val;
+          }
+        }
+        if (rowDept !== selectedDept) return false;
+      }
+
       // Custom Filter
       if (activeCustomFilter && customFilters) {
         const filter = customFilters.find((f) => f.label === activeCustomFilter);
@@ -229,7 +278,7 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
 
       return true;
     });
-  }, [data, filterKey, activeFilter, dateFilterKey, dateRange, activeCustomFilter, customFilters, search, columns]);
+  }, [data, filterKey, activeFilter, dateFilterKey, dateRange, selectedDept, departmentFilterKey, activeCustomFilter, customFilters, search, columns]);
 
   // Sorting
   const sortedData = useMemo(() => {
@@ -365,11 +414,10 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
             <button
               type="button"
               onClick={() => setShowDatePicker((prev) => !prev)}
-              className={`h-11 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm font-medium flex items-center gap-2 shadow-sm transition-colors whitespace-nowrap ${
-                dateRange.start || dateRange.end
-                  ? "text-blue-600 border-blue-200 bg-blue-50/50"
-                  : "text-slate-700"
-              }`}
+              className={`h-11 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm font-medium flex items-center gap-2 shadow-sm transition-colors whitespace-nowrap ${dateRange.start || dateRange.end
+                ? "text-blue-600 border-blue-200 bg-blue-50/50"
+                : "text-slate-700"
+                }`}
             >
               <Calendar
                 size={15}
@@ -377,11 +425,10 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
               />
               <span>
                 {dateRange.start
-                  ? `${new Date(dateRange.start).toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${
-                      dateRange.end
-                        ? new Date(dateRange.end).toLocaleDateString("en-US", { month: "short", day: "numeric" })
-                        : "..."
-                    }`
+                  ? `${new Date(dateRange.start).toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${dateRange.end
+                    ? new Date(dateRange.end).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                    : "..."
+                  }`
                   : "Filter by date"}
               </span>
               <ChevronDown size={14} className="text-slate-400" />
@@ -446,6 +493,74 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
           </div>
         )}
 
+        {/* Department Filter Dropdown */}
+        {departmentFilterKey && (
+          <div className="relative" ref={deptDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setShowDeptDropdown((prev) => !prev)}
+              className={`h-11 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm font-medium flex items-center gap-2 shadow-sm transition-colors whitespace-nowrap ${selectedDept
+                ? "text-blue-600 border-blue-200 bg-blue-50/50"
+                : "text-slate-700"
+                }`}
+            >
+              <Building2
+                size={15}
+                className={selectedDept ? "text-blue-600" : "text-slate-500"}
+              />
+              <span className="max-w-[180px] truncate">
+                {selectedDept || "All departments"}
+              </span>
+              <ChevronDown size={14} className="text-slate-400" />
+            </button>
+
+            {showDeptDropdown && (
+              <div className="absolute top-full left-0 mt-2 z-30 w-64 max-h-64 overflow-y-auto bg-white rounded-2xl shadow-xl border border-slate-200/80 p-2 animate-in fade-in zoom-in-95 duration-150">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedDept("");
+                    setShowDeptDropdown(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between ${!selectedDept
+                    ? "bg-blue-50 text-blue-700"
+                    : "text-slate-700 hover:bg-slate-50"
+                    }`}
+                >
+                  <span>All departments</span>
+                  {!selectedDept && <Check size={14} className="text-blue-600" />}
+                </button>
+                <div className="h-px bg-slate-100 my-1" />
+                {departments.length === 0 ? (
+                  <div className="px-3 py-2 text-xs text-slate-400 italic">
+                    No departments found
+                  </div>
+                ) : (
+                  departments.map((dept) => (
+                    <button
+                      key={dept}
+                      type="button"
+                      onClick={() => {
+                        setSelectedDept(dept);
+                        setShowDeptDropdown(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 rounded-xl text-xs font-medium flex items-center justify-between transition-colors ${selectedDept === dept
+                        ? "bg-blue-50 text-blue-700 font-semibold"
+                        : "text-slate-700 hover:bg-slate-50"
+                        }`}
+                    >
+                      <span className="truncate mr-2">{dept}</span>
+                      {selectedDept === dept && (
+                        <Check size={14} className="text-blue-600 shrink-0" />
+                      )}
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Extra Header Content (Custom dropdowns etc.) */}
         {extraHeaderContent}
 
@@ -480,15 +595,13 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
                   key={tab.label}
                   type="button"
                   onClick={() => setActiveFilter(tab.value)}
-                  className={`pb-3 text-sm font-semibold transition-all relative whitespace-nowrap flex items-center gap-1.5 ${
-                    isActive ? "text-blue-600 font-bold" : "text-slate-600 hover:text-slate-900"
-                  }`}
+                  className={`pb-3 text-sm font-semibold transition-all relative whitespace-nowrap flex items-center gap-1.5 ${isActive ? "text-blue-600 font-bold" : "text-slate-600 hover:text-slate-900"
+                    }`}
                 >
                   <span>{tab.label}</span>
                   <span
-                    className={`text-xs px-1.5 py-0.2 rounded-full font-bold ${
-                      isActive ? "bg-blue-100 text-blue-700" : "text-slate-500"
-                    }`}
+                    className={`text-xs px-1.5 py-0.2 rounded-full font-bold ${isActive ? "bg-blue-100 text-blue-700" : "text-slate-500"
+                      }`}
                   >
                     ({count})
                   </span>
@@ -508,11 +621,10 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
                     key={filter.label}
                     type="button"
                     onClick={() => setActiveCustomFilter(isActive ? null : filter.label)}
-                    className={`ml-2 mb-2 px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
-                      isActive
-                        ? filter.colorClass || "bg-blue-600 text-white"
-                        : "text-slate-600 bg-slate-100 hover:bg-slate-200"
-                    }`}
+                    className={`ml-2 mb-2 px-3 py-1 rounded-full text-xs font-semibold transition-colors ${isActive
+                      ? filter.colorClass || "bg-blue-600 text-white"
+                      : "text-slate-600 bg-slate-100 hover:bg-slate-200"
+                      }`}
                   >
                     {filter.label}
                   </button>
@@ -577,9 +689,8 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
                       <th
                         key={col.key}
                         style={{ width: col.width, textAlign: (col.align || "left") as any }}
-                        className={`px-4 py-3.5 ${
-                          col.sortable ? "cursor-pointer hover:text-slate-900" : ""
-                        }`}
+                        className={`px-4 py-3.5 ${col.sortable ? "cursor-pointer hover:text-slate-900" : ""
+                          }`}
                         onClick={() => {
                           if (!col.sortable) return;
                           let nextDirection: "asc" | "desc" = "asc";
@@ -596,8 +707,8 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
                               col.align === "right"
                                 ? "flex-end"
                                 : col.align === "center"
-                                ? "center"
-                                : "flex-start",
+                                  ? "center"
+                                  : "flex-start",
                             width: "100%",
                           }}
                         >
@@ -625,9 +736,8 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
                         else if (onEdit) onEdit(row);
                         else if (onView) onView(row);
                       }}
-                      className={`transition-colors duration-150 ${
-                        row.isActive === false ? "opacity-60" : ""
-                      } ${isSelected ? "bg-blue-50/60" : "hover:bg-slate-50/80"}`}
+                      className={`transition-colors duration-150 ${row.isActive === false ? "opacity-60" : ""
+                        } ${isSelected ? "bg-blue-50/60" : "hover:bg-slate-50/80"}`}
                     >
                       {/* Checkbox column */}
                       {hasRowActions && (

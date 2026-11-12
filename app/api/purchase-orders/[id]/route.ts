@@ -102,7 +102,7 @@ export async function PATCH(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  const roleCheck = await requireRole(["ADMIN", "BAC_SECRETARIAT"]);
+  const roleCheck = await requireRole(["ADMIN", "BAC_SECRETARIAT", "END_USER"]);
   if (!roleCheck.authorized) return roleCheck.response;
 
   const session = await auth();

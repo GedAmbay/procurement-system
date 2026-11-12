@@ -28,6 +28,11 @@ export async function GET(req: NextRequest) {
         po: {
           include: {
             supplier: true,
+            pr: {
+              include: {
+                office: true,
+              }
+            },
             abstract: {
               include: {
                 rfq: {
@@ -53,7 +58,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: Request) {
-  const roleCheck = await requireRole(["ADMIN", "BAC_SECRETARIAT"]);
+  const roleCheck = await requireRole(["ADMIN", "BAC_SECRETARIAT", "END_USER"]);
   if (!roleCheck.authorized) return roleCheck.response;
 
   const session = await auth();

@@ -167,6 +167,7 @@ export default function PurchaseRequestsPage() {
         emptyIcon={<FileText size={40} style={{ opacity: 0.3 }} />}
         emptyText="No Purchase Requests found"
         dateFilterKey="createdAt"
+        departmentFilterKey={(row) => row.office?.name || row.office?.code || ""}
       />
     </div>
   );

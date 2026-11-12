@@ -166,6 +166,7 @@ export default function abstractPage() {
           { label: "Completed", value: "COMPLETED" },
         ]}
         dateFilterKey="createdAt"
+        departmentFilterKey={(row) => row.rfq?.pr?.office?.name || ""}
       />
     </div>
   );

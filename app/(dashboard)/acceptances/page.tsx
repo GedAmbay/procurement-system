@@ -153,6 +153,7 @@ export default function AcceptancesPage() {
           { label: "Completed", value: "COMPLETED" },
         ]}
         dateFilterKey="createdAt"
+        departmentFilterKey={(row: any) => row.po?.pr?.office?.name || row.po?.abstract?.rfq?.pr?.office?.name || ""}
       />
       {showModal && (
         <FormModal

@@ -182,6 +182,7 @@ export default function PurchaseOrdersPage() {
           { label: "Cancelled", value: "CANCELLED" },
         ]}
         dateFilterKey="createdAt"
+        departmentFilterKey={(row) => row.pr?.office?.name || row.abstract?.rfq?.pr?.office?.name || ""}
         customFilters={[
           { label: "Direct Acquisition", filterFn: (row: PO) => !!row.pr?.isDirectAcquisition || !!row.abstract?.rfq?.pr?.isDirectAcquisition, colorClass: "bg-teal-100 text-teal-800" }
         ]}

@@ -58,7 +58,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const roleCheck = await requireRole(["ADMIN", "BAC_SECRETARIAT"]);
+  const roleCheck = await requireRole(["ADMIN", "BAC_SECRETARIAT", "END_USER"]);
   if (!roleCheck.authorized) return roleCheck.response;
 
   try {

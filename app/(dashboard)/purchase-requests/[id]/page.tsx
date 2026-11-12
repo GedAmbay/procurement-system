@@ -1,7 +1,7 @@
 "use client";
 import LoaderWave from "@/components/ui/loader-wave";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
 import { formatCurrency, normalizePrNumber, fiscalYearFromPrNumber } from "@/lib/utils";
@@ -70,6 +70,110 @@ export default function PurchaseRequestEditor() {
   });
 
   const watchAllFields = watch();
+
+  // Multi-line responsive Purpose support for Annex 30 live preview & inline editing
+  const line0Ref = useRef<HTMLInputElement>(null);
+  const line1Ref = useRef<HTMLInputElement>(null);
+  const line2Ref = useRef<HTMLInputElement>(null);
+
+  const splitPurposeIntoLines = (text: string): [string, string, string] => {
+    if (!text) return ["", "", ""];
+
+    // 1. If explicit newlines exist, strictly follow them
+    if (text.includes("\n")) {
+      const raw = text.split("\n");
+      return [
+        raw[0] || "",
+        raw[1] || "",
+        raw.slice(2).join(" ") || "",
+      ];
+    }
+
+    // 2. If no newline exists, but text exceeds single-line capacity (~72 chars),
+    // soft-wrap at word boundary so it doesn't get truncated
+    const MAX_LINE_CHARS = 72;
+    if (text.length > MAX_LINE_CHARS) {
+      const breakLine = (str: string, maxLen: number) => {
+        if (str.length <= maxLen) return { first: str, rest: "" };
+        const lastSpace = str.lastIndexOf(" ", maxLen);
+        const splitIdx = lastSpace > 25 ? lastSpace : maxLen;
+        return {
+          first: str.slice(0, splitIdx).trim(),
+          rest: str.slice(splitIdx).trim(),
+        };
+      };
+
+      const l1 = breakLine(text, MAX_LINE_CHARS);
+      const l2 = breakLine(l1.rest, MAX_LINE_CHARS);
+      return [l1.first, l2.first, l2.rest];
+    }
+
+    return [text, "", ""];
+  };
+
+  const purposeLines = useMemo(() => {
+    return splitPurposeIntoLines(watchAllFields.purpose || "");
+  }, [watchAllFields.purpose]);
+
+  const handlePurposeLineChange = (lineIndex: number, newText: string) => {
+    const currentLines = splitPurposeIntoLines(watchAllFields.purpose || "");
+    const updatedLines: [string, string, string] = [currentLines[0], currentLines[1], currentLines[2]];
+    updatedLines[lineIndex] = newText;
+
+    let result = "";
+    if (updatedLines[2].trim()) {
+      result = `${updatedLines[0]}\n${updatedLines[1]}\n${updatedLines[2]}`;
+    } else if (updatedLines[1].trim()) {
+      result = `${updatedLines[0]}\n${updatedLines[1]}`;
+    } else {
+      result = updatedLines[0];
+    }
+
+    setValue("purpose", result, { shouldDirty: true, shouldTouch: true });
+  };
+
+  const handlePurposeLineKeyDown = (
+    lineIndex: number,
+    e: React.KeyboardEvent<HTMLInputElement>
+  ) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (lineIndex === 0) {
+        line1Ref.current?.focus();
+        line1Ref.current?.select();
+      } else if (lineIndex === 1) {
+        line2Ref.current?.focus();
+        line2Ref.current?.select();
+      }
+    } else if (e.key === "Backspace") {
+      const input = e.currentTarget;
+      if (input.selectionStart === 0 && input.selectionEnd === 0) {
+        if (lineIndex === 1 && !purposeLines[1]) {
+          e.preventDefault();
+          line0Ref.current?.focus();
+        } else if (lineIndex === 2 && !purposeLines[2]) {
+          e.preventDefault();
+          line1Ref.current?.focus();
+        }
+      }
+    } else if (e.key === "ArrowDown") {
+      if (lineIndex === 0) {
+        e.preventDefault();
+        line1Ref.current?.focus();
+      } else if (lineIndex === 1) {
+        e.preventDefault();
+        line2Ref.current?.focus();
+      }
+    } else if (e.key === "ArrowUp") {
+      if (lineIndex === 1) {
+        e.preventDefault();
+        line0Ref.current?.focus();
+      } else if (lineIndex === 2) {
+        e.preventDefault();
+        line1Ref.current?.focus();
+      }
+    }
+  };
   const watchLineItems = watch("lineItems");
   const watchRequestType = watch("requestType") || prData?.requestType || "PURCHASE";
   const isJob = watchRequestType === "JOB";
@@ -592,15 +696,63 @@ export default function PurchaseRequestEditor() {
                   </tbody>
                 </table>
 
-                {/* Purpose Block */}
+                {/* Purpose Block - Multi-line responsive and inline-editable */}
                 <div className="p-3 text-sm flex gap-2 border-b-4 border-double border-black">
-                  <span className="shrink-0 italic">Purpose: </span>
-                  <div className="flex-1 flex flex-col gap-1 mt-1">
-                    <div className="border-b border-black text-left min-h-[1.5rem] relative">
-                      <span className="absolute left-0 right-0 -top-1 whitespace-nowrap overflow-hidden text-ellipsis px-2">{watchAllFields.purpose || "\u00A0"}</span>
+                  <span className="shrink-0 italic font-semibold">Purpose: </span>
+                  <div className="flex-1 flex flex-col gap-1 mt-0.5">
+                    {/* Line 1 */}
+                    <div className="border-b border-black text-left min-h-[1.5rem] relative flex items-center">
+                      <input
+                        ref={line0Ref}
+                        type="text"
+                        value={purposeLines[0]}
+                        onChange={(e) => handlePurposeLineChange(0, e.target.value)}
+                        onKeyDown={(e) => handlePurposeLineKeyDown(0, e)}
+                        disabled={isReadOnly}
+                        placeholder={isReadOnly ? "" : "Enter purpose..."}
+                        className="w-full bg-transparent border-none outline-none text-left px-1 text-sm font-normal text-black placeholder:text-slate-300 placeholder:italic print:hidden cursor-text"
+                        style={{ lineHeight: "1.2rem", height: "1.3rem" }}
+                      />
+                      <span className="hidden print:block absolute left-0 right-0 -top-1 whitespace-nowrap overflow-hidden text-ellipsis px-1 text-sm text-black">
+                        {purposeLines[0] || "\u00A0"}
+                      </span>
                     </div>
-                    <div className="border-b border-black text-center min-h-[1.5rem]"></div>
-                    <div className="border-b border-black text-center min-h-[1.5rem]"></div>
+
+                    {/* Line 2 */}
+                    <div className="border-b border-black text-left min-h-[1.5rem] relative flex items-center">
+                      <input
+                        ref={line1Ref}
+                        type="text"
+                        value={purposeLines[1]}
+                        onChange={(e) => handlePurposeLineChange(1, e.target.value)}
+                        onKeyDown={(e) => handlePurposeLineKeyDown(1, e)}
+                        disabled={isReadOnly}
+                        placeholder={isReadOnly ? "" : "Click to enter 2nd line..."}
+                        className="w-full bg-transparent border-none outline-none text-left px-1 text-sm font-normal text-black placeholder:text-slate-300 placeholder:italic print:hidden cursor-text"
+                        style={{ lineHeight: "1.2rem", height: "1.3rem" }}
+                      />
+                      <span className="hidden print:block absolute left-0 right-0 -top-1 whitespace-nowrap overflow-hidden text-ellipsis px-1 text-sm text-black">
+                        {purposeLines[1] || "\u00A0"}
+                      </span>
+                    </div>
+
+                    {/* Line 3 */}
+                    <div className="border-b border-black text-left min-h-[1.5rem] relative flex items-center">
+                      <input
+                        ref={line2Ref}
+                        type="text"
+                        value={purposeLines[2]}
+                        onChange={(e) => handlePurposeLineChange(2, e.target.value)}
+                        onKeyDown={(e) => handlePurposeLineKeyDown(2, e)}
+                        disabled={isReadOnly}
+                        placeholder={isReadOnly ? "" : "Click to enter 3rd line..."}
+                        className="w-full bg-transparent border-none outline-none text-left px-1 text-sm font-normal text-black placeholder:text-slate-300 placeholder:italic print:hidden cursor-text"
+                        style={{ lineHeight: "1.2rem", height: "1.3rem" }}
+                      />
+                      <span className="hidden print:block absolute left-0 right-0 -top-1 whitespace-nowrap overflow-hidden text-ellipsis px-1 text-sm text-black">
+                        {purposeLines[2] || "\u00A0"}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
