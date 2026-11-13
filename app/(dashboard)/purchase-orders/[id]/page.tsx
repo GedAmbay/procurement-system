@@ -354,9 +354,9 @@ export default function PurchaseOrderEditor() {
           </div>
 
           <div className="flex-1 w-full min-w-0 max-w-full overflow-auto p-4 sm:p-6 md:p-8 print:!p-0 print:!m-0 print:!bg-white print:!block print:!overflow-visible print:!h-auto print:!w-full">
-            <div className="w-fit min-w-full flex justify-center print:!block print:!w-full">
+            <div className="w-fit min-w-full flex justify-center print:!block print:!w-full print:!m-0 print:!p-0">
               <div
-                className="po-zoom-wrapper origin-top print:!block print:!w-full print:min-w-0 print:!transform-none print:!m-0 print:!p-0"
+                className="po-zoom-wrapper origin-top print:!block print:!w-full print:!min-w-0 print:!max-w-none print:!transform-none print:!m-0 print:!p-0 print:!h-auto"
                 style={{
                   width: `${Math.round(900 * zoom + 64)}px`,
                   minHeight: `${Math.round(1123 * zoom + 64)}px`,
@@ -373,24 +373,24 @@ export default function PurchaseOrderEditor() {
                     transition: "transform 0.15s ease-out",
                     marginBottom: `${Math.max(0, (zoom - 1) * 1123)}px`,
                   }}
-                  className="print:!transform-none print:!w-full print:!mb-0"
+                  className="print:!transform-none print:!w-full print:!max-w-none print:!min-w-0 print:!m-0 print:!p-0 print:!mb-0"
                 >
-                  <div className="print-area text-black shadow-xl text-[14px] leading-tight print:shadow-none print:max-w-none print:m-0 [&_td]:!font-['Times_New_Roman',_Times,_serif] [&_td]:!text-[14px] [&_th]:!font-['Times_New_Roman',_Times,_serif] [&_th]:!text-[14px] [&_th]:!text-black [&_th]:!normal-case [&_th]:!tracking-normal [&_th]:!font-bold w-[900px] min-h-[1123px] bg-white p-10 print:w-full print:min-h-0 print:p-0" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+                  <div className="print-area text-black shadow-xl text-[14px] leading-tight print:shadow-none print:!w-full print:!max-w-none print:!min-w-0 print:!m-0 print:!p-0 print:!min-h-0 [&_td]:!font-['Times_New_Roman',_Times,_serif] [&_td]:!text-[14px] [&_th]:!font-['Times_New_Roman',_Times,_serif] [&_th]:!text-[14px] [&_th]:!text-black [&_th]:!normal-case [&_th]:!tracking-normal [&_th]:!font-bold w-[830px] min-h-[1123px] bg-white p-10" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
 
                     <div className="border-[3px] border-black">
                       <div className="text-right italic pt-2 pr-2 text-sm">Appendix 49</div>
 
                       <div className="text-center font-bold mb-4">
-                        <div className="text-2xl font-black font-serif">{isJob ? "JOB ORDER" : "PURCHASE ORDER"}</div>
+                        <div className="text-xl font-black font-serif">{isJob ? "JOB ORDER" : "PURCHASE ORDER"}</div>
                         <div className="uppercase underline mt-1 text-[15px]">MUNICIPAL GOVERNMENT OF PANDAN</div>
                         <div className="text-[15px]">LGU</div>
                       </div>
 
-                      <div className="border-t-[3px] border-black grid text-[15px]" style={{ gridTemplateColumns: '10% 8% minmax(0, 1fr) 12% 16% 18%' }}>
-                        <div className="col-span-3 border-r-[3px] border-black p-1 px-2 flex flex-col justify-between">
-                          <div className="flex items-end"><span className="font-bold whitespace-nowrap mr-2">Supplier :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{selectedSupplier?.name || ""}</span></div>
-                          <div className="flex items-end mt-1"><span className="font-bold whitespace-nowrap mr-2">Address :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{selectedSupplier?.address || ""}</span></div>
-                          <div className="flex items-end mt-1"><span className="font-bold whitespace-nowrap mr-2">TIN :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight"></span></div>
+                      <div className="border-t-[3px] border-black grid text-[15px]" style={{ gridTemplateColumns: '10% 8% minmax(0, 1fr) 10% 12% 14%' }}>
+                        <div className="col-span-3 border-r-[2px] border-black p-1 px-2 flex flex-col justify-between">
+                          <div className="flex items-end"><span className="font-bold whitespace-nowrap mr-2">Supplier :</span> <span className="flex-1 font-bold border-b border-black text-left leading-tight">{selectedSupplier?.name || ""}</span></div>
+                          <div className="flex items-end mt-1"><span className="font-bold whitespace-nowrap mr-2">Address :</span> <span className="flex-1 font-bold border-b border-black text-left leading-tight">{selectedSupplier?.address || ""}</span></div>
+                          <div className="flex items-end mt-1"><span className="font-bold whitespace-nowrap mr-2">TIN :</span> <span className="flex-1 font-bold border-b border-black text-left leading-tight"></span></div>
                         </div>
                         <div className="col-span-3 p-1 px-2 flex flex-col justify-between">
                           <div className="flex items-end"><span className="font-bold whitespace-nowrap mr-2">{isJob ? "J.O. No. :" : "P.O. No. :"}</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{showPoNo ? (watchAll.poNumber || poData?.poNumber || "") : ""}</span></div>
@@ -405,8 +405,8 @@ export default function PurchaseOrderEditor() {
                         <div className="pl-8">Please furnish this Office the following articles subject to the terms and conditions contained herein:</div>
                       </div>
 
-                      <div className="border-t-[3px] border-black grid text-[15px]" style={{ gridTemplateColumns: '10% 8% minmax(0, 1fr) 12% 16% 18%' }}>
-                        <div className="col-span-3 border-r-[3px] border-black p-1 px-2">
+                      <div className="border-t-[3px] border-black grid text-[15px]" style={{ gridTemplateColumns: '10% 8% minmax(0, 1fr) 10% 12% 14%' }}>
+                        <div className="col-span-3 border-r-[2px] border-black p-1 px-2">
                           <div className="flex"><span className="font-bold w-36">Place of Delivery :</span> <span className="font-bold flex-1">{watchAll.placeOfDelivery}</span></div>
                           <div className="flex mt-1"><span className="font-bold w-36">Date of Delivery :</span> <span className="font-bold flex-1">{watchAll.deliveryDate ? new Date(watchAll.deliveryDate).toLocaleDateString('en-PH') : ""}</span></div>
                         </div>
@@ -422,9 +422,9 @@ export default function PurchaseOrderEditor() {
                             <th className="border-r border-black p-1 w-[10%]">Stock/<br />Property No.</th>
                             <th className="border-r border-black p-1 w-[8%]">Unit</th>
                             <th className="border-r border-black p-1">Description</th>
-                            <th className="border-r border-black p-1 w-[12%]">Quantity</th>
-                            <th className="border-r border-black p-1 w-[16%]">Unit Cost</th>
-                            <th className="p-1 w-[18%]">Amount</th>
+                            <th className="border-r border-black p-1 w-[10%]">Quantity</th>
+                            <th className="border-r border-black p-1 w-[12%]">Unit Cost</th>
+                            <th className="p-1 w-[14%]">Amount</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -453,12 +453,12 @@ export default function PurchaseOrderEditor() {
 
                             return (
                               <tr key={idx}>
-                                <td className="border-r border-black p-1 text-center">{displayNo}</td>
-                                <td className="border-r border-black p-1 text-center">{isSpec ? "" : item.unit}</td>
-                                <td className={`border-r border-black p-1 ${isSpec ? "pl-4 text-sm" : (hasSpecs ? "font-bold" : "")}`}>{item.description}</td>
-                                <td className="border-r border-black p-1 text-center">{isSpec ? "" : item.quantity}</td>
-                                <td className="border-r border-black p-1 text-right">{isSpec ? "" : (unitCost > 0 ? formatCurrency(unitCost).replace('₱', '') : "")}</td>
-                                <td className="p-1 text-right font-bold">{isSpec ? "" : (itemAmount > 0 ? formatCurrency(itemAmount).replace('₱', '') : "")}</td>
+                                <td className="border-r border-black p-[2px] text-center">{displayNo}</td>
+                                <td className="border-r border-black p-[2px] text-center">{isSpec ? "" : item.unit}</td>
+                                <td className={`border-r border-black p-[2px] px-2 ${isSpec ? "pl-4 text-sm" : (hasSpecs ? "font-bold" : "")}`}>{item.description}</td>
+                                <td className="border-r border-black p-[2px] text-center">{isSpec ? "" : item.quantity}</td>
+                                <td className="border-r border-black p-[2px] px-2 text-right">{isSpec ? "" : (unitCost > 0 ? formatCurrency(unitCost).replace('₱', '') : "")}</td>
+                                <td className="p-[2px] px-2 text-right">{isSpec ? "" : (itemAmount > 0 ? formatCurrency(itemAmount).replace('₱', '') : "")}</td>
                               </tr>
                             );
                           })}
@@ -503,15 +503,15 @@ export default function PurchaseOrderEditor() {
                         </tbody>
                       </table>
 
-                      <div className="border-t-[3px] border-black p-4">
+                      <div className="border-t-[3px] border-black p-2">
                         <div className="mb-6 indent-8 text-justify">
                           In case of failure to make the full delivery within the time specified above, a penalty of one-tenth (1/10) of one percent for every day of delay shall be imposed on the undelivered item/s.
                         </div>
 
-                        <div className="flex mb-8">
-                          <div className="w-1/2 pl-4">
+                        <div className="flex mb-1">
+                          <div className="w-165 pl-4">
                             <div className="mb-8">Conforme:</div>
-                            <div className="text-center w-64 mx-auto">
+                            <div className="text-center w-70 mx-auto">
                               <div className="border-b border-black h-4 mb-1"></div>
                               <div>Signature over Printed Name of Supplier</div>
                               <div className="border-b border-black h-8 mb-1 w-3/4 mx-auto"></div>
@@ -519,14 +519,14 @@ export default function PurchaseOrderEditor() {
                             </div>
                           </div>
                           <div className="w-1/2">
-                            <div className="mb-8 pl-12">Very truly yours,</div>
+                            <div className="mb-8 ">Very truly yours,</div>
                             <div className="text-center w-64 mx-auto font-bold mt-4">
                               HON. TOMAS U. ESTOPEREZ, JR.
                               <div className="font-normal">Municipal Mayor</div>
                             </div>
-                            <div className="flex items-end justify-start pl-12 mt-6">
+                            <div className="flex items-end justify-start mt-14">
                               <span className="mr-2">Resolution No:</span>
-                              <span className="border-b border-black w-40"></span>
+                              <span className="border-b border-black w-20"></span>
                             </div>
                           </div>
                         </div>
@@ -538,7 +538,7 @@ export default function PurchaseOrderEditor() {
                           <span className="mr-2">Approved per Sanggunian Resolution No.:</span>
                           <span className="border-b border-black flex-1 max-w-[400px]"></span>
                         </div>
-                        <div className="text-left mb-8 pl-4">Certified Correct:</div>
+                        <div className="text-left mb-3 pl-4">Certified Correct:</div>
                         <div className="flex justify-between px-16">
                           <div className="text-center w-64">
                             <div className="border-b border-black h-4 mb-1"></div>

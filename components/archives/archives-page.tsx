@@ -105,45 +105,34 @@ export function ArchivesPage({
     );
   }, [archives, searchQuery]);
 
-  // Active / Foldered offices vs Empty offices
-  const { activeOffices, emptyOffices } = useMemo(() => {
-    const withFolders: ArchiveOffice[] = [];
-    const withoutFolders: ArchiveOffice[] = [];
-
-    for (const office of searchFilteredOffices) {
-      if (office.count > 0) {
-        // Status chip filtering
-        if (statusFilter === "active" && office.activeCount === 0) {
-          continue;
-        }
-        if (statusFilter === "finished" && office.finishedCount === 0) {
-          continue;
-        }
-        withFolders.push(office);
-      } else {
-        // Empty offices only shown when "all" is active
-        if (statusFilter === "all") {
-          withoutFolders.push(office);
-        }
+  // Filter and sort all offices together (including offices with 0 folders)
+  const displayedOffices = useMemo(() => {
+    const list = searchFilteredOffices.filter((office) => {
+      if (statusFilter === "active") {
+        return office.activeCount > 0;
       }
-    }
+      if (statusFilter === "finished") {
+        return office.finishedCount > 0;
+      }
+      // "all" includes both offices with folders and offices with 0 folders
+      return true;
+    });
 
-    // Sorting for offices with folders
-    withFolders.sort((a, b) => {
+    list.sort((a, b) => {
       if (sortOption === "folders") {
-        return b.count - a.count;
+        return b.count !== a.count ? b.count - a.count : a.name.localeCompare(b.name);
       }
       if (sortOption === "recent") {
-        return (b.activeCount || 0) - (a.activeCount || 0);
+        if ((b.activeCount || 0) !== (a.activeCount || 0)) {
+          return (b.activeCount || 0) - (a.activeCount || 0);
+        }
+        return b.count !== a.count ? b.count - a.count : a.name.localeCompare(b.name);
       }
       // Default: sort by name
       return a.name.localeCompare(b.name);
     });
 
-    // Sort empty offices alphabetically
-    withoutFolders.sort((a, b) => a.name.localeCompare(b.name));
-
-    return { activeOffices: withFolders, emptyOffices: withoutFolders };
+    return list;
   }, [searchFilteredOffices, statusFilter, sortOption]);
 
   const sortLabelMap: Record<SortOption, string> = {
@@ -204,7 +193,7 @@ export function ArchivesPage({
     );
   }
 
-  const hasAnyResults = activeOffices.length > 0 || emptyOffices.length > 0;
+  const hasAnyResults = displayedOffices.length > 0;
 
   return (
     <div className="w-full space-y-6">
@@ -382,25 +371,19 @@ export function ArchivesPage({
         </div>
       </section>
 
-      {/* ─── 3. OFFICE FOLDERS GRID ────────────────────────────────────────── */}
-      {activeOffices.length > 0 && (
-        <main aria-label="Offices with procurement folders" className="mt-4">
+      {/* ─── 3. OFFICE FOLDERS GRID (ALL OFFICES INCLUDED) ───────────────── */}
+      {hasAnyResults && (
+        <main aria-label="Department procurement folders" className="mt-4">
           <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-x-7 gap-y-8">
-            {activeOffices.map((office) => (
+            {displayedOffices.map((office) => (
               <FolderTile
                 key={office.id}
                 office={office}
                 fiscalYear={fiscalYear}
-                isEmpty={false}
               />
             ))}
           </div>
         </main>
-      )}
-
-      {/* ─── 4. EMPTY OFFICES GROUP (COLLAPSIBLE) ──────────────────────────── */}
-      {emptyOffices.length > 0 && (
-        <EmptyOfficesGroup offices={emptyOffices} fiscalYear={fiscalYear} />
       )}
 
       {/* ─── EMPTY STATE (NO RESULTS MATCH) ────────────────────────────────── */}

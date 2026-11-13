@@ -374,7 +374,7 @@ export default function RfqLivePreviewPage() {
                   }}
                   className="print:!transform-none print:!w-full print:!mb-0"
                 >
-                  <div className="print-area text-black w-[890px] bg-white shadow-xl min-h-[1123px] p-10 pb-16 print:shadow-none print:!w-[890px] print:!min-w-[890px] print:!max-w-[890px] print:!p-10 print:!mx-auto print:!my-0 print:min-h-0 font-sans text-[11px]">
+                  <div className="print-area rfq-print-sheet text-black w-[890px] bg-white shadow-xl min-h-[1123px] p-10 pb-16 print:shadow-none print:!w-[890px] print:!min-w-[890px] print:!max-w-[890px] print:!p-10 print:!mx-auto print:!my-0 print:min-h-0 font-sans text-[11px]">
 
                     {/* Header Layout per Template */}
                     <div className="flex justify-between items-start mb-2">

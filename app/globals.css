@@ -832,21 +832,28 @@ tbody td {
     padding: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
+    min-height: 0 !important;
+    height: auto !important;
   }
 
-  /* Universal document sheet: strips screen shadows and preserves locked canvas */
+  /* Universal document sheet: strips all screen padding/margins and shadows so the document border sits directly on the printer margin */
   .print-area,
   .print-sheet,
   .abstract-print-sheet {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
     box-shadow: none !important;
     border: none !important;
     min-height: 0 !important;
     background: white !important;
+    box-sizing: border-box !important;
   }
 
-  /* Fixed locked printable width for portrait documents so print scaling behaves like Microsoft Excel / picture-type scaling without breaking layout, font reflow, or side margins */
-  .print-area:not(.abstract-print-sheet),
-  .print-sheet:not(.abstract-print-sheet) {
+  /* RFQ document does not have an outer box border, so it retains page padding and locked width */
+  .rfq-print-sheet {
     width: 890px !important;
     min-width: 890px !important;
     max-width: 890px !important;
@@ -856,13 +863,6 @@ tbody td {
     margin-top: 0 !important;
     margin-bottom: 0 !important;
     box-sizing: border-box !important;
-  }
-
-  .abstract-print-sheet {
-    padding: 0 !important;
-    margin: 0 !important;
-    width: 100% !important;
-    max-width: 100% !important;
   }
 
   table {
