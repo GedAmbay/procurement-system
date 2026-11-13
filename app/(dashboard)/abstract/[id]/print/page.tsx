@@ -656,7 +656,7 @@ export default function AbstractLivePreviewPage() {
                     className="text-xs font-semibold text-slate-700 cursor-pointer select-none"
                     onClick={() => setShowPrNo(!showPrNo)}
                   >
-                    Print PR Number on document
+                    Show PR Number
                   </label>
                   <button
                     type="button"
