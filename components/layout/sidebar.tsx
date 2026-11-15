@@ -174,6 +174,7 @@ export default function Sidebar({ user }: SidebarProps) {
             <Link
               href="/dashboard"
               aria-label="ProcureEase Home"
+              aria-describedby="sidebar-tooltip-procureease-dashboard"
               className="group relative flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded-full"
             >
               <div
@@ -196,8 +197,9 @@ export default function Sidebar({ user }: SidebarProps) {
                 />
               </div>
               <div
+                id="sidebar-tooltip-procureease-dashboard"
                 role="tooltip"
-                className="pointer-events-none absolute left-full ml-3.5 top-1/2 -translate-y-1/2 z-50 px-2.5 py-1 text-xs font-semibold text-white bg-slate-900 border border-slate-700/80 rounded-md shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity duration-150"
+                className="sidebar-nav-tooltip pointer-events-none absolute left-full ml-3.5 top-1/2 -translate-y-1/2 z-50 px-2.5 py-1 text-xs font-semibold text-white bg-slate-900 border border-slate-700/80 rounded-md shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-all duration-150"
               >
                 ProcureEase Dashboard
               </div>
@@ -314,21 +316,27 @@ export default function Sidebar({ user }: SidebarProps) {
                     item.subItems?.some((sub: any) => isActive(sub.href));
 
                   if (isRailMode) {
+                    const tooltipId = `sidebar-tooltip-${item.label.toLowerCase().replace(/[^a-z0-9]/g, "-")}`;
                     return (
-                      <div key={item.label} className="relative group/rail-item flex justify-center mb-1">
+                      <div
+                        key={item.label}
+                        className="relative group sidebar-nav-item-wrapper flex justify-center mb-1"
+                      >
                         <Link
                           href={item.href}
                           aria-label={item.label}
+                          aria-describedby={tooltipId}
                           className={`sidebar-nav-item ${active ? "active" : ""} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400`}
                         >
                           <Icon className="icon" size={20} />
                           <span className="sr-only">{item.label}</span>
                         </Link>
 
-                        {/* Tooltip on right side for rail mode */}
+                        {/* Tooltip on right side for hidden / rail mode */}
                         <div
+                          id={tooltipId}
                           role="tooltip"
-                          className="pointer-events-none absolute left-full ml-3 top-1/2 -translate-y-1/2 z-50 px-2.5 py-1 text-xs font-semibold text-white bg-slate-900 border border-slate-700/80 rounded-md shadow-xl whitespace-nowrap opacity-0 group-hover/rail-item:opacity-100 group-focus-within/rail-item:opacity-100 transition-opacity duration-150"
+                          className="sidebar-nav-tooltip pointer-events-none absolute left-full ml-3 top-1/2 -translate-y-1/2 z-50 px-2.5 py-1 text-xs font-semibold text-white bg-slate-900 border border-slate-700/80 rounded-md shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-all duration-150"
                         >
                           {item.label}
                         </div>
