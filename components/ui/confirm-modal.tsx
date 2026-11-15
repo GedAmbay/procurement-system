@@ -1,4 +1,6 @@
-import { useState } from "react";
+"use client";
+
+import { useState, useEffect } from "react";
 import { AlertTriangle, X, Lock, CheckCircle2 } from "lucide-react";
 
 interface ConfirmModalProps {
@@ -28,17 +30,35 @@ export default function ConfirmModal({
 }: ConfirmModalProps) {
   const [password, setPassword] = useState("");
 
+  useEffect(() => {
+    if (!isOpen) {
+      setPassword("");
+      return;
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !isLoading) {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, isLoading, onClose]);
+
   if (!isOpen) return null;
 
   const handleConfirm = () => {
-    onConfirm(requirePassword ? password : undefined);
-    if (!requirePassword) {
-      setPassword(""); // Reset for next time
-    }
+    const pwd = password;
+    setPassword("");
+    onConfirm(requirePassword ? pwd : undefined);
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200"
+      onClick={onClose}
+    >
       <div 
         className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
@@ -49,6 +69,7 @@ export default function ConfirmModal({
               {isDestructive ? <AlertTriangle size={24} /> : requirePassword ? <Lock size={24} /> : <CheckCircle2 size={24} />}
             </div>
             <button 
+              type="button"
               onClick={onClose}
               className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-full transition-colors"
             >
@@ -68,6 +89,12 @@ export default function ConfirmModal({
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !isLoading && password) {
+                    e.preventDefault();
+                    handleConfirm();
+                  }
+                }}
                 placeholder="••••••••"
                 className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                 autoFocus

@@ -1,10 +1,12 @@
 "use client";
 import LoaderWave from "@/components/ui/loader-wave";
+import CustomSelect from "@/components/ui/custom-select";
+import ConfirmModal from "@/components/ui/confirm-modal";
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
-import { Printer, Save, ArrowLeft, Loader2, Send, ZoomIn, ZoomOut, Minus, Plus, Package, FileText, ChevronRight, CheckCircle2, XCircle, User } from "lucide-react";
+import { Printer, Save, ArrowLeft, Loader2, Send, ZoomIn, ZoomOut, Minus, Plus, Package, FileText, ChevronRight, CheckCircle2, XCircle, User, Lock, Unlock } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { formatCurrency, numberToWords } from "@/lib/utils";
@@ -35,7 +37,25 @@ export default function PurchaseOrderEditor() {
   const [targetRows, setTargetRows] = useState(10);
   const [showPoNo, setShowPoNo] = useState(false);
   const [showPrNo, setShowPrNo] = useState(false);
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [unlockModalOpen, setUnlockModalOpen] = useState(false);
+  const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+
+  const handleUnlockConfirm = async (password?: string) => {
+    if (!password) {
+      toast.error("Password is required");
+      return;
+    }
+    setIsUnlocked(true);
+    setUnlockModalOpen(false);
+    toast.success("Document unlocked securely");
+  };
+
+  const handleSaveConfirm = () => {
+    setSaveModalOpen(false);
+    handleSubmit(onSubmit)();
+  };
 
   const getSavedTimeText = () => {
     if (!lastSaved) return null;
@@ -198,7 +218,7 @@ export default function PurchaseOrderEditor() {
   if (loading) return <LoaderWave variant="page" label="Loading purchase order..." />;
   if (!poData) return <div className="p-8 text-center text-slate-500">PO not found</div>;
 
-  const isReadOnly = poData.status === "COMPLETED";
+  const isReadOnly = poData.status === "COMPLETED" && !isUnlocked;
 
   // Resolve awarded quote from abstract as fallback if po has not saved supplier yet
   const validQuotes = poData.abstract?.rfq?.quotations?.filter((q: any) => (q.totalAmount || 0) > 0) || [];
@@ -285,6 +305,16 @@ export default function PurchaseOrderEditor() {
 
           <div className="h-5 w-px bg-slate-200 mx-1" />
 
+          {poData.status === "COMPLETED" && (
+            <button
+              type="button"
+              onClick={() => isUnlocked ? setIsUnlocked(false) : setUnlockModalOpen(true)}
+              className="border border-slate-300 hover:border-slate-400 bg-white hover:bg-slate-50 text-slate-700 font-semibold px-4 py-2 rounded-xl text-sm flex items-center gap-2 shadow-sm transition-all"
+            >
+              {isUnlocked ? <><Lock size={16} /> Lock</> : <><Unlock size={16} /> Unlock</>}
+            </button>
+          )}
+
           <button
             type="button"
             onClick={() => window.print()}
@@ -297,7 +327,7 @@ export default function PurchaseOrderEditor() {
           {!isReadOnly && (
             <button
               type="button"
-              onClick={handleSubmit(onSubmit)}
+              onClick={() => setSaveModalOpen(true)}
               disabled={submitting}
               className="border border-blue-600 hover:bg-blue-50 text-blue-600 font-semibold px-4 py-2 rounded-xl text-sm flex items-center gap-2 shadow-sm transition-all"
             >
@@ -735,16 +765,17 @@ export default function PurchaseOrderEditor() {
 
             <div>
               <label className="form-label">Awarded Supplier</label>
-              <select
-                {...register("supplierId")}
-                className="form-select"
+              <CustomSelect
+                value={watchAll.supplierId || ""}
+                onChange={(val) => setValue("supplierId", val, { shouldValidate: true, shouldDirty: true })}
+                options={suppliers.map((s) => ({
+                  value: s.id,
+                  label: s.name,
+                  sublabel: s.address || undefined,
+                }))}
+                placeholder="-- Select Supplier --"
                 disabled={isReadOnly}
-              >
-                <option value="">-- Select Supplier --</option>
-                {suppliers.map(s => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
+              />
               <p className="text-[10px] text-slate-400 mt-1">Ideally set during abstract, but can be forced here.</p>
             </div>
 
@@ -811,6 +842,26 @@ export default function PurchaseOrderEditor() {
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={saveModalOpen}
+        onClose={() => setSaveModalOpen(false)}
+        onConfirm={handleSaveConfirm}
+        title="Confirm Save"
+        message="Are you sure you want to save these changes to the Purchase Order?"
+        confirmText="Save Changes"
+      />
+
+      <ConfirmModal
+        isOpen={unlockModalOpen}
+        onClose={() => setUnlockModalOpen(false)}
+        onConfirm={handleUnlockConfirm}
+        title="Unlock Document"
+        message="This document is locked. Are you sure you want to unlock it for editing?"
+        confirmText="Unlock Document"
+        requirePassword={true}
+        isDestructive={true}
+      />
     </div>
   );
 }

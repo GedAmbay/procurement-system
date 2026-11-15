@@ -1,5 +1,7 @@
 "use client";
 import LoaderWave from "@/components/ui/loader-wave";
+import CustomSelect from "@/components/ui/custom-select";
+import ConfirmModal from "@/components/ui/confirm-modal";
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
@@ -46,8 +48,25 @@ export default function PurchaseRequestEditor() {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [zoom, setZoom] = useState(1);
   const [isUnlocked, setIsUnlocked] = useState(false);
+  const [unlockModalOpen, setUnlockModalOpen] = useState(false);
+  const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [targetRows, setTargetRows] = useState(21);
   const [showPrNo, setShowPrNo] = useState(false);
+
+  const handleUnlockConfirm = async (password?: string) => {
+    if (!password) {
+      toast.error("Password is required");
+      return;
+    }
+    setIsUnlocked(true);
+    setUnlockModalOpen(false);
+    toast.success("Document unlocked securely");
+  };
+
+  const handleSaveConfirm = () => {
+    setSaveModalOpen(false);
+    handleSubmit(onSubmit)();
+  };
 
   // Options
   const [offices, setOffices] = useState<any[]>([]);
@@ -519,7 +538,7 @@ export default function PurchaseRequestEditor() {
           {!isViewMode && !isNew && (
             <button
               type="button"
-              onClick={() => setIsUnlocked(!isUnlocked)}
+              onClick={() => isUnlocked ? setIsUnlocked(false) : setUnlockModalOpen(true)}
               className="border border-slate-300 hover:border-slate-400 bg-white hover:bg-slate-50 text-slate-700 font-semibold px-4 py-2 rounded-xl text-sm flex items-center gap-2 shadow-sm transition-all"
             >
               {isUnlocked ? <><Lock size={16} /> Lock</> : <><Unlock size={16} /> Unlock</>}
@@ -538,7 +557,7 @@ export default function PurchaseRequestEditor() {
           {!isReadOnly && (
             <button
               type="button"
-              onClick={handleSubmit(onSubmit)}
+              onClick={() => setSaveModalOpen(true)}
               disabled={submitting}
               className="border border-blue-600 hover:bg-blue-50 text-blue-600 font-semibold px-4 py-2 rounded-xl text-sm flex items-center gap-2 shadow-sm transition-all"
             >
@@ -932,30 +951,28 @@ export default function PurchaseRequestEditor() {
 
               <div>
                 <label className="form-label">Requesting Office</label>
-                <select
-                  {...register("officeId")}
-                  className="form-select"
+                <CustomSelect
+                  value={watchAllFields.officeId || ""}
+                  onChange={(val) => setValue("officeId", val, { shouldValidate: true, shouldDirty: true })}
+                  options={offices.map((o) => ({ value: o.id, label: o.name }))}
+                  placeholder="Select Office..."
                   disabled={isReadOnly}
-                >
-                  <option value="">Select Office...</option>
-                  {offices.map(o => (
-                    <option key={o.id} value={o.id}>{o.name}</option>
-                  ))}
-                </select>
+                />
               </div>
 
               <div>
                 <label className="form-label">Requested By (Signatory)</label>
-                <select
-                  {...register("requestedBySignatoryId")}
-                  className="form-select"
+                <CustomSelect
+                  value={watchAllFields.requestedBySignatoryId || ""}
+                  onChange={(val) => setValue("requestedBySignatoryId", val, { shouldValidate: true, shouldDirty: true })}
+                  options={signatories.map((s) => ({
+                    value: s.id,
+                    label: s.name,
+                    sublabel: s.position,
+                  }))}
+                  placeholder="Select Signatory..."
                   disabled={isReadOnly}
-                >
-                  <option value="">Select Signatory...</option>
-                  {signatories.map(s => (
-                    <option key={s.id} value={s.id}>{s.name} - {s.position}</option>
-                  ))}
-                </select>
+                />
               </div>
 
               <div>
@@ -1003,16 +1020,19 @@ export default function PurchaseRequestEditor() {
                     <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "0.75rem", marginBottom: "1rem" }}>
                       <div>
                         <label className="form-label">Catalog Item <span style={{ fontWeight: "400", color: "#94a3b8" }}>(optional)</span></label>
-                        <select
+                        <CustomSelect
                           value={draftItem.itemId || ""}
-                          onChange={(e) => handleItemSelect(e.target.value)}
-                          className="form-select"
-                        >
-                          <option value="">-- Custom Item --</option>
-                          {items.map(item => (
-                            <option key={item.id} value={item.id}>{item.description}</option>
-                          ))}
-                        </select>
+                          onChange={(val) => handleItemSelect(val)}
+                          options={[
+                            { value: "", label: "-- Custom Item --" },
+                            ...items.map((item) => ({
+                              value: item.id,
+                              label: item.description,
+                              sublabel: item.unit ? `${item.unit} · ₱${Number(item.standardCost || 0).toLocaleString()}` : undefined,
+                            })),
+                          ]}
+                          placeholder="-- Custom Item --"
+                        />
                       </div>
 
                       <div>
@@ -1117,6 +1137,26 @@ export default function PurchaseRequestEditor() {
             </div>
           </div>
         </div>
+
+        <ConfirmModal
+          isOpen={saveModalOpen}
+          onClose={() => setSaveModalOpen(false)}
+          onConfirm={handleSaveConfirm}
+          title="Confirm Save"
+          message="Are you sure you want to save these changes to the Purchase Request?"
+          confirmText="Save Changes"
+        />
+
+        <ConfirmModal
+          isOpen={unlockModalOpen}
+          onClose={() => setUnlockModalOpen(false)}
+          onConfirm={handleUnlockConfirm}
+          title="Unlock Document"
+          message="This document is locked. Are you sure you want to unlock it for editing?"
+          confirmText="Unlock Document"
+          requirePassword={true}
+          isDestructive={true}
+        />
       </div>
-  );
-}
+    );
+  }

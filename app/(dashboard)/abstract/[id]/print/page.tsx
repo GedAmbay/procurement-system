@@ -7,6 +7,7 @@ import { ArrowLeft, Printer, Loader2, ZoomIn, ZoomOut, Users, Edit3, Minus, Plus
 import Link from "next/link";
 import { formatCurrency, LGU_INFO } from "@/lib/utils";
 import { toast } from "sonner";
+import ConfirmModal from "@/components/ui/confirm-modal";
 
 export default function AbstractLivePreviewPage() {
   const params = useParams();
@@ -15,7 +16,24 @@ export default function AbstractLivePreviewPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(false);
+  const [unlockModalOpen, setUnlockModalOpen] = useState(false);
+  const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+
+  const handleUnlockConfirm = async (password?: string) => {
+    if (!password) {
+      toast.error("Password is required");
+      return;
+    }
+    setIsUnlocked(true);
+    setUnlockModalOpen(false);
+    toast.success("Document unlocked securely");
+  };
+
+  const handleSaveConfirm = () => {
+    setSaveModalOpen(false);
+    saveChanges();
+  };
   const [zoom, setZoom] = useState(0.65);
   const [targetRows, setTargetRows] = useState(15);
 
@@ -255,7 +273,7 @@ export default function AbstractLivePreviewPage() {
             <>
               <button
                 type="button"
-                onClick={() => setIsUnlocked(true)}
+                onClick={() => setUnlockModalOpen(true)}
                 className="border border-slate-300 hover:border-slate-400 bg-white hover:bg-slate-50 text-slate-700 font-semibold px-4 py-2 rounded-xl text-sm flex items-center gap-2 shadow-sm transition-all"
               >
                 <Unlock size={16} /> Unlock
@@ -289,7 +307,7 @@ export default function AbstractLivePreviewPage() {
               </button>
               <button
                 type="button"
-                onClick={() => saveChanges()}
+                onClick={() => setSaveModalOpen(true)}
                 disabled={submitting}
                 className="border border-blue-600 hover:bg-blue-50 text-blue-600 font-semibold px-4 py-2 rounded-xl text-sm flex items-center gap-2 shadow-sm transition-all"
               >
@@ -846,6 +864,25 @@ export default function AbstractLivePreviewPage() {
         </div>
       </div>
 
+      <ConfirmModal
+        isOpen={saveModalOpen}
+        onClose={() => setSaveModalOpen(false)}
+        onConfirm={handleSaveConfirm}
+        title="Confirm Save"
+        message="Are you sure you want to save these changes to the Abstract of Canvass?"
+        confirmText="Save Changes"
+      />
+
+      <ConfirmModal
+        isOpen={unlockModalOpen}
+        onClose={() => setUnlockModalOpen(false)}
+        onConfirm={handleUnlockConfirm}
+        title="Unlock Document"
+        message="This document is finalized. Are you sure you want to unlock it for editing?"
+        confirmText="Unlock Document"
+        requirePassword={true}
+        isDestructive={true}
+      />
     </div>
   );
 }

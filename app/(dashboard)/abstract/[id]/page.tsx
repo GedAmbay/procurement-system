@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import LoaderWave from "@/components/ui/loader-wave";
+import CustomSelect from "@/components/ui/custom-select";
 import {
   Button,
   StatusPill,
@@ -428,18 +429,18 @@ export default function AbstractHubPage() {
       {showAddSupplier && (
         <div className="bg-white rounded-2xl p-4 border border-blue-200 bg-blue-50/30 shadow-sm flex flex-col sm:flex-row items-center gap-3">
           <Building2 size={18} className="text-blue-600 shrink-0" />
-          <select
-            value={selectedNewSupplier}
-            onChange={(e) => setSelectedNewSupplier(e.target.value)}
-            className="w-full sm:flex-1 h-11 px-3.5 bg-white border border-slate-300 rounded-xl text-sm font-medium text-slate-800 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-          >
-            <option value="">— Select a supplier to add (up to 3) —</option>
-            {availableSuppliers.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
+          <div className="w-full sm:flex-1">
+            <CustomSelect
+              value={selectedNewSupplier}
+              onChange={(val) => setSelectedNewSupplier(val)}
+              options={availableSuppliers.map((s) => ({
+                value: s.id,
+                label: s.name,
+                sublabel: s.address || undefined,
+              }))}
+              placeholder="— Select a supplier to add (up to 3) —"
+            />
+          </div>
           <Button
             size="md"
             variant="primary"

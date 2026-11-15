@@ -1,5 +1,6 @@
 "use client";
 import LoaderWave from "@/components/ui/loader-wave";
+import CustomSelect from "@/components/ui/custom-select";
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -21,6 +22,7 @@ export default function RfqLivePreviewPage() {
   const [zoom, setZoom] = useState(1);
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [unlockModalOpen, setUnlockModalOpen] = useState(false);
+  const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [targetRows, setTargetRows] = useState(8);
   const [showRfqNo, setShowRfqNo] = useState(true);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -179,6 +181,11 @@ export default function RfqLivePreviewPage() {
     toast.success("Document unlocked securely");
   };
 
+  const handleSaveConfirm = () => {
+    setSaveModalOpen(false);
+    handleSubmit(onSubmit)();
+  };
+
   if (loading) return <LoaderWave variant="page" label="Loading RFQ..." />;
   if (!rfq) return <div>Error loading data</div>;
 
@@ -307,7 +314,7 @@ export default function RfqLivePreviewPage() {
               </button>
               <button
                 type="button"
-                onClick={handleSubmit(onSubmit)}
+                onClick={() => setSaveModalOpen(true)}
                 disabled={submitting}
                 className="border border-blue-600 hover:bg-blue-50 text-blue-600 font-semibold px-4 py-2 rounded-xl text-sm flex items-center gap-2 shadow-sm transition-all"
               >
@@ -618,18 +625,17 @@ export default function RfqLivePreviewPage() {
 
             <div>
               <label className="form-label text-xs font-semibold text-slate-700">Signatory</label>
-              <select
-                {...register("signatoryId")}
+              <CustomSelect
+                value={watchSignatoryId || ""}
+                onChange={(val) => setValue("signatoryId", val, { shouldValidate: true, shouldDirty: true })}
+                options={signatories.map((s) => ({
+                  value: s.id,
+                  label: s.name,
+                  sublabel: s.position,
+                }))}
+                placeholder="Select Signatory..."
                 disabled={isReadOnly}
-                className="form-select"
-              >
-                <option value="">Select Signatory...</option>
-                {signatories.map(s => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
 
             <div>
@@ -661,6 +667,15 @@ export default function RfqLivePreviewPage() {
           </form>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={saveModalOpen}
+        onClose={() => setSaveModalOpen(false)}
+        onConfirm={handleSaveConfirm}
+        title="Confirm Save"
+        message="Are you sure you want to save these changes to the Request for Quotation?"
+        confirmText="Save Changes"
+      />
 
       <ConfirmModal
         isOpen={unlockModalOpen}
