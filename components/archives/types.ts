@@ -1,4 +1,4 @@
-export type DocumentType = "Abstract" | "RFQ" | "PR" | "PO";
+export type DocumentType = "Abstract" | "RFQ" | "PR" | "PO" | "Acceptance" | string;
 
 export interface RecentlyOpenedItem {
   id: string;

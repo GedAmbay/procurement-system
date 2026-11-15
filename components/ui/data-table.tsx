@@ -683,13 +683,14 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
                   )}
 
                   {/* Columns */}
-                  {columns.map((col) => {
+                  {columns.map((col, idx) => {
                     const isSorted = sortConfig?.key === col.key;
+                    const isLast = idx === columns.length - 1;
                     return (
                       <th
                         key={col.key}
                         style={{ width: col.width, textAlign: (col.align || "left") as any }}
-                        className={`px-4 py-3.5 ${col.sortable ? "cursor-pointer hover:text-slate-900" : ""
+                        className={`px-4 py-3.5 whitespace-nowrap ${isLast ? "pr-6" : ""} ${col.sortable ? "cursor-pointer hover:text-slate-900" : ""
                           }`}
                         onClick={() => {
                           if (!col.sortable) return;
@@ -753,15 +754,18 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
                       )}
 
                       {/* Data Columns */}
-                      {columns.map((col) => (
-                        <td
-                          key={col.key}
-                          style={{ textAlign: (col.align || "left") as any }}
-                          className="px-4 py-4"
-                        >
-                          {col.render ? col.render(row) : String((row as any)[col.key] ?? "—")}
-                        </td>
-                      ))}
+                      {columns.map((col, idx) => {
+                        const isLast = idx === columns.length - 1;
+                        return (
+                          <td
+                            key={col.key}
+                            style={{ textAlign: (col.align || "left") as any }}
+                            className={`px-4 py-4 ${isLast ? "pr-6" : ""}`}
+                          >
+                            {col.render ? col.render(row) : String((row as any)[col.key] ?? "—")}
+                          </td>
+                        );
+                      })}
                     </tr>
                   );
                 })}

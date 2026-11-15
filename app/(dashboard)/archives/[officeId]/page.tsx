@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { FileText, ArrowLeft, FolderOpen, ChevronRight, User, ExternalLink } from "lucide-react";
+import { FileText, ChevronRight, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import DataTable from "@/components/ui/data-table";
 import { formatCurrency } from "@/lib/utils";
@@ -41,61 +41,58 @@ export default function OfficeArchivePage() {
     {
       key: "prNumber",
       label: "Folder ID (PR)",
+      width: "190px",
       render: (row: FolderRecord) => (
         <Link
           href={`/procurement-folders/${row.id}`}
           className="inline-flex items-center gap-1.5 font-bold font-mono text-sm text-blue-600 hover:text-blue-700 hover:underline group"
         >
           <span>{row.prNumber || "Draft (No Number)"}</span>
-          <ExternalLink size={13} className="text-blue-500 opacity-70 group-hover:opacity-100" />
+          <ExternalLink size={13} className="text-blue-400 group-hover:text-blue-600 transition-colors" />
         </Link>
       ),
-      width: "160px",
     },
     {
       key: "purpose",
       label: "Purpose",
       align: "left",
       render: (row: FolderRecord) => (
-        <div className="text-sm text-slate-700 max-w-[400px] truncate">{row.purpose}</div>
+        <div 
+          className="text-sm text-slate-700 leading-relaxed line-clamp-2 pr-6" 
+          title={row.purpose}
+        >
+          {row.purpose}
+        </div>
       ),
     },
     {
       key: "totalAmount",
       label: "Total Amount",
-      align: "center",
+      align: "right",
       sortable: true,
+      width: "170px",
       render: (row: FolderRecord) => (
-        <div className="font-bold text-green-600">{formatCurrency(row.totalAmount)}</div>
+        <div className="font-bold text-sm text-emerald-600 font-mono">
+          {formatCurrency(row.totalAmount)}
+        </div>
       ),
-      width: "140px",
     },
-
     {
       key: "createdAt",
       label: "Date Created",
-      align: "center",
+      align: "right",
       sortable: true,
+      width: "180px",
       render: (row: FolderRecord) => (
-        <span className="text-[13px] text-slate-500">
-          {new Date(row.createdAt).toLocaleDateString("en-PH")}
+        <span className="text-[13px] text-slate-500 font-medium whitespace-nowrap">
+          {new Date(row.createdAt).toLocaleDateString("en-PH", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          })}
         </span>
       ),
-      width: "120px",
     },
-
-    {
-      key: "requestedBy",
-      label: "Created By",
-      align: "center",
-      render: (row: FolderRecord) => (
-        <div className="flex items-center justify-center gap-1.5 text-xs text-slate-700 font-medium">
-          <User size={13} className="text-slate-400" />
-          <span>{row.requestedBy?.name || "—"}</span>
-        </div>
-      ),
-      width: "150px",
-    }
   ];
 
   return (

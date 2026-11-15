@@ -54,9 +54,20 @@ export function ArchivesPage({
 
   // Sync recently opened on mount and on custom events
   useEffect(() => {
-    if (!initialRecentlyOpened || initialRecentlyOpened.length === 0) {
-      setRecentlyOpened(getRecentlyOpened());
-    }
+    fetch("/api/recently-opened")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.items && data.items.length > 0) {
+          setRecentlyOpened(data.items);
+        } else if (!initialRecentlyOpened || initialRecentlyOpened.length === 0) {
+          setRecentlyOpened(getRecentlyOpened());
+        }
+      })
+      .catch(() => {
+        if (!initialRecentlyOpened || initialRecentlyOpened.length === 0) {
+          setRecentlyOpened(getRecentlyOpened());
+        }
+      });
 
     const handleUpdate = (e: any) => {
       if (e.detail) {

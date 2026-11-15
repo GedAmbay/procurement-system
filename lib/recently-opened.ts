@@ -2,6 +2,27 @@ import { RecentlyOpenedItem, DocumentType } from "@/components/archives/types";
 
 const STORAGE_KEY_PREFIX = "lgu_recently_opened_";
 
+export function getLivePreviewUrl(documentType: string, documentId: string): string {
+  if (!documentId) return "/purchase-requests";
+  const type = (documentType || "").toUpperCase();
+  if (type === "PR" || type === "PURCHASE_REQUEST" || type === "PURCHASE REQUEST") {
+    return `/purchase-requests/${documentId}`;
+  }
+  if (type === "RFQ") {
+    return `/rfqs/${documentId}`;
+  }
+  if (type === "ABSTRACT" || type === "ABSTRACT_OF_CANVASS" || type === "ABSTRACT OF CANVASS") {
+    return `/abstract/${documentId}/print`;
+  }
+  if (type === "PO" || type === "PURCHASE_ORDER" || type === "PURCHASE ORDER") {
+    return `/purchase-orders/${documentId}`;
+  }
+  if (type === "ACCEPTANCE" || type === "AIR") {
+    return `/acceptances/${documentId}`;
+  }
+  return `/purchase-requests/${documentId}`;
+}
+
 export function formatRelativeTime(dateInput: string | Date | number): string {
   if (!dateInput) return "Opened recently";
   if (typeof dateInput === "string" && dateInput.startsWith("Opened")) {
@@ -95,7 +116,7 @@ export function getRecentlyOpened(userId: string = "current"): RecentlyOpenedIte
     }
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed) && parsed.length > 0) {
-      return parsed.slice(0, 8);
+      return parsed.slice(0, 20);
     }
     return [];
   } catch {
@@ -109,11 +130,12 @@ export function recordDocumentOpen(record: {
   documentType: DocumentType;
   title: string;
   officeName: string;
-  url: string;
+  url?: string;
   openedAt?: string;
 }): void {
   if (typeof window === "undefined") return;
 
+  const liveUrl = record.url || getLivePreviewUrl(record.documentType, record.documentId);
   const userId = record.userId || "current";
   const newItem: RecentlyOpenedItem = {
     id: `rec-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
@@ -122,14 +144,14 @@ export function recordDocumentOpen(record: {
     title: record.title,
     officeName: record.officeName,
     openedAt: record.openedAt || new Date().toISOString(),
-    url: record.url,
+    url: liveUrl,
   };
 
   try {
     const current = getRecentlyOpened(userId);
     // Remove if already exists with same documentId
     const filtered = current.filter((item) => item.documentId !== record.documentId);
-    const updated = [newItem, ...filtered].slice(0, 8);
+    const updated = [newItem, ...filtered].slice(0, 20);
     localStorage.setItem(`${STORAGE_KEY_PREFIX}${userId}`, JSON.stringify(updated));
 
     // Dispatch custom event for real-time update across components
@@ -144,7 +166,7 @@ export function recordDocumentOpen(record: {
         documentType: record.documentType,
         title: record.title,
         officeName: record.officeName,
-        url: record.url,
+        url: liveUrl,
       }),
     }).catch(() => {
       // ignore network errors for offline resiliency
