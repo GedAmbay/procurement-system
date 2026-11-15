@@ -53,10 +53,11 @@ export async function GET(
 
     if (!po) return NextResponse.json({ error: "PO not found" }, { status: 404 });
 
+    let refreshedPo = null;
     // Auto-sync supplier if not assigned yet and abstract has quotations
     if (!po.supplierId && po.abstractId) {
       await syncAwardedSupplierToPO(po.abstractId);
-      const refreshedPo = await prisma.purchaseOrder.findUnique({
+      refreshedPo = await prisma.purchaseOrder.findUnique({
         where: { id },
         include: {
           createdBy: true,
@@ -89,10 +90,20 @@ export async function GET(
           }
         },
       });
-      return NextResponse.json(refreshedPo || po);
     }
 
-    return NextResponse.json(po);
+    const finalPo = refreshedPo || po;
+    const lastLog = await prisma.documentAuditLog.findFirst({
+      where: {
+        documentId: id,
+        action: { in: ["SAVE", "UPDATE", "CREATE"] },
+      },
+      orderBy: { createdAt: "desc" },
+      include: { user: { select: { name: true } } },
+    });
+    const lastSavedBy = lastLog?.user?.name || finalPo?.createdBy?.name || null;
+
+    return NextResponse.json({ ...finalPo, lastSavedBy });
   } catch (error) {
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
@@ -158,7 +169,20 @@ export async function PATCH(
       }
     }
 
-    return NextResponse.json(updatedPO);
+    const user = session.user as any;
+    if (user?.id) {
+      await prisma.documentAuditLog.create({
+        data: {
+          documentType: "PURCHASE_ORDER",
+          documentId: id,
+          action: "SAVE",
+          userId: user.id,
+          metadata: JSON.stringify({ savedBy: user.name }),
+        },
+      });
+    }
+
+    return NextResponse.json({ ...updatedPO, lastSavedBy: user?.name || null });
   } catch (error) {
     console.error("PO Update Error:", error);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });

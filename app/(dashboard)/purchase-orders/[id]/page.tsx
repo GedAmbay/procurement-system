@@ -5,6 +5,7 @@ import ConfirmModal from "@/components/ui/confirm-modal";
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { Printer, Save, ArrowLeft, Loader2, Send, ZoomIn, ZoomOut, Minus, Plus, Package, FileText, ChevronRight, CheckCircle2, XCircle, User, Lock, Unlock } from "lucide-react";
 import Link from "next/link";
@@ -26,6 +27,7 @@ interface POFormValues {
 export default function PurchaseOrderEditor() {
   const params = useParams();
   const router = useRouter();
+  const { data: session } = useSession();
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -41,6 +43,7 @@ export default function PurchaseOrderEditor() {
   const [unlockModalOpen, setUnlockModalOpen] = useState(false);
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [lastSavedBy, setLastSavedBy] = useState<string | null>(null);
 
   const handleUnlockConfirm = async (password?: string) => {
     if (!password) {
@@ -107,6 +110,7 @@ export default function PurchaseOrderEditor() {
           const data = await poRes.json();
           setPoData(data);
           if (data.updatedAt) setLastSaved(new Date(data.updatedAt));
+          if (data.lastSavedBy) setLastSavedBy(data.lastSavedBy);
           const allSups = await supRes.json();
           setSuppliers(allSups);
 
@@ -171,6 +175,11 @@ export default function PurchaseOrderEditor() {
         const updated = await res.json();
         setPoData((prev: any) => ({ ...prev, ...updated }));
         setLastSaved(new Date());
+        if (updated.lastSavedBy) {
+          setLastSavedBy(updated.lastSavedBy);
+        } else if (session?.user?.name) {
+          setLastSavedBy(session.user.name);
+        }
         toast.success(isJob ? "Job Order saved successfully" : "Purchase Order saved successfully");
       } else {
         const errorData = await res.json().catch(() => ({}));
@@ -285,7 +294,13 @@ export default function PurchaseOrderEditor() {
               {getSavedTimeText() && (
                 <span className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
-                  {getSavedTimeText()}
+                  <span>{getSavedTimeText()}</span>
+                  {lastSavedBy && (
+                    <>
+                      <span className="text-slate-300">•</span>
+                      <span className="text-slate-600 font-medium">by <strong className="font-semibold text-slate-700">{lastSavedBy}</strong></span>
+                    </>
+                  )}
                 </span>
               )}
             </div>

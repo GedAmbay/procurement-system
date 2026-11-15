@@ -51,7 +51,17 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       return NextResponse.json({ error: "Acceptance not found" }, { status: 404 });
     }
 
-    return NextResponse.json(acceptance);
+    const lastLog = await prisma.documentAuditLog.findFirst({
+      where: {
+        documentId: id,
+        action: { in: ["SAVE", "UPDATE", "CREATE"] },
+      },
+      orderBy: { createdAt: "desc" },
+      include: { user: { select: { name: true } } },
+    });
+    const lastSavedBy = lastLog?.user?.name || acceptance.createdBy?.name || null;
+
+    return NextResponse.json({ ...acceptance, lastSavedBy });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -162,7 +172,19 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       });
     }
 
-    return NextResponse.json(updatedAcceptance);
+    if (roleCheck.user?.id) {
+      await prisma.documentAuditLog.create({
+        data: {
+          documentType: "ACCEPTANCE",
+          documentId: id,
+          action: "SAVE",
+          userId: roleCheck.user.id,
+          metadata: JSON.stringify({ savedBy: roleCheck.user.name }),
+        },
+      });
+    }
+
+    return NextResponse.json({ ...updatedAcceptance, lastSavedBy: roleCheck.user?.name || null });
   } catch (error: any) {
     console.error("PUT Acceptance Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });

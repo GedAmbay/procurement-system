@@ -3,6 +3,7 @@ import LoaderWave from "@/components/ui/loader-wave";
 
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { ArrowLeft, Printer, Loader2, ZoomIn, ZoomOut, Users, Edit3, Minus, Plus, Save, CheckCircle2, Lock, Unlock, LayoutGrid } from "lucide-react";
 import Link from "next/link";
 import { formatCurrency, LGU_INFO } from "@/lib/utils";
@@ -11,6 +12,7 @@ import ConfirmModal from "@/components/ui/confirm-modal";
 
 export default function AbstractLivePreviewPage() {
   const params = useParams();
+  const { data: session } = useSession();
   const [data, setData] = useState<any>(null);
   const [allSignatories, setAllSignatories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -19,6 +21,7 @@ export default function AbstractLivePreviewPage() {
   const [unlockModalOpen, setUnlockModalOpen] = useState(false);
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [lastSavedBy, setLastSavedBy] = useState<string | null>(null);
 
   const handleUnlockConfirm = async (password?: string) => {
     if (!password) {
@@ -70,6 +73,7 @@ export default function AbstractLivePreviewPage() {
           abstractResData = d;
           setData(d);
           if (d.updatedAt) setLastSaved(new Date(d.updatedAt));
+          if (d.lastSavedBy) setLastSavedBy(d.lastSavedBy);
           if (d.rfq?.pr) {
             setReqOfficerName(d.reqOfficerName || d.rfq.pr.requestedBy || "");
             setReqOfficerOffice(d.reqOfficerOffice || d.rfq.pr.office?.name || "");
@@ -138,6 +142,11 @@ export default function AbstractLivePreviewPage() {
       const updated = await res.json();
       setData((prev: any) => ({ ...prev, ...updated }));
       setLastSaved(new Date());
+      if (updated.lastSavedBy) {
+        setLastSavedBy(updated.lastSavedBy);
+      } else if (session?.user?.name) {
+        setLastSavedBy(session.user.name);
+      }
       toast.success(newStatus ? `Abstract ${newStatus.toLowerCase()} successfully!` : "Changes saved");
       if (newStatus) setIsUnlocked(false);
     } catch (error) {
@@ -238,7 +247,15 @@ export default function AbstractLivePreviewPage() {
                   {data.status || "FINAL"}
                 </span>
                 {getSavedTimeText() && (
-                  <span className="text-xs text-slate-500 font-medium">{getSavedTimeText()}</span>
+                  <span className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+                    <span>{getSavedTimeText()}</span>
+                    {lastSavedBy && (
+                      <>
+                        <span className="text-slate-300">•</span>
+                        <span className="text-slate-600 font-medium">by <strong className="font-semibold text-slate-700">{lastSavedBy}</strong></span>
+                      </>
+                    )}
+                  </span>
                 )}
               </div>
             ) : (
@@ -249,7 +266,13 @@ export default function AbstractLivePreviewPage() {
                 {getSavedTimeText() && (
                   <span className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
-                    {getSavedTimeText()}
+                    <span>{getSavedTimeText()}</span>
+                    {lastSavedBy && (
+                      <>
+                        <span className="text-slate-300">•</span>
+                        <span className="text-slate-600 font-medium">by <strong className="font-semibold text-slate-700">{lastSavedBy}</strong></span>
+                      </>
+                    )}
                   </span>
                 )}
               </div>
@@ -385,7 +408,7 @@ export default function AbstractLivePreviewPage() {
                       fontFamily: "Arial, sans-serif",
                       fontSize: "13px",
                     }}
-                    className="abstract-print-sheet print-area w-[1448px] shadow-xl min-h-[816px] p-[40px] print:!p-0 block print:shadow-none print:!w-full print:!max-w-none print:!m-0 print:!min-h-0"
+                    className="abstract-print-sheet print-area w-[1500px] shadow-xl min-h-[816px] p-[40px] print:!p-0 block print:shadow-none print:!w-full print:!max-w-none print:!m-0 print:!min-h-0"
                   >
                     <div style={{ border: "1px solid #000", padding: "10px 0" }}>
 
@@ -742,7 +765,7 @@ export default function AbstractLivePreviewPage() {
 
                 <div style={{ marginBottom: "0.75rem" }}>
                   <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: "600", color: "#475569", marginBottom: "0.375rem" }}>Officer Name</label>
-                  <input type="text" value={reqOfficerName} onChange={e => setReqOfficerName(e.target.value)} className="form-input" style={{ width: "100%" }} placeholder="e.g. Juan Dela Cruz" />
+                  <input type="text" value={reqOfficerName} onChange={e => setReqOfficerName(e.target.value)} className="form-input uppercase" style={{ width: "100%" }} placeholder="e.g. Juan Dela Cruz" />
                 </div>
               </section>
             )}

@@ -90,7 +90,7 @@ export async function PATCH(
 
     const updated = await prisma.$transaction(async (tx) => {
       // 1. Update quotation headers
-      const updatedQuotation = await (tx.quotation as any).update({
+      const updatedQuotation = await tx.quotation.update({
         where: { id },
         data: {
           status: determinedStatus,

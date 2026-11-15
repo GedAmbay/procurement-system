@@ -4,6 +4,7 @@ import CustomSelect from "@/components/ui/custom-select";
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { Printer, Save, ArrowLeft, Loader2, ZoomIn, ZoomOut, Send, Clock, CheckCircle2, Lock, Unlock, Minus, Plus, User, LayoutGrid, Check } from "lucide-react";
 import Link from "next/link";
@@ -14,6 +15,7 @@ import ConfirmModal from "@/components/ui/confirm-modal";
 export default function RfqLivePreviewPage() {
   const params = useParams();
   const router = useRouter();
+  const { data: session } = useSession();
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -26,6 +28,7 @@ export default function RfqLivePreviewPage() {
   const [targetRows, setTargetRows] = useState(8);
   const [showRfqNo, setShowRfqNo] = useState(true);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [lastSavedBy, setLastSavedBy] = useState<string | null>(null);
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -76,6 +79,9 @@ export default function RfqLivePreviewPage() {
           } else {
             setLastSaved(new Date());
           }
+          if (data.lastSavedBy) {
+            setLastSavedBy(data.lastSavedBy);
+          }
 
           const defaultSig = loadedSignatories.find(
             s => s.name?.toUpperCase().includes("JEFFY")
@@ -120,6 +126,16 @@ export default function RfqLivePreviewPage() {
       const updated = await res.json();
       setRfq(updated);
       setLastSaved(new Date(updated.updatedAt || Date.now()));
+      if (updated.lastSavedBy) {
+        setLastSavedBy(updated.lastSavedBy);
+      } else if (session?.user?.name) {
+        setLastSavedBy(session.user.name);
+      }
+      if (updated.lastSavedBy) {
+        setLastSavedBy(updated.lastSavedBy);
+      } else if (session?.user?.name) {
+        setLastSavedBy(session.user.name);
+      }
       toast.success("RFQ details saved successfully");
     } catch (e: any) {
       toast.error(e.message || "An error occurred");
@@ -162,6 +178,11 @@ export default function RfqLivePreviewPage() {
       const updated = await res.json();
       setRfq(updated);
       setLastSaved(new Date(updated.updatedAt || Date.now()));
+      if (updated.lastSavedBy) {
+        setLastSavedBy(updated.lastSavedBy);
+      } else if (session?.user?.name) {
+        setLastSavedBy(session.user.name);
+      }
       toast.success(`RFQ ${status === "ISSUED" ? "issued" : status.toLowerCase().replace(/_/g, ' ')} successfully`);
     } catch (e: any) {
       toast.error(e.message || "Update failed");
@@ -248,7 +269,15 @@ export default function RfqLivePreviewPage() {
                   <Lock size={12} className="text-emerald-700" />
                   {rfq.status}
                 </span>
-                <span className="text-xs text-slate-500 font-medium">{getIssuedTimeText()}</span>
+                <span className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+                  <span>{getIssuedTimeText()}</span>
+                  {lastSavedBy && (
+                    <>
+                      <span className="text-slate-300">•</span>
+                      <span className="text-slate-600 font-medium">by <strong className="font-semibold text-slate-700">{lastSavedBy}</strong></span>
+                    </>
+                  )}
+                </span>
               </div>
             ) : (
               <div className="flex items-center gap-2">
@@ -257,7 +286,13 @@ export default function RfqLivePreviewPage() {
                 </span>
                 <span className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
-                  {getSavedTimeText()}
+                  <span>{getSavedTimeText()}</span>
+                  {lastSavedBy && (
+                    <>
+                      <span className="text-slate-300">•</span>
+                      <span className="text-slate-600 font-medium">by <strong className="font-semibold text-slate-700">{lastSavedBy}</strong></span>
+                    </>
+                  )}
                 </span>
               </div>
             )}

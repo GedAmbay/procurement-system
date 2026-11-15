@@ -32,7 +32,17 @@ export async function GET(
 
     if (!pr) return NextResponse.json({ error: "PR not found" }, { status: 404 });
 
-    return NextResponse.json(pr);
+    const lastLog = await prisma.documentAuditLog.findFirst({
+      where: {
+        documentId: id,
+        action: { in: ["SAVE", "UPDATE", "CREATE"] },
+      },
+      orderBy: { createdAt: "desc" },
+      include: { user: { select: { name: true } } },
+    });
+    const lastSavedBy = lastLog?.user?.name || pr.requestedBy?.name || null;
+
+    return NextResponse.json({ ...pr, lastSavedBy });
   } catch (error) {
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
@@ -164,10 +174,23 @@ export async function PATCH(
       // 6. Synchronize linked RFQs with updated PR line items
       await syncAllRfqsForPr(id, tx);
 
+      if (user?.id) {
+        await tx.documentAuditLog.create({
+          data: {
+            documentType: "PURCHASE_REQUEST",
+            documentId: id,
+            action: "SAVE",
+            userId: user.id,
+            notes: "PR details and line items saved",
+            metadata: JSON.stringify({ savedBy: user.name }),
+          },
+        });
+      }
+
       return updated;
     });
 
-    return NextResponse.json(updatedPR);
+    return NextResponse.json({ ...updatedPR, lastSavedBy: user.name || null });
   } catch (error) {
     console.error("PR Update Error:", error);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });

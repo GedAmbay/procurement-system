@@ -59,8 +59,19 @@ export async function GET(
     const evaluation = evaluateAbstractBids(quotations, rfqLineItems);
     const eligibility = checkFinalizeEligibility(quotations, rfqLineItems);
 
+    const lastLog = await prisma.documentAuditLog.findFirst({
+      where: {
+        documentId: id,
+        action: { in: ["SAVE", "UPDATE", "CREATE"] },
+      },
+      orderBy: { createdAt: "desc" },
+      include: { user: { select: { name: true } } },
+    });
+    const lastSavedBy = lastLog?.user?.name || abstract.createdBy?.name || null;
+
     return NextResponse.json({
       ...abstract,
+      lastSavedBy,
       evaluation,
       eligibility,
     });
@@ -109,7 +120,23 @@ export async function PATCH(
       await syncRfqStatus(updatedabstract.rfqId);
     }
 
-    return NextResponse.json(updatedabstract);
+    const user = session.user as any;
+    if (user?.id) {
+      await prisma.documentAuditLog.create({
+        data: {
+          documentType: "ABSTRACT",
+          documentId: id,
+          action: "SAVE",
+          userId: user.id,
+          metadata: JSON.stringify({ savedBy: user.name }),
+        },
+      });
+    }
+
+    return NextResponse.json({
+      ...updatedabstract,
+      lastSavedBy: user?.name || null,
+    });
   } catch (error) {
     console.error("abstract Update Error:", error);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });

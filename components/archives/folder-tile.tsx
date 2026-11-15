@@ -108,11 +108,54 @@ export function FolderTile({
           </div>
         </div>
 
-        {/* Front panel covering lower ~65% (114px) */}
-        <div className="absolute bottom-0 inset-x-0 h-[114px] bg-[#F8D775] rounded-[18px] border border-[#dde4ef] shadow-xs p-4 flex items-start gap-3 z-20">
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#fef3c7] text-[#92400e]">
-            {office.code}
-          </span>
+        {/* Front folder pocket with tab contour (120px tall) */}
+        <div className="absolute bottom-0 inset-x-0 h-[120px] z-20 pointer-events-none drop-shadow-[0_4px_12px_rgba(202,138,4,0.18)]">
+          <svg
+            className="w-full h-full"
+            viewBox="0 0 280 120"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            <defs>
+              <linearGradient id={`folderHighlight-${office.id}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.8" />
+                <stop offset="35%" stopColor="#FFFFFF" stopOpacity="0.45" />
+                <stop offset="100%" stopColor="#FFEAA0" stopOpacity="0.25" />
+              </linearGradient>
+              <linearGradient id={`folderBody-${office.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#FDE893" />
+                <stop offset="12%" stopColor="#F8D775" />
+                <stop offset="100%" stopColor="#F5CF65" />
+              </linearGradient>
+            </defs>
+
+            {/* Main folder pocket */}
+            <path
+              d="M 0,16 Q 0,0 16,0 L 100,0 C 112,0 118,14 130,14 L 264,14 Q 280,14 280,28 L 280,102 Q 280,120 262,120 L 18,120 Q 0,120 0,102 Z"
+              fill={`url(#folderBody-${office.id})`}
+              stroke="#E5B942"
+              strokeWidth="1"
+            />
+
+            {/* Top edge crisp highlight */}
+            <path
+              d="M 1,16 Q 1,1 16,1 L 100,1 C 112,1 118,15 130,15 L 264,15 Q 279,15 279,28"
+              fill="none"
+              stroke={`url(#folderHighlight-${office.id})`}
+              strokeWidth="1.5"
+            />
+
+            {/* Scored bottom expansion fold */}
+            <line x1="22" y1="104" x2="258" y2="104" stroke="#DCAE34" strokeWidth="1" strokeOpacity="0.35" />
+            <line x1="22" y1="105" x2="258" y2="105" stroke="#FFF7CC" strokeWidth="1" strokeOpacity="0.6" />
+          </svg>
+
+          {/* Pill Badge on Folder Tab */}
+          <div className="absolute top-[8px] left-[14px]">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#fef3c7] text-[#92400e] border border-[#fde68a] shadow-2xs">
+              {office.code}
+            </span>
+          </div>
         </div>
       </Link>
 

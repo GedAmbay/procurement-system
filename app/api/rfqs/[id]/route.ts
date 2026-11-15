@@ -29,6 +29,7 @@ export async function GET(
         pr: {
           include: {
             office: true,
+            requestedBy: true,
           }
         },
         createdBy: true,
@@ -48,7 +49,17 @@ export async function GET(
 
     if (!rfq) return NextResponse.json({ error: "RFQ not found" }, { status: 404 });
 
-    return NextResponse.json(rfq);
+    const lastLog = await prisma.documentAuditLog.findFirst({
+      where: {
+        documentId: id,
+        action: { in: ["SAVE", "UPDATE", "CREATE"] },
+      },
+      orderBy: { createdAt: "desc" },
+      include: { user: { select: { name: true } } },
+    });
+    const lastSavedBy = lastLog?.user?.name || rfq.createdBy?.name || rfq.pr?.requestedBy?.name || null;
+
+    return NextResponse.json({ ...rfq, lastSavedBy });
   } catch (error) {
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
@@ -140,7 +151,21 @@ export async function PATCH(
           quotations: { include: { supplier: true, lineItems: true } },
         },
       });
-      return NextResponse.json(updatedRfq);
+
+      const user = session.user as any;
+      if (user?.id) {
+        await prisma.documentAuditLog.create({
+          data: {
+            documentType: "RFQ",
+            documentId: id,
+            action: "SAVE",
+            userId: user.id,
+            metadata: JSON.stringify({ savedBy: user.name }),
+          },
+        });
+      }
+
+      return NextResponse.json({ ...updatedRfq, lastSavedBy: user?.name || null });
     }
 
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });

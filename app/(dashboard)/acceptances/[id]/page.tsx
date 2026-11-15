@@ -3,6 +3,7 @@ import LoaderWave from "@/components/ui/loader-wave";
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { Printer, Save, ArrowLeft, Loader2, ZoomIn, ZoomOut, Minus, Plus, Lock, Unlock, CheckCircle2, User, Package } from "lucide-react";
 import Link from "next/link";
@@ -30,6 +31,7 @@ interface AcceptanceFormValues {
 export default function AcceptanceEditor() {
   const params = useParams();
   const router = useRouter();
+  const { data: session } = useSession();
   const id = params.id as string;
 
   const [acceptance, setAcceptance] = useState<any>(null);
@@ -44,6 +46,7 @@ export default function AcceptanceEditor() {
   const [showAirNo, setShowAirNo] = useState(true);
   const [showPoNo, setShowPoNo] = useState(true);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [lastSavedBy, setLastSavedBy] = useState<string | null>(null);
 
   const getSavedTimeText = () => {
     if (!lastSaved) return null;
@@ -78,6 +81,7 @@ export default function AcceptanceEditor() {
       const data = await res.json();
       setAcceptance(data);
       if (data.updatedAt) setLastSaved(new Date(data.updatedAt));
+      if (data.lastSavedBy) setLastSavedBy(data.lastSavedBy);
 
       reset({
         airNumber: data.airNumber || data.AIRNumber || "",
@@ -128,6 +132,7 @@ export default function AcceptanceEditor() {
       toast.success("Acceptance report saved successfully");
       fetchAcceptance();
       setLastSaved(new Date());
+      if (session?.user?.name) setLastSavedBy(session.user.name);
       setIsUnlocked(false);
     } catch (e: any) {
       toast.error(e.message || "Failed to save");
@@ -147,6 +152,7 @@ export default function AcceptanceEditor() {
       toast.success(`Marked as ${status}`);
       fetchAcceptance();
       setLastSaved(new Date());
+      if (session?.user?.name) setLastSavedBy(session.user.name);
     } catch (e) {
       toast.error("Update failed");
     }
@@ -220,7 +226,15 @@ export default function AcceptanceEditor() {
                   {acceptance.status || "FINAL"}
                 </span>
                 {getSavedTimeText() && (
-                  <span className="text-xs text-slate-500 font-medium">{getSavedTimeText()}</span>
+                  <span className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+                    <span>{getSavedTimeText()}</span>
+                    {lastSavedBy && (
+                      <>
+                        <span className="text-slate-300">•</span>
+                        <span className="text-slate-600 font-medium">by <strong className="font-semibold text-slate-700">{lastSavedBy}</strong></span>
+                      </>
+                    )}
+                  </span>
                 )}
               </div>
             ) : (
@@ -231,7 +245,13 @@ export default function AcceptanceEditor() {
                 {getSavedTimeText() && (
                   <span className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
-                    {getSavedTimeText()}
+                    <span>{getSavedTimeText()}</span>
+                    {lastSavedBy && (
+                      <>
+                        <span className="text-slate-300">•</span>
+                        <span className="text-slate-600 font-medium">by <strong className="font-semibold text-slate-700">{lastSavedBy}</strong></span>
+                      </>
+                    )}
                   </span>
                 )}
               </div>
