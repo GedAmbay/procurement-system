@@ -4,7 +4,7 @@ import LoaderWave from "@/components/ui/loader-wave";
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { ArrowLeft, Printer, Loader2, ZoomIn, ZoomOut, Users, Edit3, Minus, Plus, Save, CheckCircle2, Lock, Unlock, LayoutGrid } from "lucide-react";
+import { ArrowLeft, Printer, Loader2, ZoomIn, ZoomOut, Users, Edit3, Minus, Plus, Save, CheckCircle2, Lock, Unlock, LayoutGrid, CalendarX, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { formatCurrency, LGU_INFO } from "@/lib/utils";
 import { toast } from "sonner";
@@ -47,18 +47,62 @@ export default function AbstractLivePreviewPage() {
   const [dateReceived, setDateReceived] = useState("");
   const [dateAwarded, setDateAwarded] = useState("");
 
-  // Signatories overrides: record of id -> { name, position, label }
-  const [sigOverrides, setSigOverrides] = useState<Record<string, { name: string; position: string; label: string }>>({});
+  // Signatories overrides: record of id -> { name, position, label, annotation }
+  const [sigOverrides, setSigOverrides] = useState<Record<string, { name: string; position: string; label: string; annotation?: string }>>({});
   const [selectedSigIds, setSelectedSigIds] = useState<string[]>([]);
   const [editingSigId, setEditingSigId] = useState<string | null>(null);
   const [showAllSigs, setShowAllSigs] = useState(false);
   const [reqOfficerName, setReqOfficerName] = useState("");
   const [reqOfficerOffice, setReqOfficerOffice] = useState("");
   const [pageBreaks, setPageBreaks] = useState<(number | string)[]>([]);
+  const [activeLeavesOnDate, setActiveLeavesOnDate] = useState<any[]>([]);
 
   const togglePageBreak = (idx: number | string) => {
     setPageBreaks(prev => prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]);
   };
+
+  const syncVerifiedLeaves = () => {
+    if (activeLeavesOnDate.length === 0) {
+      toast.info("No approved leaves found on this document date.");
+      return;
+    }
+    let updatedCount = 0;
+    setSigOverrides(prev => {
+      const next = { ...prev };
+      activeLeavesOnDate.forEach(l => {
+        const sigId = l.signatoryId;
+        if (next[sigId]) {
+          next[sigId] = {
+            ...next[sigId],
+            annotation: "(ON LEAVE)",
+          };
+          updatedCount++;
+        }
+      });
+      return next;
+    });
+    toast.success(`Synchronized ${updatedCount} verified leave annotation(s)`);
+  };
+
+  useEffect(() => {
+    // Only check and display on leave annotations when the award date is set
+    if (!dateAwarded) {
+      setActiveLeavesOnDate([]);
+      return;
+    }
+    async function fetchLeaves() {
+      try {
+        const res = await fetch(`/api/bac/leave?start=${dateAwarded}&end=${dateAwarded}`);
+        if (res.ok) {
+          const leaves = await res.json();
+          setActiveLeavesOnDate(leaves);
+        }
+      } catch (e) {
+        console.error("Failed to check leaves for award date", e);
+      }
+    }
+    fetchLeaves();
+  }, [dateAwarded]);
 
   useEffect(() => {
     async function load() {
@@ -194,6 +238,24 @@ export default function AbstractLivePreviewPage() {
   const hope = selectedSigs.find(s => s.role === "HOPE" || s.role === "APPROVING_OFFICIAL");
   const bacChairman = selectedSigs.find(s => s.role === "BAC_CHAIRMAN");
   const bacMembers = selectedSigs.filter(s => s.id !== hope?.id && s.id !== bacChairman?.id);
+
+  const getSignatoryAnnotation = (sig: any) => {
+    if (!dateAwarded || !sig) return null;
+    // Explicit manual override in sigOverrides takes precedence:
+    if (sig.annotation !== undefined && sig.annotation !== null && sig.annotation !== "") {
+      return sig.annotation;
+    }
+    // Explicit empty string indicates user explicitly selected "None"
+    if (sig.annotation === "") {
+      return null;
+    }
+    // Automatically check if this signatory is in activeLeavesOnDate:
+    const onLeave = activeLeavesOnDate.some((l: any) => l.signatoryId === sig.id);
+    if (onLeave) {
+      return "(ON LEAVE)";
+    }
+    return null;
+  };
 
   const cell: React.CSSProperties = { border: "1px solid #000", padding: "2px 2px", fontSize: "13px", verticalAlign: "middle" };
   const headerCell: React.CSSProperties = { ...cell, fontWeight: "700", textAlign: "center", background: "#fff", padding: 0 };
@@ -630,6 +692,11 @@ export default function AbstractLivePreviewPage() {
                             style={{ flex: "1 1 auto", textAlign: "center", padding: "4px", cursor: "pointer", borderRadius: "6px", backgroundColor: editingSigId === bacChairman.id ? "rgba(37,99,235,0.08)" : "transparent" }}
                             title="Click to edit"
                           >
+                            {getSignatoryAnnotation(bacChairman) && (
+                              <div style={{ fontWeight: "800", fontSize: "11px", color: "#b91c1c", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "3px" }}>
+                                {getSignatoryAnnotation(bacChairman)}
+                              </div>
+                            )}
                             <div style={{ fontWeight: "700", fontSize: "12px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{bacChairman.name}</div>
                             <div style={{ fontSize: "12px", }}>{bacChairman.position}</div>
                             <div style={{ fontSize: "12px" }}>BAC Chairman</div>
@@ -642,6 +709,11 @@ export default function AbstractLivePreviewPage() {
                             style={{ flex: "1 1 auto", textAlign: "center", padding: "4px", cursor: "pointer", borderRadius: "6px", backgroundColor: editingSigId === m.id ? "rgba(37,99,235,0.08)" : "transparent" }}
                             title="Click to edit"
                           >
+                            {getSignatoryAnnotation(m) && (
+                              <div style={{ fontWeight: "800", fontSize: "11px", color: "#b91c1c", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "3px" }}>
+                                {getSignatoryAnnotation(m)}
+                              </div>
+                            )}
                             <div style={{ fontWeight: "700", fontSize: "12px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{m.name}</div>
                             <div style={{ fontSize: "12px" }}>{m.position}</div>
                             <div style={{ fontSize: "12px" }}>{m.label || "BAC Member"}</div>
@@ -820,6 +892,26 @@ export default function AbstractLivePreviewPage() {
                 </button>
               </div>
 
+              {/* Verified Leave Sync Banner - Only shown when Award Date is set */}
+              {dateAwarded && activeLeavesOnDate.length > 0 && (
+                <div className="mb-3 p-3 rounded-xl bg-rose-50 border border-rose-200/80 text-xs flex flex-col gap-1.5">
+                  <div className="font-bold text-rose-800 flex items-center gap-1.5">
+                    <CalendarX size={14} className="text-rose-600 shrink-0" />
+                    <span>{activeLeavesOnDate.length} BAC Member(s) on Leave on Award Date ({fmtDate(dateAwarded)})</span>
+                  </div>
+                  <div className="text-[11px] text-rose-700">
+                    {activeLeavesOnDate.map((l: any) => l.signatory?.name).filter(Boolean).join(", ")}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={syncVerifiedLeaves}
+                    className="mt-1 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs self-start transition-colors shadow-xs"
+                  >
+                    Sync & Apply (ON LEAVE) Annotations
+                  </button>
+                </div>
+              )}
+
               {!editingSigId && !showAllSigs ? (
                 <div style={{ padding: "2rem 1rem", textAlign: "center", background: "var(--color-page-bg)", borderRadius: "0.75rem", boxShadow: "inset 3px 3px 6px rgba(163,177,198,0.4), inset -3px -3px 6px rgba(255,255,255,0.8)", color: "#94a3b8", fontSize: "0.8125rem", fontStyle: "italic" }}>
                   Click a signatory on the document to edit their details, or click "Add / Remove" to manage signatories.
@@ -835,7 +927,10 @@ export default function AbstractLivePreviewPage() {
                     .map((sig: any) => {
                       const isSelected = selectedSigIds.includes(sig.id);
                       const isEditing = editingSigId === sig.id;
-                      const override = sigOverrides[sig.id] || { name: sig.name, position: sig.position, label: getRoleLabel(sig.role) };
+                      const override = sigOverrides[sig.id] || { name: sig.name, position: sig.position, label: getRoleLabel(sig.role), annotation: undefined };
+                      const activeLeave = activeLeavesOnDate.find((l: any) => l.signatoryId === sig.id);
+                      const effectiveAnnotation = getSignatoryAnnotation({ ...sig, ...override });
+
                       return (
                         <div key={sig.id} style={{
                           borderRadius: "0.75rem", padding: "0.75rem",
@@ -852,7 +947,14 @@ export default function AbstractLivePreviewPage() {
                               }}
                               style={{ accentColor: "#2563eb", width: "15px", height: "15px" }}
                             />
-                            <div style={{ flex: 1, fontSize: "0.8125rem", fontWeight: "700", color: "#334155" }}>{override.name}</div>
+                            <div style={{ flex: 1, fontSize: "0.8125rem", fontWeight: "700", color: "#334155" }}>
+                              {override.name}
+                              {effectiveAnnotation && (
+                                <span className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-700">
+                                  {effectiveAnnotation}
+                                </span>
+                              )}
+                            </div>
                             <span style={{ fontSize: "0.7rem", color: "#94a3b8", background: "#f1f5f9", padding: "1px 6px", borderRadius: "9999px" }}>
                               {getRoleLabel(sig.role)}
                             </span>
@@ -867,8 +969,19 @@ export default function AbstractLivePreviewPage() {
                               </button>
                             )}
                           </div>
+
+                          {dateAwarded && activeLeave && (
+                            <div className="mt-1 text-[11px] font-semibold text-rose-600 flex items-center gap-1 pl-6">
+                              <CalendarX size={11} />
+                              <span>Verified on approved leave on award date</span>
+                            </div>
+                          )}
+
                           {isSelected && isEditing && (
                             <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem", paddingLeft: "1.5rem", marginTop: "0.625rem" }}>
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                                Name
+                              </label>
                               <input
                                 type="text"
                                 value={override.name}
@@ -881,6 +994,10 @@ export default function AbstractLivePreviewPage() {
                                   fontSize: "0.8125rem", color: "#334155", outline: "none", fontFamily: "inherit",
                                 }}
                               />
+
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">
+                                Position / Title
+                              </label>
                               <input
                                 type="text"
                                 value={override.position}
@@ -893,6 +1010,10 @@ export default function AbstractLivePreviewPage() {
                                   fontSize: "0.8125rem", color: "#334155", outline: "none", fontFamily: "inherit",
                                 }}
                               />
+
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">
+                                Role Label
+                              </label>
                               <input
                                 type="text"
                                 value={override.label}
@@ -905,6 +1026,28 @@ export default function AbstractLivePreviewPage() {
                                   fontSize: "0.8125rem", color: "#334155", outline: "none", fontFamily: "inherit",
                                 }}
                               />
+
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">
+                                Signature Line Annotation
+                              </label>
+                              <select
+                                value={override.annotation !== undefined ? override.annotation : (activeLeave ? "(ON LEAVE)" : "")}
+                                onChange={e => setSigOverrides(prev => ({
+                                  ...prev,
+                                  [sig.id]: { ...prev[sig.id], annotation: e.target.value }
+                                }))}
+                                style={{
+                                  width: "100%", padding: "0.3rem 0.5rem", border: "none", borderRadius: "0.5rem",
+                                  background: "var(--color-page-bg)",
+                                  boxShadow: "inset 2px 2px 4px rgba(163,177,198,0.5), inset -2px -2px 4px rgba(255,255,255,0.9)",
+                                  fontSize: "0.8125rem", color: "#334155", outline: "none", fontFamily: "inherit",
+                                }}
+                              >
+                                <option value="">None (Physical Signature Required)</option>
+                                <option value="(ON LEAVE)">(ON LEAVE)</option>
+                                <option value="(EXCUSED)">(EXCUSED)</option>
+                                <option value="(OFFICIAL BUSINESS)">(OFFICIAL BUSINESS)</option>
+                              </select>
                             </div>
                           )}
                         </div>

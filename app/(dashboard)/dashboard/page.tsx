@@ -1,11 +1,6 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-
 import DashboardClient from "@/components/dashboard/dashboard-client";
-import { formatCurrency } from "@/lib/utils";
-
-type MonthlyPR = { createdAt: Date; totalAmount: number };
-
 
 async function getDashboardData() {
   const [
@@ -13,35 +8,24 @@ async function getDashboardData() {
     rfqForSigning,
     abstractForSigning,
     poForSigning,
-    recentPRs,
-    monthlyData,
-    overdueDeliveries,
     pipelineCounts,
     posForSavingsAndAvgTime,
     nextAwardEvent,
+    bacSignatories,
+    thisMonthPrs,
   ] = await Promise.all([
     prisma.purchaseRequest.count(),
     prisma.rfq.count({ where: { status: "FOR_SIGNING", pr: { isDirectAcquisition: false } } }),
     prisma.abstractOfCanvass.count({ where: { status: "FOR_SIGNING", rfq: { pr: { isDirectAcquisition: false } } } }),
     prisma.purchaseOrder.count({ where: { status: "FOR_SIGNING" } }),
-    prisma.purchaseRequest.findMany({
-      take: 5,
-      orderBy: { createdAt: "desc" },
-      include: { office: true, requestedBy: true },
-    }),
-    prisma.purchaseRequest.findMany({
-      where: { fiscalYear: new Date().getFullYear() },
-      select: { createdAt: true, totalAmount: true },
-    }),
-    prisma.purchaseOrder.count({
-      where: { status: "ISSUED", deliveryDate: { lt: new Date() } }
-    }),
     Promise.all([
       prisma.purchaseRequest.count(), // PR Logged
-      prisma.purchaseRequest.count({ where: { rfqs: { none: {} }, isDirectAcquisition: false } }), // For RFQ
-      prisma.rfq.count({ where: { abstract: null, pr: { isDirectAcquisition: false } } }), // For abstract
-      prisma.purchaseRequest.count({ where: { isDirectAcquisition: true, purchaseOrders: { none: {} } } }), // For PO (Direct) + below for normal
-      prisma.purchaseOrder.count({ where: { status: { in: ["ISSUED", "COMPLETED"] } } }) // Issued
+      prisma.rfq.count(), // RFQ
+      prisma.abstractOfCanvass.count(), // Abstract
+      prisma.abstractOfCanvass.count({ where: { status: { in: ["FOR_SIGNING", "COMPLETED"] } } }), // Abstract / Award
+      prisma.purchaseOrder.count(), // PO
+      prisma.acceptance.count(), // Acceptance
+      prisma.purchaseOrder.count({ where: { status: { in: ["ISSUED", "COMPLETED"] } } }), // Issued
     ]),
     prisma.purchaseOrder.findMany({
       where: { fiscalYear: new Date().getFullYear(), status: { in: ["ISSUED", "COMPLETED"] } },
@@ -49,44 +33,45 @@ async function getDashboardData() {
         totalAmount: true,
         createdAt: true,
         pr: { select: { totalAmount: true, createdAt: true } },
-        abstract: { select: { rfq: { select: { pr: { select: { totalAmount: true, createdAt: true } } } } } }
-      }
+        abstract: { select: { rfq: { select: { pr: { select: { totalAmount: true, createdAt: true } } } } } },
+      },
     }),
     prisma.calendarEvent.findFirst({
       where: {
         eventType: "Award Date",
-        eventDate: { gte: new Date(new Date().setHours(0, 0, 0, 0)) }
+        eventDate: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
       },
       orderBy: { eventDate: "asc" },
-      select: { eventDate: true, title: true, pr: { select: { prNumber: true } } }
+      select: { eventDate: true, title: true, pr: { select: { prNumber: true } } },
+    }),
+    prisma.signatory.findMany({
+      where: {
+        role: { in: ["BAC_CHAIRMAN", "BAC_VICE_CHAIRMAN", "BAC_MEMBER"] },
+        isActive: true,
+      },
+      orderBy: { role: "asc" },
+      select: { id: true, name: true, position: true, role: true },
+    }),
+    prisma.purchaseRequest.count({
+      where: {
+        createdAt: {
+          gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+        },
+      },
     }),
   ]);
 
-  // Build monthly chart data
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const monthlyChart = months.map((month, i) => {
-    const prs = monthlyData.filter((pr: MonthlyPR) => new Date(pr.createdAt).getMonth() === i);
-    return {
-      month,
-      count: prs.length,
-      amount: prs.reduce((sum: number, pr: MonthlyPR) => sum + pr.totalAmount, 0),
-    };
-  });
-
-  // Calculate KPIs
+  // Calculate Savings & Avg Time
   let totalSavings = 0;
   let totalDays = 0;
   let validProcessingCount = 0;
 
-  posForSavingsAndAvgTime.forEach(po => {
+  posForSavingsAndAvgTime.forEach((po) => {
     const pr = po.pr || po.abstract?.rfq?.pr;
     if (pr) {
-      // Savings
       if (pr.totalAmount > po.totalAmount) {
-        totalSavings += (pr.totalAmount - po.totalAmount);
+        totalSavings += pr.totalAmount - po.totalAmount;
       }
-
-      // Processing Time
       const prDate = new Date(pr.createdAt).getTime();
       const poDate = new Date(po.createdAt).getTime();
       const diffDays = (poDate - prDate) / (1000 * 60 * 60 * 24);
@@ -105,7 +90,7 @@ async function getDashboardData() {
       rfqForSigning,
       abstractForSigning,
       poForSigning,
-      overdueDeliveries,
+      thisMonthPrs,
     },
     kpis: {
       totalSavings,
@@ -114,20 +99,14 @@ async function getDashboardData() {
     },
     pipeline: {
       logged: pipelineCounts[0],
-      forRfq: pipelineCounts[1],
-      forabstract: pipelineCounts[2],
-      forPo: pipelineCounts[3] + pipelineCounts[2], // Placeholder logic approximation for PO pipeline
-      issued: pipelineCounts[4],
+      rfq: pipelineCounts[1],
+      abstract: pipelineCounts[2],
+      abstractAward: pipelineCounts[3],
+      po: pipelineCounts[4],
+      acceptance: pipelineCounts[5],
+      issued: pipelineCounts[6],
     },
-    recentPRs: recentPRs.map((pr: typeof recentPRs[number]) => ({
-      id: pr.id,
-      prNumber: pr.prNumber,
-      office: pr.office.name,
-      purpose: pr.purpose,
-      totalAmount: pr.totalAmount,
-      createdAt: pr.createdAt.toISOString(),
-    })),
-    monthlyChart,
+    bacSignatories,
   };
 }
 

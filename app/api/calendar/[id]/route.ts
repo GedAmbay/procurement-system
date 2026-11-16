@@ -8,23 +8,55 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
   if (!roleCheck.authorized) return roleCheck.response;
 
   const session = await auth();
-  if (!session || !session.user || !session.user.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session || !session.user || !session.user.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const { id } = await context.params;
+  // Handle projected recurring birthday id like "cmuz8yxts0001-2026"
+  const cleanId = id.includes("-20") ? id.split("-20")[0] : id;
 
   try {
     const data = await req.json();
-    
+
+    let notesPayload: string | null = undefined as any;
+    const hasStructuredMeta =
+      data.venue !== undefined ||
+      data.description !== undefined ||
+      data.participants !== undefined ||
+      data.recipient !== undefined ||
+      data.isRecurring !== undefined ||
+      data.birthMonth !== undefined ||
+      data.birthDay !== undefined;
+
+    if (hasStructuredMeta) {
+      notesPayload = JSON.stringify({
+        notes: data.notes || "",
+        venue: data.venue || "",
+        description: data.description || "",
+        participants: data.participants || "",
+        recipient: data.recipient || "",
+        isRecurring: data.isRecurring !== undefined ? data.isRecurring : data.eventType === "Birthday",
+        birthMonth: data.birthMonth || null,
+        birthDay: data.birthDay || null,
+      });
+    } else if (data.notes !== undefined) {
+      notesPayload = data.notes;
+    }
+
     const event = await prisma.calendarEvent.update({
-      where: { id },
+      where: { id: cleanId },
       data: {
         title: data.title,
         eventType: data.eventType,
         eventDate: data.eventDate ? new Date(data.eventDate) : undefined,
         eventTime: data.eventTime,
-        notes: data.notes,
-        prId: data.prId
-      }
+        notes: notesPayload,
+        prId: data.prId,
+      },
+      include: {
+        pr: { select: { id: true, prNumber: true, purpose: true } },
+      },
     });
 
     await prisma.calendarEventHistory.create({
@@ -32,8 +64,8 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
         eventId: event.id,
         userId: session.user.id,
         action: "UPDATED",
-        changes: JSON.stringify(data)
-      }
+        changes: JSON.stringify(data),
+      },
     });
 
     return NextResponse.json(event);
@@ -48,23 +80,25 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
   if (!roleCheck.authorized) return roleCheck.response;
 
   const session = await auth();
-  if (!session || !session.user || !session.user.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session || !session.user || !session.user.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const { id } = await context.params;
+  const cleanId = id.includes("-20") ? id.split("-20")[0] : id;
 
   try {
-    // Audit before delete
     await prisma.calendarEventHistory.create({
       data: {
-        eventId: id,
+        eventId: cleanId,
         userId: session.user.id,
         action: "DELETED",
-        changes: "{}"
-      }
+        changes: "{}",
+      },
     });
 
     await prisma.calendarEvent.delete({
-      where: { id }
+      where: { id: cleanId },
     });
 
     return NextResponse.json({ success: true });

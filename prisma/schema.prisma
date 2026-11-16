@@ -57,6 +57,8 @@ model Signatory {
   purchaseRequests PurchaseRequest[] @relation("PrRequestedBy")
   rfqs             Rfq[]
   office           Office?           @relation(fields: [officeId], references: [id])
+  bacAttendances   BacAttendance[]
+  bacLeaves        BacLeaveRecord[]
 
   @@map("signatories")
 }
@@ -410,4 +412,61 @@ model CalendarEventHistory {
   user  User          @relation(fields: [userId], references: [id])
 
   @@map("calendar_event_history")
+}
+
+model BacAttendance {
+  id           String    @id @default(cuid())
+  signatoryId  String
+  date         DateTime
+  status       String    @default("NOT_RECORDED") // PRESENT, ABSENT, EXCUSED, NOT_RECORDED
+  activityId   String?
+  remarks      String?
+  recordedById String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  signatory Signatory @relation(fields: [signatoryId], references: [id], onDelete: Cascade)
+
+  @@unique([signatoryId, date])
+  @@index([date])
+  @@map("bac_attendance")
+}
+
+model BacLeaveRecord {
+  id          String   @id @default(cuid())
+  signatoryId String
+  startDate   DateTime
+  endDate     DateTime
+  leaveType   String   @default("VACATION") // VACATION, SICK, OFFICIAL_BUSINESS, EMERGENCY, OTHER
+  reason      String?
+  approvedBy  String?
+  status      String   @default("APPROVED") // APPROVED, PENDING, CANCELLED
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  signatory Signatory @relation(fields: [signatoryId], references: [id], onDelete: Cascade)
+
+  @@index([signatoryId])
+  @@index([startDate, endDate])
+  @@map("bac_leave_records")
+}
+
+model Announcement {
+  id             String    @id @default(cuid())
+  title          String
+  content        String
+  eventDate      String?
+  eventTime      String?
+  venue          String?
+  isPinned       Boolean   @default(false)
+  priority       String    @default("NORMAL") // NORMAL, HIGH, URGENT
+  targetAudience String    @default("ALL") // ALL, BAC_MEMBERS, END_USERS, SECRETARIAT
+  authorId       String?
+  isArchived     Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([isPinned, createdAt])
+  @@map("announcements")
 }
