@@ -431,7 +431,7 @@ export default function PurchaseOrderEditor() {
                         <div className="text-[15px]">LGU</div>
                       </div>
 
-                      <div className="border-t-[3px] border-black grid text-[15px]" style={{ gridTemplateColumns: '10% 8% minmax(0, 1fr) 10% 12% 14%' }}>
+                      <div className="border-t-[2px] border-black grid text-[15px]" style={{ gridTemplateColumns: '10% 8% minmax(0, 1fr) 9.7% 12% 14%' }}>
                         <div className="col-span-3 border-r-[2px] border-black p-1 px-2 flex flex-col justify-between">
                           <div className="flex items-end"><span className="font-bold whitespace-nowrap mr-2">Supplier :</span> <span className="flex-1 font-bold border-b border-black text-left leading-tight">{selectedSupplier?.name || ""}</span></div>
                           <div className="flex items-end mt-1"><span className="font-bold whitespace-nowrap mr-2">Address :</span> <span className="flex-1 font-bold border-b border-black text-left leading-tight">{selectedSupplier?.address || ""}</span></div>
@@ -445,12 +445,12 @@ export default function PurchaseOrderEditor() {
                         </div>
                       </div>
 
-                      <div className="border-t-[3px] border-black p-1 px-2 text-[15px]">
+                      <div className="border-t-[2px] border-black p-1 px-2 text-[15px]">
                         <div>Gentlemen:</div>
                         <div className="pl-8">Please furnish this Office the following articles subject to the terms and conditions contained herein:</div>
                       </div>
 
-                      <div className="border-t-[3px] border-black grid text-[15px]" style={{ gridTemplateColumns: '10% 8% minmax(0, 1fr) 10% 12% 14%' }}>
+                      <div className="border-t-[2px] border-black grid text-[15px]" style={{ gridTemplateColumns: '10% 8% minmax(0, 1fr) 9.7% 12% 14%' }}>
                         <div className="col-span-3 border-r-[2px] border-black p-1 px-2">
                           <div className="flex"><span className="font-bold w-36">Place of Delivery :</span> <span className="font-bold flex-1">{watchAll.placeOfDelivery}</span></div>
                           <div className="flex mt-1"><span className="font-bold w-36">Date of Delivery :</span> <span className="font-bold flex-1">{watchAll.deliveryDate ? new Date(watchAll.deliveryDate).toLocaleDateString('en-PH') : ""}</span></div>
@@ -461,9 +461,9 @@ export default function PurchaseOrderEditor() {
                         </div>
                       </div>
 
-                      <table className="w-full border-collapse border-t-[3px] border-black">
+                      <table className="w-full border-collapse border-t-[2px] border-black">
                         <thead>
-                          <tr className="border-b-[3px] border-black text-[14px]">
+                          <tr className="border-b-[2px] border-black text-[14px]">
                             <th className="border-r border-black p-1 w-[10%]">Stock/<br />Property No.</th>
                             <th className="border-r border-black p-1 w-[8%]">Unit</th>
                             <th className="border-r border-black p-1">Description</th>
@@ -537,7 +537,7 @@ export default function PurchaseOrderEditor() {
 
                           <tr>
                             <td colSpan={6} className="p-0 border-0">
-                              <div className="border-t-[3px] border-black w-full"></div>
+                              <div className="border-t-[2px] border-black w-full"></div>
                             </td>
                           </tr>
                           <tr className="font-bold">
@@ -548,7 +548,7 @@ export default function PurchaseOrderEditor() {
                         </tbody>
                       </table>
 
-                      <div className="border-t-[3px] border-black p-2">
+                      <div className="border-t-[2px] border-black p-2">
                         <div className="mb-6 indent-8 text-justify">
                           In case of failure to make the full delivery within the time specified above, a penalty of one-tenth (1/10) of one percent for every day of delay shall be imposed on the undelivered item/s.
                         </div>
@@ -577,7 +577,7 @@ export default function PurchaseOrderEditor() {
                         </div>
                       </div>
 
-                      <div className="border-t-[3px] border-black p-4 text-center">
+                      <div className="border-t-[2px] border-black p-4 text-center">
                         <div className="mb-4">(In case of Negotiated Purchase pursuant to Section 369 (a) of RA 7160, this portion must be accomplished.)</div>
                         <div className="flex items-end justify-start mb-6">
                           <span className="mr-2">Approved per Sanggunian Resolution No.:</span>
