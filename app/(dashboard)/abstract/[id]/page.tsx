@@ -150,6 +150,29 @@ export default function AbstractHubPage() {
     }
   };
 
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+
+  const handleMarkCompleted = async () => {
+    setUpdatingStatus(true);
+    try {
+      const res = await fetch(`/api/abstract/${abstractId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "COMPLETED" }),
+      });
+      if (res.ok) {
+        toast.success("Abstract marked as completed!");
+        fetchData();
+      } else {
+        toast.error("Failed to update status");
+      }
+    } catch {
+      toast.error("An error occurred while updating status");
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
   const handleFinalizeSubmit = async () => {
     if (!confirmAward) return;
     setFinalizing(true);
@@ -211,6 +234,7 @@ export default function AbstractHubPage() {
   const currentStatus = abstract.status || "DRAFT";
   const isFinalizedOrMore = currentStatus === "FINALIZED" || currentStatus === "ISSUED" || currentStatus === "SIGNED" || currentStatus === "COMPLETED";
   const isIssuedOrMore = currentStatus === "ISSUED" || currentStatus === "SIGNED" || currentStatus === "COMPLETED";
+  const isCompleted = currentStatus === "COMPLETED" || currentStatus === "SIGNED";
 
   const stepperSteps = [
     {
@@ -241,9 +265,9 @@ export default function AbstractHubPage() {
     {
       id: 4,
       stepNumber: 4,
-      title: "Issued",
-      subtitle: isIssuedOrMore ? "Completed" : "Not started",
-      status: isIssuedOrMore ? ("done" as const) : ("not_started" as const),
+      title: "Completed",
+      subtitle: isCompleted ? "Completed" : (isIssuedOrMore ? "Issued" : "Not started"),
+      status: isCompleted ? ("done" as const) : (isIssuedOrMore ? ("in_progress" as const) : ("not_started" as const)),
     },
   ];
 
@@ -283,7 +307,7 @@ export default function AbstractHubPage() {
                         ? "issued"
                         : "returned"
                 }
-                label={currentStatus === "DRAFT" ? "Draft" : currentStatus}
+                label={currentStatus === "DRAFT" ? "Draft" : (isCompleted ? "Completed" : currentStatus)}
               />
             </div>
             <p className="text-xs text-slate-500 font-medium mt-0.5 flex items-center gap-1.5 flex-wrap">
@@ -322,6 +346,17 @@ export default function AbstractHubPage() {
                 onClick={() => setShowFinalizeModal(true)}
               >
                 Finalize &amp; Issue
+              </Button>
+            )}
+
+            {currentStatus === "ISSUED" && (
+              <Button
+                variant="primary"
+                icon={<CheckCircle2 size={16} />}
+                disabled={updatingStatus}
+                onClick={handleMarkCompleted}
+              >
+                Mark as Completed
               </Button>
             )}
           </div>

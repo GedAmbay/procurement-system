@@ -7,7 +7,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useForm, useFieldArray } from "react-hook-form";
-import { Printer, Save, ArrowLeft, Loader2, Send, ZoomIn, ZoomOut, Minus, Plus, Package, FileText, ChevronRight, CheckCircle2, XCircle, User, Lock, Unlock } from "lucide-react";
+import { Printer, Save, ArrowLeft, Loader2, Send, ZoomIn, ZoomOut, Minus, Plus, Package, FileText, ChevronRight, CheckCircle2, XCircle, User, Lock, Unlock, Truck } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { formatCurrency, numberToWords } from "@/lib/utils";
@@ -238,6 +238,26 @@ export default function PurchaseOrderEditor() {
   const selectedSupplier = suppliers.find(s => s.id === watchAll.supplierId) || poData.supplier || winningQuote?.supplier;
   const poTotalAmount = (poData.totalAmount && poData.totalAmount > 0) ? poData.totalAmount : (winningQuote?.totalAmount || 0);
 
+  const supplierName = selectedSupplier?.name || "";
+  const supplierFontSize =
+    supplierName.length > 55
+      ? "text-[10px]"
+      : supplierName.length > 42
+        ? "text-[11.5px]"
+        : supplierName.length > 30
+          ? "text-[13px]"
+          : "text-[15px]";
+
+  const supplierAddress = selectedSupplier?.address || "";
+  let addressLine1 = supplierAddress;
+  let addressLine2 = "";
+  if (supplierAddress.length > 40) {
+    const lastSpace = supplierAddress.lastIndexOf(" ", 40);
+    const splitIdx = lastSpace > 20 ? lastSpace : 40;
+    addressLine1 = supplierAddress.substring(0, splitIdx).trim();
+    addressLine2 = supplierAddress.substring(splitIdx).trim();
+  }
+
   // Calculate exact PR number and ABC from nested relation if available
   const linkedPrNumber = poData.abstract?.rfq?.pr?.prNumber || poData.pr?.prNumber || "PENDING";
   const lineItems = poData.lineItems || [];
@@ -374,6 +394,43 @@ export default function PurchaseOrderEditor() {
         </div>
       </div>
 
+      {/* Status Banners */}
+      {poData.status === "SIGNED" && (
+        <div className="no-print bg-indigo-50 border border-indigo-200 rounded-2xl px-5 py-2.5 flex items-center justify-between gap-2.5 text-xs text-indigo-900 shadow-sm font-medium shrink-0">
+          <div className="flex items-center gap-2.5">
+            <CheckCircle2 size={15} className="text-indigo-600 shrink-0" />
+            <span>
+              <strong className="font-bold">This {isJob ? "Job Order" : "Purchase Order"} is signed.</strong> Conforme has been accepted. You can now record deliveries in the Delivery Hub.
+            </span>
+          </div>
+          <Link
+            href={`/acceptances/hub/${poData.id}`}
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-700 hover:text-indigo-900 bg-white border border-indigo-200 px-3 py-1 rounded-lg hover:bg-indigo-50 transition-colors shadow-2xs shrink-0"
+          >
+            <Package size={14} className="text-indigo-600" />
+            Go to Delivery Hub &rarr;
+          </Link>
+        </div>
+      )}
+
+      {poData.status === "PARTIALLY_DELIVERED" && (
+        <div className="no-print bg-blue-50 border border-blue-200 rounded-2xl px-5 py-2.5 flex items-center justify-between gap-2.5 text-xs text-blue-900 shadow-sm font-medium shrink-0">
+          <div className="flex items-center gap-2.5">
+            <Truck size={15} className="text-blue-600 shrink-0" />
+            <span>
+              <strong className="font-bold">Partially Delivered.</strong> Some line items have been accepted. Deliveries are still ongoing in the Delivery Hub.
+            </span>
+          </div>
+          <Link
+            href={`/acceptances/hub/${poData.id}`}
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-700 hover:text-blue-900 bg-white border border-blue-200 px-3 py-1 rounded-lg hover:bg-blue-50 transition-colors shadow-2xs shrink-0"
+          >
+            <Package size={14} className="text-blue-600" />
+            Delivery Hub &rarr;
+          </Link>
+        </div>
+      )}
+
       {/* Completed Banner */}
       {isReadOnly && (
         <div className="no-print bg-[#ecfdf5] border border-[#a7f3d0] rounded-2xl px-5 py-2.5 flex items-center gap-2.5 text-xs text-[#065f46] shadow-sm font-medium shrink-0">
@@ -420,7 +477,7 @@ export default function PurchaseOrderEditor() {
                   }}
                   className="print:!transform-none print:!w-full print:!max-w-none print:!min-w-0 print:!m-0 print:!p-0 print:!mb-0"
                 >
-                  <div className="print-area text-black shadow-xl text-[14px] leading-tight print:shadow-none print:!w-full print:!max-w-none print:!min-w-0 print:!m-0 print:!p-0 print:!min-h-0 [&_td]:!font-['Times_New_Roman',_Times,_serif] [&_td]:!text-[14px] [&_th]:!font-['Times_New_Roman',_Times,_serif] [&_th]:!text-[14px] [&_th]:!text-black [&_th]:!normal-case [&_th]:!tracking-normal [&_th]:!font-bold w-[830px] min-h-[1123px] bg-white p-10" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+                  <div className="print-area text-black shadow-xl text-[14px] leading-tight print:shadow-none print:!w-full print:!max-w-none print:!min-w-0 print:!m-0 print:!p-0 print:!min-h-0 [&_td]:!font-['Times_New_Roman',_Times,_serif] [&_td]:!text-[14px] [&_th]:!font-['Times_New_Roman',_Times,_serif] [&_th]:!text-[14px] [&_th]:!text-black [&_th]:!normal-case [&_th]:!tracking-normal [&_th]:!font-bold w-[794px] min-h-[1123px] bg-white p-10" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
 
                     <div className="border-[3px] border-black">
                       <div className="text-right italic pt-2 pr-2 text-sm">Appendix 49</div>
@@ -431,17 +488,44 @@ export default function PurchaseOrderEditor() {
                         <div className="text-[15px]">LGU</div>
                       </div>
 
-                      <div className="border-t-[2px] border-black grid text-[15px]" style={{ gridTemplateColumns: '10% 8% minmax(0, 1fr) 9.7% 12% 14%' }}>
-                        <div className="col-span-3 border-r-[2px] border-black p-1 px-2 flex flex-col justify-between">
-                          <div className="flex items-end"><span className="font-bold whitespace-nowrap mr-2">Supplier :</span> <span className="flex-1 font-bold border-b border-black text-left leading-tight">{selectedSupplier?.name || ""}</span></div>
-                          <div className="flex items-end mt-1"><span className="font-bold whitespace-nowrap mr-2">Address :</span> <span className="flex-1 font-bold border-b border-black text-left leading-tight">{selectedSupplier?.address || ""}</span></div>
-                          <div className="flex items-end mt-1"><span className="font-bold whitespace-nowrap mr-2">TIN :</span> <span className="flex-1 font-bold border-b border-black text-left leading-tight"></span></div>
+                      <div className="border-t-[2px] border-black grid text-[15px]" style={{ gridTemplateColumns: '15% 10% 36.79% 10% 12% 14%' }}>
+                        <div className="col-span-3 border-r-[2px] border-black p-0 px-1 flex flex-col justify-between">
+                          {/* Row 1: Supplier */}
+                          <div className="flex items-end">
+                            <span className="font-bold whitespace-nowrap mr-2 pt-2">Supplier :</span>
+                            <span className={`flex-1 font-bold border-b border-black text-left whitespace-nowrap overflow-hidden leading-tight ${supplierFontSize}`} title={supplierName}>
+                              {supplierName}
+                            </span>
+                          </div>
+
+                          {/* Row 2: Address line 1 */}
+                          <div className="flex items-end mt-1">
+                            <span className="font-bold whitespace-nowrap mr-2">Address :</span>
+                            <span className="flex-1 font-bold border-b border-black text-left leading-tight">
+                              {addressLine1}
+                            </span>
+                          </div>
+
+                          {/* Row 3: Address line 2 (two rows for address) */}
+                          <div className="flex items-end mt-1">
+                            <span className="w-6 shrink-0"></span>
+                            <span className="flex-1 font-bold border-b border-black text-left leading-tight min-h-[1.1rem]">
+                              {addressLine2 || "\u00A0"}
+                            </span>
+                          </div>
+
+                          {/* Row 4: TIN */}
+                          <div className="flex items-end mt-1">
+                            <span className="font-bold whitespace-nowrap mr-2">TIN :</span>
+                            <span className="flex-1 font-bold text-left leading-tight">
+                            </span>
+                          </div>
                         </div>
                         <div className="col-span-3 p-1 px-2 flex flex-col justify-between">
-                          <div className="flex items-end"><span className="font-bold whitespace-nowrap mr-2">{isJob ? "J.O. No. :" : "P.O. No. :"}</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{showPoNo ? (watchAll.poNumber || poData?.poNumber || "") : ""}</span></div>
+                          <div className="flex items-end"><span className="font-bold whitespace-nowrap mr-2 pt-1">{isJob ? "J.O. No. :" : "P.O. No. :"}</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{showPoNo ? (watchAll.poNumber || poData?.poNumber || "") : ""}</span></div>
                           <div className="flex items-end mt-1"><span className="font-bold whitespace-nowrap mr-2">Date :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{watchAll.deliveryDate ? new Date(watchAll.deliveryDate).toLocaleDateString('en-PH') : ""}</span></div>
                           <div className="flex items-end mt-1"><span className="font-bold whitespace-nowrap mr-2">Mode of Procurement :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{watchAll.modeOfProcurement}</span></div>
-                          <div className="flex items-end mt-1"><span className="font-bold whitespace-nowrap mr-2">{isJob ? "JR No./s :" : "PR No./s :"}</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{showPrNo && linkedPrNumber !== "PENDING" ? linkedPrNumber : ""}</span></div>
+                          <div className="flex items-end mt-1"><span className="font-bold whitespace-nowrap mr-2">{isJob ? "JR No./s :" : "PR No./s :"}</span> <span className="flex-1 font-bold text-center leading-tight">{showPrNo && linkedPrNumber !== "PENDING" ? linkedPrNumber : ""}</span></div>
                         </div>
                       </div>
 
@@ -450,23 +534,43 @@ export default function PurchaseOrderEditor() {
                         <div className="pl-8">Please furnish this Office the following articles subject to the terms and conditions contained herein:</div>
                       </div>
 
-                      <div className="border-t-[2px] border-black grid text-[15px]" style={{ gridTemplateColumns: '10% 8% minmax(0, 1fr) 9.7% 12% 14%' }}>
-                        <div className="col-span-3 border-r-[2px] border-black p-1 px-2">
-                          <div className="flex"><span className="font-bold w-36">Place of Delivery :</span> <span className="font-bold flex-1">{watchAll.placeOfDelivery}</span></div>
-                          <div className="flex mt-1"><span className="font-bold w-36">Date of Delivery :</span> <span className="font-bold flex-1">{watchAll.deliveryDate ? new Date(watchAll.deliveryDate).toLocaleDateString('en-PH') : ""}</span></div>
+                      <div className="border-t-[2px] border-black grid text-[15px]" style={{ gridTemplateColumns: '15% 10% 36.79% 12% 16% 16%' }}>
+                        <div className="col-span-3 border-r-[2px] border-black">
+                          <div className="flex items-center border-b border-black p-0 px-1">
+                            <span className="font-bold w-36 whitespace-nowrap">Place of Delivery :</span>
+                            <span className="font-bold flex-1">{watchAll.placeOfDelivery}</span>
+                          </div>
+                          <div className="flex items-center p-0 px-1">
+                            <span className="font-bold w-36 whitespace-nowrap">Date of Delivery :</span>
+                            <span className="font-bold flex-1">{watchAll.deliveryDate ? new Date(watchAll.deliveryDate).toLocaleDateString('en-PH') : ""}</span>
+                          </div>
                         </div>
-                        <div className="col-span-3 p-1 px-2">
-                          <div className="flex"><span className="font-bold w-32">Delivery Term :</span> <span className="font-bold flex-1">{watchAll.deliveryTerms}</span></div>
-                          <div className="flex mt-1"><span className="font-bold w-32">Payment Term :</span> <span className="font-bold flex-1">{watchAll.paymentTerms}</span></div>
+                        <div className="col-span-3">
+                          <div className="flex items-center p-0 px-1">
+                            <span className="font-bold w-32 whitespace-nowrap">Delivery Term :</span>
+                            <span className="font-bold flex-1">{watchAll.deliveryTerms}</span>
+                          </div>
+                          <div className="flex items-center p-0 px-1">
+                            <span className="font-bold w-32 whitespace-nowrap">Payment Term :</span>
+                            <span className="font-bold flex-1">{watchAll.paymentTerms}</span>
+                          </div>
                         </div>
                       </div>
 
-                      <table className="w-full border-collapse border-t-[2px] border-black">
+                      <table className="w-full border-collapse border-t-[2px] border-black table-fixed">
+                        <colgroup>
+                          <col style={{ width: "15%" }} />
+                          <col style={{ width: "10%" }} />
+                          <col style={{ width: "40%" }} />
+                          <col style={{ width: "12%" }} />
+                          <col style={{ width: "16%" }} />
+                          <col style={{ width: "16%" }} />
+                        </colgroup>
                         <thead>
                           <tr className="border-b-[2px] border-black text-[14px]">
                             <th className="border-r border-black p-1 w-[10%]">Stock/<br />Property No.</th>
                             <th className="border-r border-black p-1 w-[8%]">Unit</th>
-                            <th className="border-r border-black p-1">Description</th>
+                            <th className="border-r border-black p-1 w-[46%]">Description</th>
                             <th className="border-r border-black p-1 w-[10%]">Quantity</th>
                             <th className="border-r border-black p-1 w-[12%]">Unit Cost</th>
                             <th className="p-1 w-[14%]">Amount</th>
@@ -500,7 +604,7 @@ export default function PurchaseOrderEditor() {
                               <tr key={idx}>
                                 <td className="border-r border-black p-[2px] text-center">{displayNo}</td>
                                 <td className="border-r border-black p-[2px] text-center">{isSpec ? "" : item.unit}</td>
-                                <td className={`border-r border-black p-[2px] px-2 ${isSpec ? "pl-4 text-sm" : (hasSpecs ? "font-bold" : "")}`}>{item.description}</td>
+                                <td className={`border-r border-black p-[2px] px-2 break-words ${isSpec ? "pl-4 text-sm" : (hasSpecs ? "font-bold" : "")}`}>{item.description}</td>
                                 <td className="border-r border-black p-[2px] text-center">{isSpec ? "" : item.quantity}</td>
                                 <td className="border-r border-black p-[2px] px-2 text-right">{isSpec ? "" : (unitCost > 0 ? formatCurrency(unitCost).replace('₱', '') : "")}</td>
                                 <td className="p-[2px] px-2 text-right">{isSpec ? "" : (itemAmount > 0 ? formatCurrency(itemAmount).replace('₱', '') : "")}</td>
@@ -541,30 +645,30 @@ export default function PurchaseOrderEditor() {
                             </td>
                           </tr>
                           <tr className="font-bold">
-                            <td colSpan={2} className="p-1 px-1 text-left whitespace-nowrap text-[12px] tracking-tight">(Total Amount in Words)</td>
-                            <td colSpan={3} className="p-1 px-4 font-normal">{poTotalAmount > 0 ? numberToWords(poTotalAmount) : ""}</td>
+                            <td colSpan={2} className="p-1 px-1 text-left text-[11px] leading-tight tracking-tight">(Total Amount in Words)</td>
+                            <td colSpan={3} className="p-1 px-4 font-normal break-words">{poTotalAmount > 0 ? numberToWords(poTotalAmount) : ""}</td>
                             <td className="p-1 text-right">{poTotalAmount > 0 ? formatCurrency(poTotalAmount).replace('₱', '') : ""}</td>
                           </tr>
                         </tbody>
                       </table>
 
-                      <div className="border-t-[2px] border-black p-2">
-                        <div className="mb-6 indent-8 text-justify">
+                      <div className="border-t-[2px] border-black">
+                        <div className="p-2 pb-4 indent-8 text-justify">
                           In case of failure to make the full delivery within the time specified above, a penalty of one-tenth (1/10) of one percent for every day of delay shall be imposed on the undelivered item/s.
                         </div>
 
-                        <div className="flex mb-1">
-                          <div className="w-165 pl-4">
+                        <div className="grid pb-2" style={{ gridTemplateColumns: '15% 10% 36.79% 10% 12% 14%' }}>
+                          <div className="col-span-3 pl-4 pr-2">
                             <div className="mb-8">Conforme:</div>
-                            <div className="text-center w-70 mx-auto">
+                            <div className="text-center w-72 mx-auto">
                               <div className="border-b border-black h-4 mb-1"></div>
                               <div>Signature over Printed Name of Supplier</div>
                               <div className="border-b border-black h-8 mb-1 w-3/4 mx-auto"></div>
                               <div>Date</div>
                             </div>
                           </div>
-                          <div className="w-1/2">
-                            <div className="mb-8 ">Very truly yours,</div>
+                          <div className="col-span-3 p-1 px-2">
+                            <div className="mb-8">Very truly yours,</div>
                             <div className="text-center w-64 mx-auto font-bold mt-4">
                               HON. TOMAS U. ESTOPEREZ, JR.
                               <div className="font-normal">Municipal Mayor</div>

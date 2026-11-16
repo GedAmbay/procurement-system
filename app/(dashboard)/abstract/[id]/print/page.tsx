@@ -242,9 +242,17 @@ export default function AbstractLivePreviewPage() {
             </h2>
             {isReadOnly ? (
               <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
-                  <Lock size={12} className="text-emerald-700" />
-                  {data.status || "FINAL"}
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${
+                  data.status === "COMPLETED" || data.status === "SIGNED"
+                    ? "bg-emerald-100 text-emerald-800"
+                    : "bg-blue-100 text-blue-800"
+                }`}>
+                  {data.status === "COMPLETED" || data.status === "SIGNED" ? (
+                    <CheckCircle2 size={12} className="text-emerald-700" />
+                  ) : (
+                    <Lock size={12} className="text-blue-700" />
+                  )}
+                  {data.status === "SIGNED" || data.status === "COMPLETED" ? "COMPLETED" : (data.status || "FINAL")}
                 </span>
                 {getSavedTimeText() && (
                   <span className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
@@ -294,6 +302,16 @@ export default function AbstractLivePreviewPage() {
 
           {isReadOnly ? (
             <>
+              {data.status === "ISSUED" && (
+                <button
+                  type="button"
+                  onClick={() => saveChanges("COMPLETED")}
+                  disabled={submitting}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-xl text-sm flex items-center gap-2 shadow-sm transition-all"
+                >
+                  {submitting ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />} Mark as Completed
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setUnlockModalOpen(true)}
@@ -346,6 +364,16 @@ export default function AbstractLivePreviewPage() {
                   {submitting ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />} Finalize
                 </button>
               )}
+              {data.status === "ISSUED" && (
+                <button
+                  type="button"
+                  onClick={() => saveChanges("COMPLETED")}
+                  disabled={submitting}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-5 py-2 rounded-xl text-sm flex items-center gap-2 shadow-sm transition-all"
+                >
+                  {submitting ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />} Mark as Completed
+                </button>
+              )}
             </>
           )}
         </div>
@@ -353,9 +381,16 @@ export default function AbstractLivePreviewPage() {
 
       {isReadOnly && (
         <div className="no-print bg-[#ecfdf5] border border-[#a7f3d0] rounded-2xl px-5 py-2.5 flex items-center gap-2.5 text-xs text-[#065f46] shadow-sm font-medium shrink-0">
-          <Lock size={15} className="text-[#059669] shrink-0" />
+          <CheckCircle2 size={15} className="text-[#059669] shrink-0" />
           <span>
-            <strong className="font-bold">This Abstract of Canvass is finalized and locked.</strong> Unlock it to make changes.
+            <strong className="font-bold">
+              {data.status === "COMPLETED" || data.status === "SIGNED"
+                ? "This Abstract of Canvass is completed."
+                : "This Abstract of Canvass is finalized and locked."}
+            </strong>{" "}
+            {data.status === "COMPLETED" || data.status === "SIGNED"
+              ? "All quotations, evaluations, and signatures are finalized."
+              : "Unlock it to make changes."}
           </span>
         </div>
       )}

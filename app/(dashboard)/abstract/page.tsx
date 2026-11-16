@@ -162,7 +162,6 @@ export default function abstractPage() {
           { label: "All", value: null },
           { label: "Draft", value: "DRAFT" },
           { label: "Issued", value: "ISSUED" },
-          { label: "Signed", value: "SIGNED" },
           { label: "Completed", value: "COMPLETED" },
         ]}
         dateFilterKey="createdAt"

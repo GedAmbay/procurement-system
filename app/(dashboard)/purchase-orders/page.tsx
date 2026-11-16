@@ -26,9 +26,12 @@ interface PO {
 }
 
 const STATUS_COLORS: Record<string, { bg: string; color: string; icon: React.ReactNode }> = {
-  DRAFT: { bg: "#f1f5f9", color: "#475569", icon: <Clock size={11} /> },
+  DRAFT: { bg: "#fef3c7", color: "#b45309", icon: <Clock size={11} /> },
   ISSUED: { bg: "#eff6ff", color: "#2563eb", icon: <FileSignature size={11} /> },
-  COMPLETED: { bg: "#f0fdf4", color: "#16a34a", icon: <CheckCircle2 size={11} /> },
+  SIGNED: { bg: "#eef2ff", color: "#4f46e5", icon: <CheckCircle2 size={11} /> },
+  PARTIALLY_DELIVERED: { bg: "#eff6ff", color: "#2563eb", icon: <Truck size={11} /> },
+  COMPLETED: { bg: "#dcfce7", color: "#15803d", icon: <CheckCircle2 size={11} /> },
+  CANCELLED: { bg: "#fef2f2", color: "#dc2626", icon: <Clock size={11} /> },
 };
 
 export default function PurchaseOrdersPage() {
@@ -126,7 +129,7 @@ export default function PurchaseOrdersPage() {
       label: "Status",
       align: "center",
       render: (row: PO) => <StatusBadge status={row.status} />,
-      width: "140px",
+      width: "160px",
     },
     {
       key: "createdAt",
@@ -177,6 +180,7 @@ export default function PurchaseOrdersPage() {
           { label: "All", value: null },
           { label: "Draft", value: "DRAFT" },
           { label: "Issued", value: "ISSUED" },
+          { label: "Signed", value: "SIGNED" },
           { label: "Partially Delivered", value: "PARTIALLY_DELIVERED" },
           { label: "Completed", value: "COMPLETED" },
           { label: "Cancelled", value: "CANCELLED" },

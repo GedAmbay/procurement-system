@@ -31,7 +31,11 @@ export async function GET(req: NextRequest) {
     }
   }
   if (status) {
-    whereClause.status = status;
+    if (status === "COMPLETED") {
+      whereClause.status = { in: ["COMPLETED", "SIGNED"] };
+    } else {
+      whereClause.status = status;
+    }
   }
 
   try {
@@ -69,7 +73,12 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json(abstracts);
+    const mapped = abstracts.map(a => ({
+      ...a,
+      status: a.status === "SIGNED" ? "COMPLETED" : a.status,
+    }));
+
+    return NextResponse.json(mapped);
   } catch (error) {
     console.error("Fetch abstracts Error:", error);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
