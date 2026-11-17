@@ -759,7 +759,7 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
                         return (
                           <td
                             key={col.key}
-                            style={{ textAlign: (col.align || "left") as any }}
+                            style={{ width: col.width, textAlign: (col.align || "left") as any }}
                             className={`px-4 py-4 ${isLast ? "pr-6" : ""}`}
                           >
                             {col.render ? col.render(row) : String((row as any)[col.key] ?? "—")}

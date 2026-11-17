@@ -30,6 +30,7 @@ interface LineItemState {
   quantity: number;
   abcUnitCost: number;
   unitPrice: number;
+  isSpec: boolean;
 }
 
 export default function BidEntryPage() {
@@ -81,14 +82,18 @@ export default function BidEntryPage() {
           const match = existingLines.find(
             (qli: any) => qli.rfqLineItemId === rfqItem.id
           );
+          const rawQty = Number(rfqItem.quantity) || 0;
+          const isSpec = !rawQty || rawQty === 0;
+
           return {
             id: match?.id,
             rfqLineItemId: rfqItem.id,
             description: rfqItem.description,
-            unit: rfqItem.unit,
-            quantity: Number(rfqItem.quantity) || 1,
-            abcUnitCost: Number(rfqItem.unitCost) || 0,
-            unitPrice: match ? Number(match.unitPrice) || 0 : 0,
+            unit: isSpec ? "" : (rfqItem.unit || ""),
+            quantity: rawQty,
+            abcUnitCost: isSpec ? 0 : (Number(rfqItem.unitCost) || 0),
+            unitPrice: isSpec ? 0 : (match ? Number(match.unitPrice) || 0 : 0),
+            isSpec,
           };
         });
 
@@ -119,24 +124,42 @@ export default function BidEntryPage() {
     let grandTotalCentavos = 0;
     let totalAbcCentavos = 0;
 
-    const rows = lineItems.map((item) => {
-      const qty = item.quantity;
-      const abcUnitCentavos = toCentavos(item.abcUnitCost);
+    const rows = lineItems.map((item, idx) => {
+      const isSpec = item.isSpec;
+      const qty = isSpec ? 0 : item.quantity;
+      const abcUnitCentavos = isSpec ? 0 : toCentavos(item.abcUnitCost);
       const abcLineCentavos = Math.round(qty * abcUnitCentavos);
 
-      const bidUnitCentavos = toCentavos(item.unitPrice);
+      const bidUnitCentavos = isSpec ? 0 : toCentavos(item.unitPrice);
       const bidLineCentavos = Math.round(qty * bidUnitCentavos);
 
-      const lineVarianceCentavos = bidLineCentavos - abcLineCentavos;
+      const lineVarianceCentavos = isSpec ? 0 : (bidLineCentavos - abcLineCentavos);
 
       grandTotalCentavos += bidLineCentavos;
       totalAbcCentavos += abcLineCentavos;
 
+      // Item display number calculation matching PR / RFQ / Abstract print
+      let displayNo = "";
+      if (!isSpec) {
+        let count = 0;
+        for (let i = 0; i <= idx; i++) {
+          if (!lineItems[i].isSpec && (Number(lineItems[i].quantity) || 0) > 0) {
+            count++;
+          }
+        }
+        displayNo = count.toString();
+      }
+
+      // Check if subsequent line is a spec to bold parent item
+      const hasSpecs = !isSpec && idx + 1 < lineItems.length && lineItems[idx + 1].isSpec;
+
       return {
         ...item,
+        displayNo,
+        hasSpecs,
         bidLineTotal: fromCentavos(bidLineCentavos),
         lineVariancePesos: fromCentavos(lineVarianceCentavos),
-        isOverAbc: lineVarianceCentavos > 0 && bidUnitCentavos > 0,
+        isOverAbc: !isSpec && lineVarianceCentavos > 0 && bidUnitCentavos > 0,
       };
     });
 
@@ -149,6 +172,8 @@ export default function BidEntryPage() {
         ? Math.min(100, (grandTotalCentavos / totalAbcCentavos) * 100)
         : 0;
 
+    const pricedItemsCount = lineItems.filter((i) => !i.isSpec).length;
+
     return {
       rows,
       grandTotal: fromCentavos(grandTotalCentavos),
@@ -157,10 +182,12 @@ export default function BidEntryPage() {
       isOverBudget,
       isUnderBudget,
       progressPercent,
+      pricedItemsCount,
     };
   }, [lineItems]);
 
   const handlePriceChange = (index: number, newPrice: number) => {
+    if (lineItems[index]?.isSpec) return;
     setIsDirty(true);
     setLineItems((prev) => {
       const next = [...prev];
@@ -170,9 +197,12 @@ export default function BidEntryPage() {
   };
 
   const handleEnterKey = (index: number) => {
-    if (index + 1 < lineItems.length) {
-      inputRefs.current[index + 1]?.focus();
-      inputRefs.current[index + 1]?.select();
+    for (let i = index + 1; i < lineItems.length; i++) {
+      if (!lineItems[i].isSpec && inputRefs.current[i]) {
+        inputRefs.current[i]?.focus();
+        inputRefs.current[i]?.select();
+        break;
+      }
     }
   };
 
@@ -198,13 +228,15 @@ export default function BidEntryPage() {
         status: "RETURNED",
         submittedAt: dateReceived,
         lineItems: lineItems.map((item) => {
-          const qty = item.quantity;
-          const cleanPrice = Number(item.unitPrice) || 0;
+          const isSpec = item.isSpec;
+          const qty = isSpec ? 0 : (Number(item.quantity) || 0);
+          const cleanPrice = isSpec ? 0 : (Number(item.unitPrice) || 0);
           return {
             id: item.id || undefined,
             rfqLineItemId: item.rfqLineItemId,
             unitPrice: cleanPrice,
             totalPrice: qty * cleanPrice,
+            quantity: qty,
           };
         }),
       };
@@ -336,7 +368,7 @@ export default function BidEntryPage() {
             </div>
           </div>
           <p className="text-xs text-slate-500 font-medium mt-3">
-            Sum of the {lineItems.length} line-item ABCs
+            Sum of the {summary.pricedItemsCount} {summary.pricedItemsCount === 1 ? "line-item" : "line-items"} ABC
           </p>
         </div>
 
@@ -432,61 +464,94 @@ export default function BidEntryPage() {
               {summary.rows.map((row, idx) => {
                 const diff = row.lineVariancePesos;
                 const hasBid = row.unitPrice > 0;
+                const isSpec = row.isSpec;
 
                 return (
                   <tr
                     key={row.rfqLineItemId}
-                    className="hover:bg-slate-50/60 transition-colors"
+                    className={`transition-colors ${
+                      isSpec
+                        ? "bg-slate-50/40 hover:bg-slate-50/70"
+                        : "hover:bg-slate-50/60"
+                    }`}
                   >
                     {/* Index */}
                     <td className="py-3.5 px-4 text-center text-slate-400 font-bold">
-                      {idx + 1}
+                      {isSpec ? "" : row.displayNo}
                     </td>
 
                     {/* Description */}
-                    <td className="py-3.5 px-4 font-bold text-slate-900">
+                    <td
+                      className={`py-3.5 px-4 ${
+                        isSpec
+                          ? "pl-8 text-slate-600 font-normal italic text-[12px]"
+                          : row.hasSpecs
+                            ? "font-bold text-slate-900"
+                            : "font-semibold text-slate-900"
+                      }`}
+                    >
                       {row.description}
                     </td>
 
                     {/* Quantity */}
                     <td className="py-3.5 px-4 text-center text-slate-700 font-semibold">
-                      {row.quantity}
+                      {isSpec ? "" : row.quantity}
                     </td>
 
                     {/* Unit */}
                     <td className="py-3.5 px-4 text-center text-slate-500 font-medium capitalize">
-                      {row.unit}
+                      {isSpec ? "" : row.unit}
                     </td>
 
                     {/* ABC Unit Price */}
                     <td className="py-3.5 px-4 text-right font-semibold text-slate-500">
-                      {formatPeso(row.abcUnitCost)}
+                      {isSpec ? (
+                        <span className="text-slate-300 font-medium">—</span>
+                      ) : (
+                        formatPeso(row.abcUnitCost)
+                      )}
                     </td>
 
                     {/* Unit Price Bid Input */}
                     <td className="py-3.5 px-4 text-right">
-                      <div className="flex justify-end">
-                        <MoneyInput
-                          ref={(el) => {
-                            inputRefs.current[idx] = el;
-                          }}
-                          value={row.unitPrice}
-                          onChange={(val) => handlePriceChange(idx, val)}
-                          onEnterPress={() => handleEnterKey(idx)}
-                          hasError={row.isOverAbc}
-                          placeholder="0.00"
-                        />
-                      </div>
+                      {isSpec ? (
+                        <div className="flex justify-end pr-4">
+                          <span className="text-slate-300 font-medium select-none text-xs">
+                            —
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex justify-end">
+                          <MoneyInput
+                            ref={(el) => {
+                              inputRefs.current[idx] = el;
+                            }}
+                            value={row.unitPrice}
+                            onChange={(val) => handlePriceChange(idx, val)}
+                            onEnterPress={() => handleEnterKey(idx)}
+                            hasError={row.isOverAbc}
+                            placeholder="0.00"
+                          />
+                        </div>
+                      )}
                     </td>
 
                     {/* Total Cost */}
                     <td className="py-3.5 px-4 text-right font-black text-slate-900 text-sm">
-                      {row.bidLineTotal > 0 ? formatPeso(row.bidLineTotal) : "₱0.00"}
+                      {isSpec ? (
+                        <span className="text-slate-300 font-normal text-xs">—</span>
+                      ) : row.bidLineTotal > 0 ? (
+                        formatPeso(row.bidLineTotal)
+                      ) : (
+                        "₱0.00"
+                      )}
                     </td>
 
                     {/* VS ABC Pill */}
                     <td className="py-3.5 px-4 text-center">
-                      {!hasBid ? (
+                      {isSpec ? (
+                        <span className="text-slate-300 font-medium">—</span>
+                      ) : !hasBid ? (
                         <span className="text-slate-300 font-medium">—</span>
                       ) : diff < 0 ? (
                         <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200">

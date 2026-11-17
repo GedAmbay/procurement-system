@@ -654,189 +654,189 @@ export default function PurchaseRequestEditor() {
                   className="print:!transform-none print:!w-full print:!mb-0"
                 >
                   <div className="print-area text-black w-[794px] bg-white shadow-xl min-h-[1123px] p-10 print:shadow-none print:w-full print:max-w-none print:p-0 print:m-0 print:min-h-0">
-              {/* PR Standard Form Layout */}
-              <div className="text-right font-bold text-lg mb-2">Annex 30</div>
+                    {/* PR Standard Form Layout */}
+                    <div className="text-right font-bold text-lg mb-2">Annex 30</div>
 
-              <div className="border-2 border-black">
-                {/* Title Block */}
-                <div className="text-center p-4 border-b-4 border-double border-black">
-                  <h2 className="font-extrabold text-3xl uppercase tracking-wide mb-1">{isJob ? "Job Request" : "Purchase Request"}</h2>
-                  <div className="text-sm font-semibold underline decoration-black">
-                    Municipality of Pandan, Antique
-                  </div>
-                  <div className="text-sm italic font-medium">
-                    LGU
-                  </div>
-                </div>
+                    <div className="border-3 border-black">
+                      {/* Title Block */}
+                      <div className="text-center p-4 border-b-4 border-double border-black">
+                        <h2 className="font-extrabold text-3xl uppercase tracking-wide mb-1">{isJob ? "Job Request" : "Purchase Request"}</h2>
+                        <div className="text-sm font-semibold underline decoration-black">
+                          Municipality of Pandan, Antique
+                        </div>
+                        <div className="text-sm italic font-medium">
+                          LGU
+                        </div>
+                      </div>
 
-                {/* Grid Block */}
-                <div className="grid grid-cols-2 text-sm border-b-4 border-double border-black">
-                  <div className="border-r-2 border-black p-2 flex flex-col justify-center">
-                    <div className="flex mb-2"><span className="w-24 whitespace-nowrap">Department :</span> <span className="border-b border-black flex-1 text-center">{offices.find(o => o.id === watchAllFields.officeId)?.name || "Office of the Mayor"}</span></div>
-                    <div className="flex"><span className="w-24 whitespace-nowrap">Section :</span> <span className="border-b border-black flex-1 text-center">{"\u00A0"}</span></div>
-                  </div>
-                  <div className="p-2 flex flex-col justify-between">
-                    <div className="flex mb-2"><span className="w-20">{isJob ? "JR No.:" : "PR No.:"}</span> <span className="border-b border-black flex-1 text-center">{showPrNo ? (watchAllFields.prNumber || prData?.prNumber || "") : ""}</span> <span className="w-12 ml-2">Date:</span> <span className="border-b border-black flex-1 text-center"></span></div>
-                    <div className="flex mb-2"><span className="w-20">SAI No.:</span> <span className="border-b border-black flex-1 text-center">{"\u00A0"}</span> <span className="w-12 ml-2">Date:</span> <span className="border-b border-black flex-1 text-center">{"\u00A0"}</span></div>
-                    <div className="flex"><span className="w-20">ALOBS No.:</span> <span className="border-b border-black flex-1 text-center">{"\u00A0"}</span> <span className="w-12 ml-2">Date:</span> <span className="border-b border-black flex-1 text-center">{"\u00A0"}</span></div>
-                  </div>
-                </div>
+                      {/* Grid Block */}
+                      <div className="grid grid-cols-2 text-sm border-b-4 border-double border-black">
+                        <div className="border-r-2 border-black p-2 flex flex-col justify-center">
+                          <div className="flex mb-2"><span className="w-24 whitespace-nowrap">Department :</span> <span className="border-b border-black flex-1 text-center">{offices.find(o => o.id === watchAllFields.officeId)?.name || "Office of the Mayor"}</span></div>
+                          <div className="flex"><span className="w-24 whitespace-nowrap">Section :</span> <span className="border-b border-black flex-1 text-center">{"\u00A0"}</span></div>
+                        </div>
+                        <div className="p-2 flex flex-col justify-between">
+                          <div className="flex mb-2"><span className="w-20">{isJob ? "JR No.:" : "PR No.:"}</span> <span className="border-b border-black flex-1 text-center">{showPrNo ? (watchAllFields.prNumber || prData?.prNumber || "") : ""}</span> <span className="w-12 ml-2">Date:</span> <span className="border-b border-black flex-1 text-center"></span></div>
+                          <div className="flex mb-2"><span className="w-20">SAI No.:</span> <span className="border-b border-black flex-1 text-center">{"\u00A0"}</span> <span className="w-12 ml-2">Date:</span> <span className="border-b border-black flex-1 text-center">{"\u00A0"}</span></div>
+                          <div className="flex"><span className="w-20">ALOBS No.:</span> <span className="border-b border-black flex-1 text-center">{"\u00A0"}</span> <span className="w-12 ml-2">Date:</span> <span className="border-b border-black flex-1 text-center">{"\u00A0"}</span></div>
+                        </div>
+                      </div>
 
-                {/* Table Block */}
-                <table className="w-full table-fixed border-collapse text-sm border-b-4 border-double border-black">
-                  <thead>
-                    <tr className="bg-white">
-                      <th className="border border-black border-t-0 border-l-0 p-1 font-bold text-center w-[7%]">Item<br />No.</th>
-                      <th className="border border-black border-t-0 p-1 font-bold text-center w-[11%]">Quantity</th>
-                      <th className="border border-black border-t-0 p-1 font-bold text-center w-[12%]">Unit Of<br />Issue</th>
-                      <th className="border border-black border-t-0 p-1 font-bold text-center w-[40%]">Item Description</th>
-                      <th className="border border-black border-t-0 p-1 font-bold text-center w-[15%]">Estimated<br />Unit Cost</th>
-                      <th className="border border-black border-t-0 border-r-0 p-1 font-bold text-center w-[15%]">Estimated<br />Cost</th>
-                    </tr>
-                  </thead>
+                      {/* Table Block */}
+                      <table className="w-full table-fixed border-collapse text-sm border-b-4 border-double border-black">
+                        <thead>
+                          <tr className="bg-white">
+                            <th className="border border-black border-t-0 border-l-0 p-1 font-bold text-center w-[7%]">Item<br />No.</th>
+                            <th className="border border-black border-t-0 p-1 font-bold text-center w-[11%]">Quantity</th>
+                            <th className="border border-black border-t-0 p-1 font-bold text-center w-[12%]">Unit Of<br />Issue</th>
+                            <th className="border border-black border-t-0 p-1 font-bold text-center w-[40%]">Item Description</th>
+                            <th className="border border-black border-t-0 p-1 font-bold text-center w-[15%]">Estimated<br />Unit Cost</th>
+                            <th className="border border-black border-t-0 border-r-0 p-1 font-bold text-center w-[15%]">Estimated<br />Cost</th>
+                          </tr>
+                        </thead>
 
-                  <tbody>
-                    {watchLineItems.length > 0 ? watchLineItems.map((item, idx) => {
-                      const isSpec = !item.quantity || item.quantity === 0;
-                      let displayNo = "";
-                      if (!isSpec) {
-                        let count = 0;
-                        for (let i = 0; i <= idx; i++) {
-                          if (Number(watchLineItems[i].quantity) > 0) count++;
-                        }
-                        displayNo = count.toString();
-                      }
+                        <tbody>
+                          {watchLineItems.length > 0 ? watchLineItems.map((item, idx) => {
+                            const isSpec = !item.quantity || item.quantity === 0;
+                            let displayNo = "";
+                            if (!isSpec) {
+                              let count = 0;
+                              for (let i = 0; i <= idx; i++) {
+                                if (Number(watchLineItems[i].quantity) > 0) count++;
+                              }
+                              displayNo = count.toString();
+                            }
 
-                      const hasSpecs = !isSpec && idx + 1 < watchLineItems.length && (!watchLineItems[idx + 1].quantity || watchLineItems[idx + 1].quantity === 0);
+                            const hasSpecs = !isSpec && idx + 1 < watchLineItems.length && (!watchLineItems[idx + 1].quantity || watchLineItems[idx + 1].quantity === 0);
 
-                      return (
-                        <tr key={idx} onClick={() => handleRowClick(idx)} className={`h-6 ${!isReadOnly ? `cursor-pointer transition-colors ${activeItemIndex === idx ? "bg-blue-100 hover:bg-blue-200" : "hover:bg-blue-50"}` : ""}`}>
-                          <td className="border border-black border-l-0 p-0 leading-tight text-center align-top">{displayNo}</td>
-                          <td className="border border-black p-0 leading-tight text-center align-top">{isSpec ? "" : item.quantity}</td>
-                          <td className="border border-black p-0 leading-tight text-center align-top">{isSpec ? "" : item.unit}</td>
-                          <td className={`border border-black p-0 px-1 leading-tight whitespace-normal break-words align-top ${isSpec ? "pl-4 text-sm" : (hasSpecs ? "font-bold" : "")}`}>{item.description}</td>
-                          <td className="border border-black p-0 leading-tight text-right align-top pr-1">{isSpec ? "" : (item.unitCost ? formatCurrency(item.unitCost).replace('₱', '') : '0.00')}</td>
-                          <td className="border border-black border-r-0 p-0 leading-tight text-right align-top pr-1">{isSpec ? "" : ((item.quantity && item.unitCost) ? formatCurrency(item.quantity * item.unitCost).replace('₱', '') : '0.00')}</td>
-                        </tr>
-                      );
-                    }) : null}
-                    {/* Empty rows filler */}
-                    {Array.from({ length: Math.max(0, targetRows - watchLineItems.length) }).map((_, i) => (
-                      <tr key={`empty-${i}`} className="h-6">
-                        <td className="border border-black border-l-0 p-0"></td>
-                        <td className="border border-black p-0"></td>
-                        <td className="border border-black p-0"></td>
-                        <td className="border border-black p-0"></td>
-                        <td className="border border-black p-0"></td>
-                        <td className="border border-black border-r-0 p-0"></td>
-                      </tr>
-                    ))}
-                    <tr className="h-6">
-                      <td colSpan={5} className="border border-black border-l-0 border-b-0 p-0 font-bold text-right pr-2">TOTAL</td>
-                      <td className="border border-black border-r-0 border-b-0 p-0 text-right pr-1 font-bold">{totalAmount > 0 ? formatCurrency(totalAmount).replace('₱', '') : '-'}</td>
-                    </tr>
-                  </tbody>
-                </table>
+                            return (
+                              <tr key={idx} onClick={() => handleRowClick(idx)} className={`h-6 ${!isReadOnly ? `cursor-pointer transition-colors ${activeItemIndex === idx ? "bg-blue-100 hover:bg-blue-200" : "hover:bg-blue-50"}` : ""}`}>
+                                <td className="border border-black border-l-0 p-0 leading-tight text-center align-top">{displayNo}</td>
+                                <td className="border border-black p-0 leading-tight text-center align-top">{isSpec ? "" : item.quantity}</td>
+                                <td className="border border-black p-0 leading-tight text-center align-top">{isSpec ? "" : item.unit}</td>
+                                <td className={`border border-black p-0 px-1 leading-tight whitespace-normal break-words align-top ${isSpec ? "pl-4 text-sm" : (hasSpecs ? "font-bold" : "")}`}>{item.description}</td>
+                                <td className="border border-black p-0 leading-tight text-right align-top pr-1">{isSpec ? "" : (item.unitCost ? formatCurrency(item.unitCost).replace('₱', '') : '0.00')}</td>
+                                <td className="border border-black border-r-0 p-0 leading-tight text-right align-top pr-1">{isSpec ? "" : ((item.quantity && item.unitCost) ? formatCurrency(item.quantity * item.unitCost).replace('₱', '') : '0.00')}</td>
+                              </tr>
+                            );
+                          }) : null}
+                          {/* Empty rows filler */}
+                          {Array.from({ length: Math.max(0, targetRows - watchLineItems.length) }).map((_, i) => (
+                            <tr key={`empty-${i}`} className="h-6">
+                              <td className="border border-black border-l-0 p-0"></td>
+                              <td className="border border-black p-0"></td>
+                              <td className="border border-black p-0"></td>
+                              <td className="border border-black p-0"></td>
+                              <td className="border border-black p-0"></td>
+                              <td className="border border-black border-r-0 p-0"></td>
+                            </tr>
+                          ))}
+                          <tr className="h-6">
+                            <td colSpan={5} className="border border-black border-l-0 border-b-0 p-0 font-bold text-right pr-2">TOTAL</td>
+                            <td className="border border-black border-r-0 border-b-0 p-0 text-right pr-1 font-bold">{totalAmount > 0 ? formatCurrency(totalAmount).replace('₱', '') : '-'}</td>
+                          </tr>
+                        </tbody>
+                      </table>
 
-                {/* Purpose Block - Multi-line responsive and inline-editable */}
-                <div className="p-3 text-sm flex gap-2 border-b-4 border-double border-black">
-                  <span className="shrink-0 italic font-semibold">Purpose: </span>
-                  <div className="flex-1 flex flex-col gap-1 mt-0.5">
-                    {/* Line 1 */}
-                    <div className="border-b border-black text-left min-h-[1.5rem] relative flex items-center">
-                      <input
-                        ref={line0Ref}
-                        type="text"
-                        value={purposeLines[0]}
-                        onChange={(e) => handlePurposeLineChange(0, e.target.value)}
-                        onKeyDown={(e) => handlePurposeLineKeyDown(0, e)}
-                        disabled={isReadOnly}
-                        placeholder={isReadOnly ? "" : "Enter purpose..."}
-                        className="w-full bg-transparent border-none outline-none text-left px-1 text-sm font-normal text-black placeholder:text-slate-300 placeholder:italic print:hidden cursor-text"
-                        style={{ lineHeight: "1.2rem", height: "1.3rem" }}
-                      />
-                      <span className="hidden print:block absolute left-0 right-0 -top-1 whitespace-nowrap overflow-hidden text-ellipsis px-1 text-sm text-black">
-                        {purposeLines[0] || "\u00A0"}
-                      </span>
-                    </div>
+                      {/* Purpose Block - Multi-line responsive and inline-editable */}
+                      <div className="p-3 text-sm flex gap-2 border-b-4 border-double border-black">
+                        <span className="shrink-0 italic font-semibold">Purpose: </span>
+                        <div className="flex-1 flex flex-col gap-1 mt-0.5">
+                          {/* Line 1 */}
+                          <div className="border-b border-black text-left min-h-[1.5rem] relative flex items-center">
+                            <input
+                              ref={line0Ref}
+                              type="text"
+                              value={purposeLines[0]}
+                              onChange={(e) => handlePurposeLineChange(0, e.target.value)}
+                              onKeyDown={(e) => handlePurposeLineKeyDown(0, e)}
+                              disabled={isReadOnly}
+                              placeholder={isReadOnly ? "" : "Enter purpose..."}
+                              className="w-full bg-transparent border-none outline-none text-left px-1 text-sm font-normal text-black placeholder:text-slate-300 placeholder:italic print:hidden cursor-text"
+                              style={{ lineHeight: "1.2rem", height: "1.3rem" }}
+                            />
+                            <span className="hidden print:block absolute left-0 right-0 -top-1 whitespace-nowrap overflow-hidden text-ellipsis px-1 text-sm text-black">
+                              {purposeLines[0] || "\u00A0"}
+                            </span>
+                          </div>
 
-                    {/* Line 2 */}
-                    <div className="border-b border-black text-left min-h-[1.5rem] relative flex items-center">
-                      <input
-                        ref={line1Ref}
-                        type="text"
-                        value={purposeLines[1]}
-                        onChange={(e) => handlePurposeLineChange(1, e.target.value)}
-                        onKeyDown={(e) => handlePurposeLineKeyDown(1, e)}
-                        disabled={isReadOnly}
-                        placeholder={isReadOnly ? "" : "Click to enter 2nd line..."}
-                        className="w-full bg-transparent border-none outline-none text-left px-1 text-sm font-normal text-black placeholder:text-slate-300 placeholder:italic print:hidden cursor-text"
-                        style={{ lineHeight: "1.2rem", height: "1.3rem" }}
-                      />
-                      <span className="hidden print:block absolute left-0 right-0 -top-1 whitespace-nowrap overflow-hidden text-ellipsis px-1 text-sm text-black">
-                        {purposeLines[1] || "\u00A0"}
-                      </span>
-                    </div>
+                          {/* Line 2 */}
+                          <div className="border-b border-black text-left min-h-[1.5rem] relative flex items-center">
+                            <input
+                              ref={line1Ref}
+                              type="text"
+                              value={purposeLines[1]}
+                              onChange={(e) => handlePurposeLineChange(1, e.target.value)}
+                              onKeyDown={(e) => handlePurposeLineKeyDown(1, e)}
+                              disabled={isReadOnly}
+                              placeholder={isReadOnly ? "" : "Click to enter 2nd line..."}
+                              className="w-full bg-transparent border-none outline-none text-left px-1 text-sm font-normal text-black placeholder:text-slate-300 placeholder:italic print:hidden cursor-text"
+                              style={{ lineHeight: "1.2rem", height: "1.3rem" }}
+                            />
+                            <span className="hidden print:block absolute left-0 right-0 -top-1 whitespace-nowrap overflow-hidden text-ellipsis px-1 text-sm text-black">
+                              {purposeLines[1] || "\u00A0"}
+                            </span>
+                          </div>
 
-                    {/* Line 3 */}
-                    <div className="border-b border-black text-left min-h-[1.5rem] relative flex items-center">
-                      <input
-                        ref={line2Ref}
-                        type="text"
-                        value={purposeLines[2]}
-                        onChange={(e) => handlePurposeLineChange(2, e.target.value)}
-                        onKeyDown={(e) => handlePurposeLineKeyDown(2, e)}
-                        disabled={isReadOnly}
-                        placeholder={isReadOnly ? "" : "Click to enter 3rd line..."}
-                        className="w-full bg-transparent border-none outline-none text-left px-1 text-sm font-normal text-black placeholder:text-slate-300 placeholder:italic print:hidden cursor-text"
-                        style={{ lineHeight: "1.2rem", height: "1.3rem" }}
-                      />
-                      <span className="hidden print:block absolute left-0 right-0 -top-1 whitespace-nowrap overflow-hidden text-ellipsis px-1 text-sm text-black">
-                        {purposeLines[2] || "\u00A0"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                          {/* Line 3 */}
+                          <div className="border-b border-black text-left min-h-[1.5rem] relative flex items-center">
+                            <input
+                              ref={line2Ref}
+                              type="text"
+                              value={purposeLines[2]}
+                              onChange={(e) => handlePurposeLineChange(2, e.target.value)}
+                              onKeyDown={(e) => handlePurposeLineKeyDown(2, e)}
+                              disabled={isReadOnly}
+                              placeholder={isReadOnly ? "" : "Click to enter 3rd line..."}
+                              className="w-full bg-transparent border-none outline-none text-left px-1 text-sm font-normal text-black placeholder:text-slate-300 placeholder:italic print:hidden cursor-text"
+                              style={{ lineHeight: "1.2rem", height: "1.3rem" }}
+                            />
+                            <span className="hidden print:block absolute left-0 right-0 -top-1 whitespace-nowrap overflow-hidden text-ellipsis px-1 text-sm text-black">
+                              {purposeLines[2] || "\u00A0"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
 
-                {/* Signatures Block */}
-                <table className="w-full border-collapse text-xs text-center border-t-0 table-fixed">
-                  <colgroup>
-                    <col className="w-[16%]" />
-                    <col className="w-[27.33%]" />
-                    <col className="w-[24%]" />
-                    <col className="w-[27.33%]" />
-                  </colgroup>
-                  <tbody>
-                    <tr>
-                      <td className="border border-black border-l-0 border-t-0 py-0 px-1"></td>
-                      <td className="border border-black border-t-0 py-0 px-1 leading-tight font-bold sign-text">Requested by:</td>
-                      <td className="border border-black border-t-0 py-0 px-1 leading-tight font-bold sign-text">Cash availability:</td>
-                      <td className="border border-black border-t-0 border-r-0 py-0 px-1 leading-tight font-bold sign-text">Approved by:</td>
-                    </tr>
-                    <tr className="border-none">
-                      <td className="border border-black border-l-0 border-b-0 py-0 px-1 pl-2 italic text-left align-top h-[30px] text-[13px]">Signature:</td>
-                      <td className="border border-black py-0 px-1"></td>
-                      <td className="border border-black py-0 px-1"></td>
-                      <td className="border border-black border-r-0 py-0 px-1"></td>
-                    </tr>
-                    <tr className="border-none">
-                      <td className="border border-black border-l-0 border-y-0 py-0 px-1 pl-2 italic text-left text-[13px] leading-tight">Printed Name:</td>
-                      <td className="border border-black py-0 px-1 font-bold uppercase text-[12px] leading-tight">
-                        {signatories.find(s => s.id === watchAllFields.requestedBySignatoryId)?.name || ""}
-                      </td>
-                      <td className="border border-black py-0 px-1 font-bold uppercase text-[12px] leading-tight">EDSEL J. AMBUBUYOG</td>
-                      <td className="border border-black border-r-0 py-0 px-1 font-bold uppercase text-[12px] leading-tight">HON. TOMAS U. ESTOPEREZ JR.</td>
-                    </tr>
-                    <tr className="border-none">
-                      <td className="border border-black border-l-0 border-t-0 border-b-0 py-0 px-1 pl-2 italic text-left h-[30px] text-[13px] leading-tight">Designation:</td>
-                      <td className="border border-black py-0 px-1 text-[13px] leading-tight">
-                        {signatories.find(s => s.id === watchAllFields.requestedBySignatoryId)?.position || ""}
-                      </td>
-                      <td className="border border-black py-0 px-1 text-[13px] leading-tight">Acting Municipal Treasurer</td>
-                      <td className="border border-black border-r-0 py-0 px-1 text-[13px] leading-tight">Municipal Mayor</td>
-                    </tr>
-                  </tbody>
-                </table>
+                      {/* Signatures Block */}
+                      <table className="w-full border-collapse text-xs text-center border-t-0 table-fixed">
+                        <colgroup>
+                          <col className="w-[16%]" />
+                          <col className="w-[27.33%]" />
+                          <col className="w-[24%]" />
+                          <col className="w-[27.33%]" />
+                        </colgroup>
+                        <tbody>
+                          <tr>
+                            <td className="border border-black border-l-0 border-t-0 py-0 px-1"></td>
+                            <td className="border border-black border-t-0 py-0 px-1 leading-tight font-bold sign-text">Requested by:</td>
+                            <td className="border border-black border-t-0 py-0 px-1 leading-tight font-bold sign-text">Cash availability:</td>
+                            <td className="border border-black border-t-0 border-r-0 py-0 px-1 leading-tight font-bold sign-text">Approved by:</td>
+                          </tr>
+                          <tr className="border-none">
+                            <td className="border border-black border-l-0 border-b-0 py-0 px-1 pl-2 italic text-left align-top h-[30px] text-[13px]">Signature:</td>
+                            <td className="border border-black py-0 px-1"></td>
+                            <td className="border border-black py-0 px-1"></td>
+                            <td className="border border-black border-r-0 py-0 px-1"></td>
+                          </tr>
+                          <tr className="border-none">
+                            <td className="border border-black border-l-0 border-y-0 py-0 px-1 pl-2 italic text-left text-[13px] leading-tight">Printed Name:</td>
+                            <td className="border border-black py-0 px-1 font-bold uppercase text-[12px] leading-tight">
+                              {signatories.find(s => s.id === watchAllFields.requestedBySignatoryId)?.name || ""}
+                            </td>
+                            <td className="border border-black py-0 px-1 font-bold uppercase text-[12px] leading-tight">EDSEL J. AMBUBUYOG</td>
+                            <td className="border border-black border-r-0 py-0 px-1 font-bold uppercase text-[12px] leading-tight">HON. TOMAS U. ESTOPEREZ JR.</td>
+                          </tr>
+                          <tr className="border-none">
+                            <td className="border border-black border-l-0 border-t-0 border-b-0 py-0 px-1 pl-2 italic text-left h-[30px] text-[13px] leading-tight">Designation:</td>
+                            <td className="border border-black border-b-0 py-0 px-1 text-[13px] leading-tight">
+                              {signatories.find(s => s.id === watchAllFields.requestedBySignatoryId)?.position || ""}
+                            </td>
+                            <td className="border border-black border-b-0 py-0 px-1 text-[13px] leading-tight">Acting Municipal Treasurer</td>
+                            <td className="border border-black border-b-0 border-r-0 py-0 px-1 text-[13px] leading-tight">Municipal Mayor</td>
+                          </tr>
+                        </tbody>
+                      </table>
                     </div>
                   </div>
                 </div>
@@ -857,329 +857,329 @@ export default function PurchaseRequestEditor() {
           </div>
         </div>
 
-    {/* Right Side: Data Entry Form */}
-    <div className="no-print w-[360px] lg:w-[400px] xl:w-[420px] shrink-0 bg-white rounded-2xl shadow-sm border border-slate-200/60 p-5 flex flex-col overflow-y-auto">
-      <div className="mb-4">
-        <h2 className="text-base font-bold text-slate-900">
-          {isJob ? "Job Request Details" : "Purchase Request Details"}
-        </h2>
-        <p className="text-xs text-slate-500 mt-1">
-          {isReadOnly
-            ? "Read-only while the document is locked."
-            : "Update the details for the purchase request."}
-        </p>
-      </div>
+        {/* Right Side: Data Entry Form */}
+        <div className="no-print w-[360px] lg:w-[400px] xl:w-[420px] shrink-0 bg-white rounded-2xl shadow-sm border border-slate-200/60 p-5 flex flex-col overflow-y-auto">
+          <div className="mb-4">
+            <h2 className="text-base font-bold text-slate-900">
+              {isJob ? "Job Request Details" : "Purchase Request Details"}
+            </h2>
+            <p className="text-xs text-slate-500 mt-1">
+              {isReadOnly
+                ? "Read-only while the document is locked."
+                : "Update the details for the purchase request."}
+            </p>
+          </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3.5 flex-1">
-              {/* Type Toggle: Purchase Request vs Job Request */}
-              <div>
-                <label className="form-label">Request Type</label>
-                <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-lg border border-slate-200">
-                  <button
-                    type="button"
-                    onClick={() => !isReadOnly && setValue("requestType", "PURCHASE")}
-                    disabled={isReadOnly}
-                    className={`py-1.5 px-3 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${!isJob
-                      ? "bg-white text-blue-600 shadow-sm border border-slate-200/60"
-                      : "text-slate-500 hover:text-slate-800"
-                      }`}
-                  >
-                    <span>Purchase Request</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => !isReadOnly && setValue("requestType", "JOB")}
-                    disabled={isReadOnly}
-                    className={`py-1.5 px-3 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${isJob
-                      ? "bg-indigo-600 text-white shadow-sm"
-                      : "text-slate-500 hover:text-slate-800"
-                      }`}
-                  >
-                    <span>Job Request</span>
-                  </button>
-                </div>
+          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3.5 flex-1">
+            {/* Type Toggle: Purchase Request vs Job Request */}
+            <div>
+              <label className="form-label">Request Type</label>
+              <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-lg border border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => !isReadOnly && setValue("requestType", "PURCHASE")}
+                  disabled={isReadOnly}
+                  className={`py-1.5 px-3 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${!isJob
+                    ? "bg-white text-blue-600 shadow-sm border border-slate-200/60"
+                    : "text-slate-500 hover:text-slate-800"
+                    }`}
+                >
+                  <span>Purchase Request</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => !isReadOnly && setValue("requestType", "JOB")}
+                  disabled={isReadOnly}
+                  className={`py-1.5 px-3 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${isJob
+                    ? "bg-indigo-600 text-white shadow-sm"
+                    : "text-slate-500 hover:text-slate-800"
+                    }`}
+                >
+                  <span>Job Request</span>
+                </button>
               </div>
+            </div>
 
-              {/* Document Numbering */}
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-bold text-slate-800">
-                      {isJob ? "JR Number" : "PR Number"}
-                    </label>
-                  </div>
-                  <input
-                    type="text"
-                    {...register("prNumber")}
-                    disabled={isReadOnly}
-                    onBlur={(e) => {
-                      const val = e.target.value?.trim();
-                      if (val) {
-                        const normalized = normalizePrNumber(val);
-                        setValue("prNumber", normalized);
-                        const derivedYear = fiscalYearFromPrNumber(normalized);
-                        if (derivedYear) {
-                          setValue("fiscalYear", derivedYear);
-                        }
-                      }
-                    }}
-                    placeholder="e.g. 26-01-001"
-                    className="form-input font-mono font-bold text-sm bg-white"
-                  />
-                  <p className="text-[10px] text-slate-500 mt-1">
-                    Leave blank if not yet assigned by custodian. Can be updated at any time.
-                  </p>
-                </div>
-
-                {/* Show/Hide Document Number on Document Toggle */}
-                <div className="flex items-center justify-between pt-2 border-t border-slate-200">
-                  <label
-                    className="text-xs font-semibold text-slate-700 cursor-pointer select-none"
-                    onClick={() => setShowPrNo(!showPrNo)}
-                  >
-                    Print {isJob ? "JR Number" : "PR Number"} on document
+            {/* Document Numbering */}
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-bold text-slate-800">
+                    {isJob ? "JR Number" : "PR Number"}
                   </label>
+                </div>
+                <input
+                  type="text"
+                  {...register("prNumber")}
+                  disabled={isReadOnly}
+                  onBlur={(e) => {
+                    const val = e.target.value?.trim();
+                    if (val) {
+                      const normalized = normalizePrNumber(val);
+                      setValue("prNumber", normalized);
+                      const derivedYear = fiscalYearFromPrNumber(normalized);
+                      if (derivedYear) {
+                        setValue("fiscalYear", derivedYear);
+                      }
+                    }
+                  }}
+                  placeholder="e.g. 26-01-001"
+                  className="form-input font-mono font-bold text-sm bg-white"
+                />
+                <p className="text-[10px] text-slate-500 mt-1">
+                  Leave blank if not yet assigned by custodian. Can be updated at any time.
+                </p>
+              </div>
+
+              {/* Show/Hide Document Number on Document Toggle */}
+              <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+                <label
+                  className="text-xs font-semibold text-slate-700 cursor-pointer select-none"
+                  onClick={() => setShowPrNo(!showPrNo)}
+                >
+                  Print {isJob ? "JR Number" : "PR Number"} on document
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowPrNo(!showPrNo)}
+                  style={{
+                    width: "44px",
+                    height: "24px",
+                    borderRadius: "12px",
+                    background: showPrNo ? "#10b981" : "#cbd5e1",
+                    position: "relative",
+                    border: "none",
+                    cursor: "pointer",
+                    transition: "background 0.3s",
+                    boxShadow: "inset 0 1px 3px rgba(0,0,0,0.1)",
+                  }}
+                  title={showPrNo ? "Hide from document" : "Show on document"}
+                >
+                  <div
+                    style={{
+                      width: "20px",
+                      height: "20px",
+                      borderRadius: "50%",
+                      background: "#fff",
+                      position: "absolute",
+                      top: "2px",
+                      left: showPrNo ? "22px" : "2px",
+                      transition: "left 0.3s",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+                    }}
+                  />
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="form-label">Requesting Office</label>
+              <CustomSelect
+                value={watchAllFields.officeId || ""}
+                onChange={(val) => setValue("officeId", val, { shouldValidate: true, shouldDirty: true })}
+                options={offices.map((o) => ({ value: o.id, label: o.name }))}
+                placeholder="Select Office..."
+                disabled={isReadOnly}
+              />
+            </div>
+
+            <div>
+              <label className="form-label">Requested By (Signatory)</label>
+              <CustomSelect
+                value={watchAllFields.requestedBySignatoryId || ""}
+                onChange={(val) => setValue("requestedBySignatoryId", val, { shouldValidate: true, shouldDirty: true })}
+                options={signatories.map((s) => ({
+                  value: s.id,
+                  label: s.name,
+                  sublabel: s.position,
+                }))}
+                placeholder="Select Signatory..."
+                disabled={isReadOnly}
+              />
+            </div>
+
+            <div>
+              <label className="form-label">Purpose</label>
+              <textarea
+                {...register("purpose")}
+                className="form-input"
+                style={{ minHeight: "80px", resize: "vertical" }}
+                placeholder="Enter purpose of procurement..."
+                disabled={isReadOnly}
+              />
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <input
+                type="checkbox"
+                id="isDirectAcquisition"
+                {...register("isDirectAcquisition")}
+                disabled={isReadOnly}
+                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <label htmlFor="isDirectAcquisition" className="text-sm font-medium text-slate-700 cursor-pointer">
+                Direct Acquisition <span className="text-xs text-slate-500 font-normal">(Skips RFQ and abstract phases)</span>
+              </label>
+            </div>
+
+            <div style={{ paddingTop: "1rem", borderTop: "1px solid #e2e8f0" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+                <h3 style={{ fontWeight: "700", color: "#334155", fontSize: "0.9375rem" }}>
+                  {activeItemIndex !== null ? "Edit Item" : "Add New Item"}
+                </h3>
+                {activeItemIndex !== null && !isReadOnly && (
                   <button
                     type="button"
-                    onClick={() => setShowPrNo(!showPrNo)}
-                    style={{
-                      width: "44px",
-                      height: "24px",
-                      borderRadius: "12px",
-                      background: showPrNo ? "#10b981" : "#cbd5e1",
-                      position: "relative",
-                      border: "none",
-                      cursor: "pointer",
-                      transition: "background 0.3s",
-                      boxShadow: "inset 0 1px 3px rgba(0,0,0,0.1)",
-                    }}
-                    title={showPrNo ? "Hide from document" : "Show on document"}
+                    onClick={handleClearDraft}
+                    className="btn btn-secondary btn-sm"
                   >
-                    <div
-                      style={{
-                        width: "20px",
-                        height: "20px",
-                        borderRadius: "50%",
-                        background: "#fff",
-                        position: "absolute",
-                        top: "2px",
-                        left: showPrNo ? "22px" : "2px",
-                        transition: "left 0.3s",
-                        boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
-                      }}
-                    />
+                    Cancel Edit
                   </button>
-                </div>
+                )}
               </div>
 
-              <div>
-                <label className="form-label">Requesting Office</label>
-                <CustomSelect
-                  value={watchAllFields.officeId || ""}
-                  onChange={(val) => setValue("officeId", val, { shouldValidate: true, shouldDirty: true })}
-                  options={offices.map((o) => ({ value: o.id, label: o.name }))}
-                  placeholder="Select Office..."
-                  disabled={isReadOnly}
-                />
-              </div>
-
-              <div>
-                <label className="form-label">Requested By (Signatory)</label>
-                <CustomSelect
-                  value={watchAllFields.requestedBySignatoryId || ""}
-                  onChange={(val) => setValue("requestedBySignatoryId", val, { shouldValidate: true, shouldDirty: true })}
-                  options={signatories.map((s) => ({
-                    value: s.id,
-                    label: s.name,
-                    sublabel: s.position,
-                  }))}
-                  placeholder="Select Signatory..."
-                  disabled={isReadOnly}
-                />
-              </div>
-
-              <div>
-                <label className="form-label">Purpose</label>
-                <textarea
-                  {...register("purpose")}
-                  className="form-input"
-                  style={{ minHeight: "80px", resize: "vertical" }}
-                  placeholder="Enter purpose of procurement..."
-                  disabled={isReadOnly}
-                />
-              </div>
-
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <input
-                  type="checkbox"
-                  id="isDirectAcquisition"
-                  {...register("isDirectAcquisition")}
-                  disabled={isReadOnly}
-                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <label htmlFor="isDirectAcquisition" className="text-sm font-medium text-slate-700 cursor-pointer">
-                  Direct Acquisition <span className="text-xs text-slate-500 font-normal">(Skips RFQ and abstract phases)</span>
-                </label>
-              </div>
-
-              <div style={{ paddingTop: "1rem", borderTop: "1px solid #e2e8f0" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
-                  <h3 style={{ fontWeight: "700", color: "#334155", fontSize: "0.9375rem" }}>
-                    {activeItemIndex !== null ? "Edit Item" : "Add New Item"}
-                  </h3>
-                  {activeItemIndex !== null && !isReadOnly && (
-                    <button
-                      type="button"
-                      onClick={handleClearDraft}
-                      className="btn btn-secondary btn-sm"
-                    >
-                      Cancel Edit
-                    </button>
-                  )}
-                </div>
-
-                {!isReadOnly && (
-                  <div style={{ borderRadius: "1rem", background: "var(--color-page-bg)", boxShadow: "inset 4px 4px 8px rgba(163,177,198,0.5), inset -4px -4px 8px rgba(255,255,255,0.9)", padding: "1rem" }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "0.75rem", marginBottom: "1rem" }}>
-                      <div>
-                        <label className="form-label">Catalog Item <span style={{ fontWeight: "400", color: "#94a3b8" }}>(optional)</span></label>
-                        <CustomSelect
-                          value={draftItem.itemId || ""}
-                          onChange={(val) => handleItemSelect(val)}
-                          options={[
-                            { value: "", label: "-- Custom Item --" },
-                            ...items.map((item) => ({
-                              value: item.id,
-                              label: item.description,
-                              sublabel: item.unit ? `${item.unit} · ₱${Number(item.standardCost || 0).toLocaleString()}` : undefined,
-                            })),
-                          ]}
-                          placeholder="-- Custom Item --"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="form-label">Description</label>
-                        <input
-                          value={draftItem.description}
-                          onChange={(e) => setDraftItem({ ...draftItem, description: e.target.value })}
-                          className="form-input"
-                          placeholder="Enter description..."
-                        />
-                      </div>
-
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
-                        <div>
-                          <label className="form-label">Unit of Issue</label>
-                          <input
-                            value={draftItem.unit}
-                            onChange={(e) => setDraftItem({ ...draftItem, unit: e.target.value })}
-                            className="form-input"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="form-label">Quantity</label>
-                          <input
-                            type="number"
-                            step="1"
-                            min="0"
-                            value={draftItem.quantity}
-                            onChange={(e) => setDraftItem({ ...draftItem, quantity: e.target.value === "" ? "" : Number(e.target.value) })}
-                            className="form-input"
-                            style={{ textAlign: "right" }}
-                            placeholder="0"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="form-label">Cost</label>
-                          <input
-                            type="number"
-                            step="0.25"
-                            min="0"
-                            value={draftItem.unitCost}
-                            onChange={(e) => setDraftItem({ ...draftItem, unitCost: e.target.value === "" ? "" : Number(e.target.value) })}
-                            className="form-input"
-                            style={{ textAlign: "right" }}
-                            placeholder="0.00"
-                          />
-                        </div>
-                      </div>
+              {!isReadOnly && (
+                <div style={{ borderRadius: "1rem", background: "var(--color-page-bg)", boxShadow: "inset 4px 4px 8px rgba(163,177,198,0.5), inset -4px -4px 8px rgba(255,255,255,0.9)", padding: "1rem" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "0.75rem", marginBottom: "1rem" }}>
+                    <div>
+                      <label className="form-label">Catalog Item <span style={{ fontWeight: "400", color: "#94a3b8" }}>(optional)</span></label>
+                      <CustomSelect
+                        value={draftItem.itemId || ""}
+                        onChange={(val) => handleItemSelect(val)}
+                        options={[
+                          { value: "", label: "-- Custom Item --" },
+                          ...items.map((item) => ({
+                            value: item.id,
+                            label: item.description,
+                            sublabel: item.unit ? `${item.unit} · ₱${Number(item.standardCost || 0).toLocaleString()}` : undefined,
+                          })),
+                        ]}
+                        placeholder="-- Custom Item --"
+                      />
                     </div>
 
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid #e2e8f0", paddingTop: "0.75rem" }}>
-                      <div style={{ fontSize: "0.875rem", fontWeight: "700", color: "#059669" }}>
-                        Est: {formatCurrency(Number(draftItem.quantity) * Number(draftItem.unitCost))}
+                    <div>
+                      <label className="form-label">Description</label>
+                      <input
+                        value={draftItem.description}
+                        onChange={(e) => setDraftItem({ ...draftItem, description: e.target.value })}
+                        className="form-input"
+                        placeholder="Enter description..."
+                      />
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
+                      <div>
+                        <label className="form-label">Unit of Issue</label>
+                        <input
+                          value={draftItem.unit}
+                          onChange={(e) => setDraftItem({ ...draftItem, unit: e.target.value })}
+                          className="form-input"
+                        />
                       </div>
-                      <div style={{ display: "flex", gap: "0.5rem" }}>
-                        {activeItemIndex !== null ? (
-                          <button
-                            type="button"
-                            onClick={handleDeleteItem}
-                            className="btn btn-danger btn-sm"
-                            style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}
-                          >
-                            <Trash2 size={13} /> Delete
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={handleClearDraft}
-                            className="btn btn-secondary btn-sm"
-                            style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}
-                          >
-                            Clear
-                          </button>
-                        )}
+
+                      <div>
+                        <label className="form-label">Quantity</label>
+                        <input
+                          type="number"
+                          step="1"
+                          min="0"
+                          value={draftItem.quantity}
+                          onChange={(e) => setDraftItem({ ...draftItem, quantity: e.target.value === "" ? "" : Number(e.target.value) })}
+                          className="form-input"
+                          style={{ textAlign: "right" }}
+                          placeholder="0"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="form-label">Cost</label>
+                        <input
+                          type="number"
+                          step="0.25"
+                          min="0"
+                          value={draftItem.unitCost}
+                          onChange={(e) => setDraftItem({ ...draftItem, unitCost: e.target.value === "" ? "" : Number(e.target.value) })}
+                          className="form-input"
+                          style={{ textAlign: "right" }}
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid #e2e8f0", paddingTop: "0.75rem" }}>
+                    <div style={{ fontSize: "0.875rem", fontWeight: "700", color: "#059669" }}>
+                      Est: {formatCurrency(Number(draftItem.quantity) * Number(draftItem.unitCost))}
+                    </div>
+                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                      {activeItemIndex !== null ? (
                         <button
                           type="button"
-                          onClick={handleAddOrUpdate}
-                          className="btn btn-primary btn-sm"
+                          onClick={handleDeleteItem}
+                          className="btn btn-danger btn-sm"
+                          style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}
                         >
-                          {activeItemIndex !== null ? "Update" : "Add Item"}
+                          <Trash2 size={13} /> Delete
                         </button>
-                      </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleClearDraft}
+                          className="btn btn-secondary btn-sm"
+                          style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}
+                        >
+                          Clear
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={handleAddOrUpdate}
+                        className="btn btn-primary btn-sm"
+                      >
+                        {activeItemIndex !== null ? "Update" : "Add Item"}
+                      </button>
                     </div>
                   </div>
-                )}
+                </div>
+              )}
 
-                {isReadOnly && watchLineItems.length === 0 && (
-                  <div style={{ textAlign: "center", padding: "1.5rem", border: "2px dashed #e2e8f0", borderRadius: "0.75rem", color: "#94a3b8", fontSize: "0.875rem" }}>
-                    No line items added.
-                  </div>
-                )}
-              </div>
-            </form>
+              {isReadOnly && watchLineItems.length === 0 && (
+                <div style={{ textAlign: "center", padding: "1.5rem", border: "2px dashed #e2e8f0", borderRadius: "0.75rem", color: "#94a3b8", fontSize: "0.875rem" }}>
+                  No line items added.
+                </div>
+              )}
+            </div>
+          </form>
 
-            <div className="mt-auto pt-3 border-t border-slate-100 sticky bottom-0 bg-white z-10">
-              <div className="flex justify-between items-center font-bold text-base text-slate-900">
-                <span>Grand Total:</span>
-                <span className="text-emerald-600 font-extrabold">{formatCurrency(totalAmount)}</span>
-              </div>
+          <div className="mt-auto py-3 border-t border-slate-100 sticky bottom-0 bg-white z-10">
+            <div className="flex justify-between items-center font-bold text-base text-slate-900">
+              <span>Grand Total:</span>
+              <span className="text-emerald-600 font-extrabold">{formatCurrency(totalAmount)}</span>
             </div>
           </div>
         </div>
-
-        <ConfirmModal
-          isOpen={saveModalOpen}
-          onClose={() => setSaveModalOpen(false)}
-          onConfirm={handleSaveConfirm}
-          title="Confirm Save"
-          message="Are you sure you want to save these changes to the Purchase Request?"
-          confirmText="Save Changes"
-        />
-
-        <ConfirmModal
-          isOpen={unlockModalOpen}
-          onClose={() => setUnlockModalOpen(false)}
-          onConfirm={handleUnlockConfirm}
-          title="Unlock Document"
-          message="This document is locked. Are you sure you want to unlock it for editing?"
-          confirmText="Unlock Document"
-          requirePassword={true}
-          isDestructive={true}
-        />
       </div>
-    );
-  }
+
+      <ConfirmModal
+        isOpen={saveModalOpen}
+        onClose={() => setSaveModalOpen(false)}
+        onConfirm={handleSaveConfirm}
+        title="Confirm Save"
+        message="Are you sure you want to save these changes to the Purchase Request?"
+        confirmText="Save Changes"
+      />
+
+      <ConfirmModal
+        isOpen={unlockModalOpen}
+        onClose={() => setUnlockModalOpen(false)}
+        onConfirm={handleUnlockConfirm}
+        title="Unlock Document"
+        message="This document is locked. Are you sure you want to unlock it for editing?"
+        confirmText="Unlock Document"
+        requirePassword={true}
+        isDestructive={true}
+      />
+    </div>
+  );
+}

@@ -67,6 +67,7 @@ export interface LineItemPricing {
   quantity: number;
   abcUnitCost: number; // in pesos
   unitPrice: number;   // in pesos
+  isSpec?: boolean;
 }
 
 export interface ComputedLineItem extends LineItemPricing {
@@ -146,20 +147,22 @@ export function computeQuotationSummary(
   }
 
   const computedLineItems: ComputedLineItem[] = rfqLineItems.map((rfqItem) => {
-    const qty = Number(rfqItem.quantity) || 0;
-    const abcUnitCost = Number(rfqItem.unitCost) || 0;
+    const rawQty = Number(rfqItem.quantity) || 0;
+    const isSpec = !rawQty || rawQty === 0;
+    const qty = isSpec ? 0 : rawQty;
+    const abcUnitCost = isSpec ? 0 : (Number(rfqItem.unitCost) || 0);
     const abcUnitCostCentavos = toCentavos(abcUnitCost);
     const abcTotalCostCentavos = Math.round(qty * abcUnitCostCentavos);
 
     const match = quoteLineMap.get(rfqItem.id);
-    const unitPrice = status === "NO_BID" ? 0 : (match?.unitPrice || 0);
+    const unitPrice = (status === "NO_BID" || isSpec) ? 0 : (match?.unitPrice || 0);
     const unitPriceCentavos = toCentavos(unitPrice);
     const totalCostCentavos = Math.round(qty * unitPriceCentavos);
 
     totalBidCentavos += totalCostCentavos;
     totalAbcCentavos += abcTotalCostCentavos;
 
-    const lineVarianceCentavos = totalCostCentavos - abcTotalCostCentavos;
+    const lineVarianceCentavos = isSpec ? 0 : (totalCostCentavos - abcTotalCostCentavos);
     const vsAbcPercent =
       abcTotalCostCentavos > 0
         ? Math.abs(lineVarianceCentavos) / abcTotalCostCentavos * 100
@@ -169,8 +172,9 @@ export function computeQuotationSummary(
       id: match?.id,
       rfqLineItemId: rfqItem.id,
       description: rfqItem.description,
-      unit: rfqItem.unit,
+      unit: isSpec ? "" : rfqItem.unit,
       quantity: qty,
+      isSpec,
       abcUnitCost,
       abcUnitCostCentavos,
       abcTotalCost: fromCentavos(abcTotalCostCentavos),
@@ -181,7 +185,7 @@ export function computeQuotationSummary(
       totalCostCentavos,
       varianceCentavos: lineVarianceCentavos,
       variancePesos: fromCentavos(lineVarianceCentavos),
-      isOverAbc: lineVarianceCentavos > 0 && unitPriceCentavos > 0,
+      isOverAbc: !isSpec && lineVarianceCentavos > 0 && unitPriceCentavos > 0,
       vsAbcPercent,
     };
   });
@@ -267,9 +271,11 @@ export function evaluateAbstractBids(
 
   // Derive total ABC from the first summary, or fallback to sum of rfqLineItems
   const totalAbcCentavos = rfqLineItems.reduce((sum, item) => {
-    const qty = Number(item.quantity) || 0;
+    const rawQty = Number(item.quantity) || 0;
+    const isSpec = !rawQty || rawQty === 0;
+    if (isSpec) return sum;
     const cost = Number(item.unitCost) || 0;
-    return sum + Math.round(qty * toCentavos(cost));
+    return sum + Math.round(rawQty * toCentavos(cost));
   }, 0);
   const totalAbc = fromCentavos(totalAbcCentavos);
 

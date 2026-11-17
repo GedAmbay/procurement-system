@@ -36,7 +36,7 @@
   --shadow-neu-inner-sm: inset 3px 3px 6px var(--sh-d), inset -3px -3px 6px var(--sh-l);
   --shadow-neu-drop-hover: 5px 5px 12px var(--sh-d), -5px -5px 12px var(--sh-l);
 
-  --system-zoom: 0.9;
+  --system-zoom: 0.85;
   --full-vh: calc(100vh / var(--system-zoom));
 }
 

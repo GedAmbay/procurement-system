@@ -69,43 +69,44 @@ export default function AcceptancesPage() {
     {
       key: "airNumber",
       label: "AIR Number",
+      width: "24%",
       render: (row: Acceptance) => (
         <Link
           href={`/acceptances/${row.id}`}
-          className="inline-flex items-center gap-1.5 font-bold font-mono text-sm text-blue-600 hover:text-blue-700 hover:underline group"
+          className="inline-flex items-center gap-1.5 font-bold font-mono text-sm text-blue-600 hover:text-blue-700 hover:underline group whitespace-nowrap"
         >
-          <span>{row.airNumber || row.AIRNumber || "Draft (No Number)"}</span>
-          <ExternalLink size={13} className="text-blue-500 opacity-70 group-hover:opacity-100" />
+          <span className="whitespace-nowrap">{row.airNumber || row.AIRNumber || "Draft (No Number)"}</span>
+          <ExternalLink size={13} className="text-blue-500 opacity-70 group-hover:opacity-100 shrink-0" />
         </Link>
       ),
-      width: "160px",
     },
     {
       key: "poNumber",
       label: "PO Number",
+      width: "20%",
       render: (row: Acceptance) => (
         row.po?.poNumber && row.poId ? (
           <Link
             href={`/purchase-orders/${row.poId}`}
-            className="inline-flex items-center gap-1.5 font-medium font-mono text-xs text-blue-600 hover:text-blue-700 hover:underline group"
+            className="inline-flex items-center gap-1.5 font-medium font-mono text-xs text-blue-600 hover:text-blue-700 hover:underline group whitespace-nowrap"
           >
-            <span>{row.po.poNumber}</span>
-            <ExternalLink size={12} className="text-blue-500 opacity-70 group-hover:opacity-100" />
+            <span className="whitespace-nowrap">{row.po.poNumber}</span>
+            <ExternalLink size={12} className="text-blue-500 opacity-70 group-hover:opacity-100 shrink-0" />
           </Link>
         ) : (
-          <div style={{ fontWeight: "600", color: "#1e293b", fontSize: "0.875rem" }}>
+          <div style={{ fontWeight: "600", color: "#1e293b", fontSize: "0.875rem" }} className="whitespace-nowrap">
             {row.po?.poNumber || <span style={{ color: "#94a3b8", fontStyle: "italic", fontWeight: 400 }}>No. not yet assigned</span>}
           </div>
         )
       ),
-      width: "200px",
     },
     {
       key: "supplier",
       label: "Supplier",
+      width: "32%",
       align: "left",
       render: (row: Acceptance) => (
-        <div style={{ fontSize: "0.875rem", color: "#334155" }}>
+        <div style={{ fontSize: "0.875rem", color: "#334155", fontWeight: 500 }}>
           {row.po?.supplier?.name || "N/A"}
         </div>
       ),
@@ -113,21 +114,21 @@ export default function AcceptancesPage() {
     {
       key: "status",
       label: "Status",
+      width: "12%",
       align: "center",
       render: (row: Acceptance) => <StatusBadge status={row.status} />,
-      width: "140px",
     },
     {
       key: "createdAt",
       label: "Date Created",
+      width: "12%",
       align: "center",
       sortable: true,
       render: (row: Acceptance) => (
-        <span style={{ fontSize: "0.8125rem", color: "#64748b", display: "block" }}>
+        <span style={{ fontSize: "0.8125rem", color: "#64748b", display: "block", whiteSpace: "nowrap" }}>
           {new Date(row.createdAt).toLocaleDateString("en-PH")}
         </span>
       ),
-      width: "140px",
     }
   ];
 
