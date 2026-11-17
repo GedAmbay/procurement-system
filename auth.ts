@@ -50,15 +50,41 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.role = (user as any).role;
         token.officeId = (user as any).officeId;
         token.officeName = (user as any).officeName;
+        token.id = user.id;
       }
       return token;
     },
     async session({ session, token }) {
       if (token) {
-        session.user.id = token.sub as string;
+        session.user.id = (token.id || token.sub) as string;
         (session.user as any).role = token.role;
         (session.user as any).officeId = token.officeId;
         (session.user as any).officeName = token.officeName;
+
+        // Auto-heal session if database was migrated or re-seeded (stale JWT cookie from previous DB)
+        if (session.user.email) {
+          try {
+            const currentDbUser = await prisma.user.findUnique({
+              where: { id: session.user.id },
+              select: { id: true, officeId: true, role: true, office: { select: { name: true } } },
+            });
+
+            if (!currentDbUser) {
+              const matchedUser = await prisma.user.findUnique({
+                where: { email: session.user.email },
+                select: { id: true, officeId: true, role: true, office: { select: { name: true } } },
+              });
+              if (matchedUser) {
+                session.user.id = matchedUser.id;
+                (session.user as any).officeId = matchedUser.officeId;
+                (session.user as any).officeName = matchedUser.office?.name;
+                (session.user as any).role = matchedUser.role;
+              }
+            }
+          } catch {
+            // Fail open to standard session data if DB query errors
+          }
+        }
       }
       return session;
     },

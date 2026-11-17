@@ -4,7 +4,7 @@ import LoaderWave from "@/components/ui/loader-wave";
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { ArrowLeft, Printer, Loader2, ZoomIn, ZoomOut, Users, Edit3, Minus, Plus, Save, CheckCircle2, Lock, Unlock, LayoutGrid, CalendarX, AlertCircle } from "lucide-react";
+import { ArrowLeft, Printer, Loader2, ZoomIn, ZoomOut, Users, Edit3, Minus, Plus, Save, CheckCircle2, Lock, Unlock, LayoutGrid, CalendarX, AlertCircle, FileText, User, Calendar, Check, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { formatCurrency, LGU_INFO } from "@/lib/utils";
 import { toast } from "sonner";
@@ -304,11 +304,10 @@ export default function AbstractLivePreviewPage() {
             </h2>
             {isReadOnly ? (
               <div className="flex items-center gap-2">
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${
-                  data.status === "COMPLETED" || data.status === "SIGNED"
-                    ? "bg-emerald-100 text-emerald-800"
-                    : "bg-blue-100 text-blue-800"
-                }`}>
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${data.status === "COMPLETED" || data.status === "SIGNED"
+                  ? "bg-emerald-100 text-emerald-800"
+                  : "bg-blue-100 text-blue-800"
+                  }`}>
                   {data.status === "COMPLETED" || data.status === "SIGNED" ? (
                     <CheckCircle2 size={12} className="text-emerald-700" />
                   ) : (
@@ -678,56 +677,108 @@ export default function AbstractLivePreviewPage() {
                       </div>
 
                       {/* Certification Paragraph */}
-                      <div className="print:break-inside-avoid" style={{ fontSize: "14px", lineHeight: "1.6", marginBottom: "50px", textAlign: "justify", padding: "0 24px" }}>
+                      <div className="print:break-inside-avoid" style={{ fontSize: "14px", lineHeight: "1.6", marginBottom: "60px", textAlign: "justify", padding: "0 24px" }}>
                         &nbsp;&nbsp;&nbsp;&nbsp;We, the undersigned the BAC Chairman, Members and Requisitioning Officer, do hereby certify that the foregoing is the true and correct ABSTRACT OF CANVASS of the Request for Quotation received on <strong>{fmtDate(dateReceived)}</strong> by BAC Secretariat and was opened by Bids and Awards Committee of Pandan, Antique on <strong>{fmtDate(dateAwarded)}</strong> for&nbsp;
                         <span style={{ borderBottom: "1px solid #000" }}><strong>&nbsp;{pr?.purpose}&nbsp;</strong></span>
                         &nbsp;needed for use in the Office of the <strong>{reqOfficerOffice || "___________________"}</strong>, Pandan, Antique.
                         The offer <strong><span>{recommendedQuote ? recommendedQuote.supplier?.name?.toUpperCase() : "___________________"}</span></strong> for items herein and respectively checked and articles/materials are hereby ACCEPTED AND AWARDED OF PRICE RECOMMENDATION. Recommending approval of the award in favor of the dealer quoted most advantageous offers indicating in the column above.
                       </div>
 
-                      <div className="print:break-inside-avoid" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px", flexWrap: "nowrap", rowGap: "32px" }}>
-                        {bacChairman && (
-                          <div
-                            onClick={() => { setEditingSigId(bacChairman.id); setShowAllSigs(false); }}
-                            style={{ flex: "1 1 auto", textAlign: "center", padding: "4px", cursor: "pointer", borderRadius: "6px", backgroundColor: editingSigId === bacChairman.id ? "rgba(37,99,235,0.08)" : "transparent" }}
-                            title="Click to edit"
-                          >
-                            {getSignatoryAnnotation(bacChairman) && (
-                              <div style={{ fontWeight: "800", fontSize: "11px", color: "#b91c1c", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "3px" }}>
-                                {getSignatoryAnnotation(bacChairman)}
+                      {(() => {
+                        const reqAnnotation = sigOverrides["req"]?.annotation || "";
+                        const hasAnySigAnnotation = Boolean(
+                          (bacChairman && getSignatoryAnnotation(bacChairman)) ||
+                          bacMembers.some((m: any) => getSignatoryAnnotation(m)) ||
+                          reqAnnotation
+                        );
+
+                        return (
+                          <div className="print:break-inside-avoid" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px", flexWrap: "nowrap", rowGap: "32px" }}>
+                            {bacChairman && (
+                              <div
+                                onClick={() => { setEditingSigId(bacChairman.id); setShowAllSigs(false); }}
+                                style={{ flex: "1 1 auto", textAlign: "center", padding: "4px", cursor: "pointer", borderRadius: "6px", backgroundColor: editingSigId === bacChairman.id ? "rgba(37,99,235,0.08)" : "transparent" }}
+                                title="Click to edit"
+                              >
+                                {hasAnySigAnnotation && (
+                                  <div
+                                    style={{
+                                      fontWeight: "700",
+                                      fontSize: "11px",
+                                      color: "#64748b",
+                                      textTransform: "uppercase",
+                                      letterSpacing: "0.05em",
+                                      marginBottom: "3px",
+                                      minHeight: "15px",
+                                      lineHeight: "15px",
+                                      visibility: getSignatoryAnnotation(bacChairman) ? "visible" : "hidden",
+                                    }}
+                                  >
+                                    {getSignatoryAnnotation(bacChairman) || "\u00A0"}
+                                  </div>
+                                )}
+                                <div style={{ fontWeight: "700", fontSize: "12px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{bacChairman.name}</div>
+                                <div style={{ fontSize: "12px" }}>{bacChairman.position}</div>
+                                <div style={{ fontSize: "12px" }}>BAC Chairman</div>
                               </div>
                             )}
-                            <div style={{ fontWeight: "700", fontSize: "12px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{bacChairman.name}</div>
-                            <div style={{ fontSize: "12px", }}>{bacChairman.position}</div>
-                            <div style={{ fontSize: "12px" }}>BAC Chairman</div>
-                          </div>
-                        )}
-                        {bacMembers.map((m: any) => (
-                          <div
-                            key={m.id}
-                            onClick={() => { setEditingSigId(m.id); setShowAllSigs(false); }}
-                            style={{ flex: "1 1 auto", textAlign: "center", padding: "4px", cursor: "pointer", borderRadius: "6px", backgroundColor: editingSigId === m.id ? "rgba(37,99,235,0.08)" : "transparent" }}
-                            title="Click to edit"
-                          >
-                            {getSignatoryAnnotation(m) && (
-                              <div style={{ fontWeight: "800", fontSize: "11px", color: "#b91c1c", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "3px" }}>
-                                {getSignatoryAnnotation(m)}
+                            {bacMembers.map((m: any) => (
+                              <div
+                                key={m.id}
+                                onClick={() => { setEditingSigId(m.id); setShowAllSigs(false); }}
+                                style={{ flex: "1 1 auto", textAlign: "center", padding: "4px", cursor: "pointer", borderRadius: "6px", backgroundColor: editingSigId === m.id ? "rgba(37,99,235,0.08)" : "transparent" }}
+                                title="Click to edit"
+                              >
+                                {hasAnySigAnnotation && (
+                                  <div
+                                    style={{
+                                      fontWeight: "700",
+                                      fontSize: "11px",
+                                      color: "#64748b",
+                                      textTransform: "uppercase",
+                                      letterSpacing: "0.05em",
+                                      marginBottom: "3px",
+                                      minHeight: "15px",
+                                      lineHeight: "15px",
+                                      visibility: getSignatoryAnnotation(m) ? "visible" : "hidden",
+                                    }}
+                                  >
+                                    {getSignatoryAnnotation(m) || "\u00A0"}
+                                  </div>
+                                )}
+                                <div style={{ fontWeight: "700", fontSize: "12px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{m.name}</div>
+                                <div style={{ fontSize: "12px" }}>{m.position}</div>
+                                <div style={{ fontSize: "12px" }}>{m.label || "BAC Member"}</div>
                               </div>
-                            )}
-                            <div style={{ fontWeight: "700", fontSize: "12px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{m.name}</div>
-                            <div style={{ fontSize: "12px" }}>{m.position}</div>
-                            <div style={{ fontSize: "12px" }}>{m.label || "BAC Member"}</div>
+                            ))}
+                            <div
+                              onClick={() => { setEditingSigId("req"); setShowAllSigs(false); }}
+                              style={{ flex: "1 1 auto", textAlign: "center", padding: "4px", cursor: "pointer", borderRadius: "6px", backgroundColor: editingSigId === "req" ? "rgba(37,99,235,0.08)" : "transparent" }}
+                              title="Click to edit"
+                            >
+                              {hasAnySigAnnotation && (
+                                <div
+                                  style={{
+                                    fontWeight: "700",
+                                    fontSize: "11px",
+                                    color: "#64748b",
+                                    textTransform: "uppercase",
+                                    letterSpacing: "0.05em",
+                                    marginBottom: "3px",
+                                    minHeight: "15px",
+                                    lineHeight: "15px",
+                                    visibility: reqAnnotation ? "visible" : "hidden",
+                                  }}
+                                >
+                                  {reqAnnotation || "\u00A0"}
+                                </div>
+                              )}
+                              <div style={{ fontWeight: "700", fontSize: "12px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{reqOfficerName || "___________________"}</div>
+                              <div style={{ fontSize: "12px" }}>Requisitioning Officer</div>
+                            </div>
                           </div>
-                        ))}
-                        <div
-                          onClick={() => { setEditingSigId("req"); setShowAllSigs(false); }}
-                          style={{ flex: "1 1 auto", textAlign: "center", padding: "4px", cursor: "pointer", borderRadius: "6px", backgroundColor: editingSigId === "req" ? "rgba(37,99,235,0.08)" : "transparent" }}
-                          title="Click to edit"
-                        >
-                          <div style={{ fontWeight: "700", fontSize: "12px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{reqOfficerName || "___________________"}</div>
-                          <div style={{ fontSize: "12px" }}>Requisitioning Officer</div>
-                        </div>
-                      </div>
+                        );
+                      })()}
 
                       {/* Approved by */}
                       <div className="print:break-inside-avoid" style={{ display: "flex", justifyContent: "flex-end", marginTop: "6px", padding: "0 24px", marginBottom: "10px" }}>
@@ -848,8 +899,9 @@ export default function AbstractLivePreviewPage() {
 
             {/* ── Certification ── */}
             <section>
-              <div style={{ fontSize: "0.75rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.875rem" }}>
-                📝 Certification Paragraph
+              <div style={{ fontSize: "0.75rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.875rem", display: "flex", alignItems: "center", gap: "0.375rem" }}>
+                <FileText size={14} className="text-slate-500" />
+                Certification Paragraph
               </div>
 
               <div style={{ marginBottom: "1rem" }}>
@@ -867,7 +919,8 @@ export default function AbstractLivePreviewPage() {
             {(!editingSigId || editingSigId === "req") && (
               <section>
                 <div style={{ fontSize: "0.75rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.875rem", display: "flex", alignItems: "center", gap: "0.375rem" }}>
-                  👤 Requisitioning Officer
+                  <User size={14} className="text-slate-500" />
+                  Requisitioning Officer
                 </div>
 
                 <div style={{ marginBottom: "0.75rem" }}>
@@ -880,8 +933,9 @@ export default function AbstractLivePreviewPage() {
             {/* ── Signatories ── */}
             <section>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.875rem" }}>
-                <div style={{ fontSize: "0.75rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  ✍ Signatories
+                <div style={{ fontSize: "0.75rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: "0.375rem" }}>
+                  <Users size={14} className="text-slate-500" />
+                  Signatories
                 </div>
                 <button
                   type="button"
@@ -892,25 +946,106 @@ export default function AbstractLivePreviewPage() {
                 </button>
               </div>
 
-              {/* Verified Leave Sync Banner - Only shown when Award Date is set */}
-              {dateAwarded && activeLeavesOnDate.length > 0 && (
-                <div className="mb-3 p-3 rounded-xl bg-rose-50 border border-rose-200/80 text-xs flex flex-col gap-1.5">
-                  <div className="font-bold text-rose-800 flex items-center gap-1.5">
-                    <CalendarX size={14} className="text-rose-600 shrink-0" />
-                    <span>{activeLeavesOnDate.length} BAC Member(s) on Leave on Award Date ({fmtDate(dateAwarded)})</span>
-                  </div>
-                  <div className="text-[11px] text-rose-700">
-                    {activeLeavesOnDate.map((l: any) => l.signatory?.name).filter(Boolean).join(", ")}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={syncVerifiedLeaves}
-                    className="mt-1 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs self-start transition-colors shadow-xs"
+              {/* Verified Leave Sync Card - Seamless & Professional */}
+              {(() => {
+                if (!dateAwarded || activeLeavesOnDate.length === 0) return null;
+
+                const allLeavesApplied = activeLeavesOnDate.every((l: any) => {
+                  const sig = allSignatories.find((s: any) => s.id === l.signatoryId);
+                  if (!sig) return true;
+                  const override = sigOverrides[sig.id];
+                  return getSignatoryAnnotation({ ...sig, ...override }) === "(ON LEAVE)";
+                });
+
+                return (
+                  <div
+                    style={{
+                      marginBottom: "1rem",
+                      padding: "0.875rem",
+                      borderRadius: "0.75rem",
+                      background: "rgba(248, 250, 252, 0.85)",
+                      border: "1px solid rgba(226, 232, 240, 0.9)",
+                      boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+                    }}
                   >
-                    Sync & Apply (ON LEAVE) Annotations
-                  </button>
-                </div>
-              )}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.75rem", fontWeight: "700", color: "#334155" }}>
+                        <Calendar size={14} className="text-slate-500" />
+                        <span>BAC Attendance</span>
+                      </div>
+                      <span
+                        style={{
+                          fontSize: "0.6875rem",
+                          fontWeight: "600",
+                          padding: "2px 8px",
+                          borderRadius: "9999px",
+                          backgroundColor: allLeavesApplied ? "#f1f5f9" : "#fef3c7",
+                          color: allLeavesApplied ? "#475569" : "#92400e",
+                          border: `1px solid ${allLeavesApplied ? "#e2e8f0" : "#fde68a"}`,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "4px",
+                        }}
+                      >
+                        {allLeavesApplied ? (
+                          <>
+                            <Check size={11} className="text-emerald-600" />
+                            <span>Annotations Active</span>
+                          </>
+                        ) : (
+                          <span>{activeLeavesOnDate.length} on leave</span>
+                        )}
+                      </span>
+                    </div>
+
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "0.375rem", marginBottom: "0.625rem" }}>
+                      {activeLeavesOnDate.map((l: any) => (
+                        <div
+                          key={l.id || l.signatoryId}
+                          style={{
+                            fontSize: "0.6875rem",
+                            fontWeight: "500",
+                            color: "#475569",
+                            background: "#ffffff",
+                            border: "1px solid #e2e8f0",
+                            borderRadius: "6px",
+                            padding: "2px 8px",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "5px",
+                          }}
+                        >
+                          <span style={{ width: "5px", height: "5px", borderRadius: "50%", backgroundColor: "#94a3b8" }} />
+                          {l.signatory?.name}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: "0.5rem", borderTop: "1px solid #f1f5f9", fontSize: "0.6875rem", color: "#64748b" }}>
+                      <span>Award date: {fmtDate(dateAwarded)}</span>
+                      <button
+                        type="button"
+                        onClick={syncVerifiedLeaves}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          color: "#2563eb",
+                          fontWeight: "600",
+                          fontSize: "0.6875rem",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "3px",
+                          padding: 0,
+                        }}
+                      >
+                        <RefreshCw size={11} />
+                        {allLeavesApplied ? "Re-sync" : "Apply to document"}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {!editingSigId && !showAllSigs ? (
                 <div style={{ padding: "2rem 1rem", textAlign: "center", background: "var(--color-page-bg)", borderRadius: "0.75rem", boxShadow: "inset 3px 3px 6px rgba(163,177,198,0.4), inset -3px -3px 6px rgba(255,255,255,0.8)", color: "#94a3b8", fontSize: "0.8125rem", fontStyle: "italic" }}>
@@ -950,7 +1085,7 @@ export default function AbstractLivePreviewPage() {
                             <div style={{ flex: 1, fontSize: "0.8125rem", fontWeight: "700", color: "#334155" }}>
                               {override.name}
                               {effectiveAnnotation && (
-                                <span className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-700">
+                                <span className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
                                   {effectiveAnnotation}
                                 </span>
                               )}

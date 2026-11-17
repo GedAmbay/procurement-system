@@ -117,7 +117,7 @@ async function main() {
   // ─── Signatories ──────────────────────────────────────────
   const signatoriesData = [
     { name: "Hon. Ricardo Dela Cruz", position: "Municipal Mayor / HOPE", role: "HOPE", officeId: officeAdmin.id },
-    { name: "Engr. Jose Reyes", position: "BAC Chairperson", role: "BAC_CHAIRMAN", officeId: officeBAC.id },
+    { name: "Engr. Jose Reyes", position: "BAC Chairman", role: "BAC_CHAIRMAN", officeId: officeBAC.id },
     { name: "CPA Luz Bautista", position: "Municipal Treasurer / Budget Officer", role: "BUDGET_OFFICER", officeId: officeFinance.id },
     { name: "Pedro Garcia", position: "Supply / Property Officer", role: "SUPPLY_OFFICER", officeId: officeAdmin.id },
     { name: "Dr. Ana Lim", position: "Municipal Health Officer", role: "END_USER", officeId: officeHealth.id },

@@ -858,8 +858,8 @@ export default function PurchaseRequestEditor() {
         </div>
 
         {/* Right Side: Data Entry Form */}
-        <div className="no-print w-[360px] lg:w-[400px] xl:w-[420px] shrink-0 bg-white rounded-2xl shadow-sm border border-slate-200/60 p-5 flex flex-col overflow-y-auto">
-          <div className="mb-4">
+        <div className="no-print w-[360px] lg:w-[400px] xl:w-[420px] shrink-0 bg-white rounded-2xl shadow-sm border border-slate-200/60 flex flex-col overflow-hidden">
+          <div className="p-5 pb-3 shrink-0">
             <h2 className="text-base font-bold text-slate-900">
               {isJob ? "Job Request Details" : "Purchase Request Details"}
             </h2>
@@ -870,7 +870,8 @@ export default function PurchaseRequestEditor() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3.5 flex-1">
+          <div className="flex-1 overflow-y-auto p-5 pt-0">
+            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3.5">
             {/* Type Toggle: Purchase Request vs Job Request */}
             <div>
               <label className="form-label">Request Type</label>
@@ -1151,11 +1152,13 @@ export default function PurchaseRequestEditor() {
               )}
             </div>
           </form>
+          </div>
 
-          <div className="mt-auto py-3 border-t border-slate-100 sticky bottom-0 bg-white z-10">
-            <div className="flex justify-between items-center font-bold text-base text-slate-900">
-              <span>Grand Total:</span>
-              <span className="text-emerald-600 font-extrabold">{formatCurrency(totalAmount)}</span>
+          {/* Dedicated Pinned Footer: Grand Total */}
+          <div className="shrink-0 p-4 px-5 border-t border-slate-200/80 bg-slate-50/90 rounded-b-2xl">
+            <div className="flex justify-between items-center font-bold text-sm text-slate-800">
+              <span className="text-slate-600">Grand Total:</span>
+              <span className="text-emerald-600 text-lg font-extrabold">{formatCurrency(totalAmount)}</span>
             </div>
           </div>
         </div>

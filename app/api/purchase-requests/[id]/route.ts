@@ -95,6 +95,16 @@ export async function PATCH(
     const totalAmount = lineItems.reduce((sum: number, item: any) => sum + (item.quantity * item.unitCost), 0);
 
     const updatedPR = await prisma.$transaction(async (tx) => {
+      // 0. Resolve valid audit user ID to prevent foreign key errors from stale sessions
+      let auditUserId = user?.id;
+      if (auditUserId) {
+        const userExists = await tx.user.findUnique({ where: { id: auditUserId }, select: { id: true } });
+        if (!userExists && user?.email) {
+          const userByEmail = await tx.user.findUnique({ where: { email: user.email }, select: { id: true } });
+          auditUserId = userByEmail?.id;
+        }
+      }
+
       // 1. Delete old line items
       await tx.prLineItem.deleteMany({ where: { prId: id } });
 
@@ -130,13 +140,13 @@ export async function PATCH(
       });
 
       // 4. Audit log if PR number changed
-      if (newPrNumber !== pr.prNumber) {
+      if (newPrNumber !== pr.prNumber && auditUserId) {
         await tx.documentAuditLog.create({
           data: {
             documentType: "PURCHASE_REQUEST",
             documentId: id,
             action: "UPDATE_PR_NUMBER",
-            userId: user.id,
+            userId: auditUserId,
             notes: `PR Number changed from ${pr.prNumber} to ${newPrNumber}`,
           }
         });
@@ -174,13 +184,13 @@ export async function PATCH(
       // 6. Synchronize linked RFQs with updated PR line items
       await syncAllRfqsForPr(id, tx);
 
-      if (user?.id) {
+      if (auditUserId) {
         await tx.documentAuditLog.create({
           data: {
             documentType: "PURCHASE_REQUEST",
             documentId: id,
             action: "SAVE",
-            userId: user.id,
+            userId: auditUserId,
             notes: "PR details and line items saved",
             metadata: JSON.stringify({ savedBy: user.name }),
           },

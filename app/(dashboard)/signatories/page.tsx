@@ -18,7 +18,7 @@ interface Signatory {
 
 const SIGNATORY_ROLES = [
   { value: "HOPE", label: "HOPE / Local Chief Executive" },
-  { value: "BAC_CHAIRMAN", label: "BAC Chairperson" },
+  { value: "BAC_CHAIRMAN", label: "BAC Chairman" },
   { value: "BUDGET_OFFICER", label: "Budget Officer" },
   { value: "SUPPLY_OFFICER", label: "Supply / Property Officer" },
   { value: "END_USER", label: "End User / Dept. Head" },
@@ -27,7 +27,7 @@ const SIGNATORY_ROLES = [
 
 const ROLE_LABELS: Record<string, string> = {
   HOPE: "HOPE / LCE",
-  BAC_CHAIRMAN: "BAC Chairperson",
+  BAC_CHAIRMAN: "BAC Chairman",
   BUDGET_OFFICER: "Budget Officer",
   SUPPLY_OFFICER: "Supply Officer",
   END_USER: "End User",

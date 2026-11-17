@@ -175,14 +175,38 @@ export const EVENT_CATEGORIES: Record<
 
 // Selectable categories for NEW event creation (BAC Meeting and Delivery removed per specs)
 const CREATABLE_CATEGORIES = [
-  "Award Date",
-  "Bid Opening",
   "Pre-Bid",
+  "Bid Opening",
+  "Award Date",
   "COA",
   "Birthday",
   "Award / Recognition",
   "Other",
 ];
+
+function getTitlePlaceholder(cat: string) {
+  switch (cat) {
+    case "Pre-Bid": return "e.g., Pre-bid Conference for Office Supplies";
+    case "Bid Opening": return "e.g., Opening & Preliminary Examination of Bids";
+    case "Award Date": return "e.g., Notice of Award Issuance";
+    case "COA": return "e.g., COA Entrance Conference / Audit Inspection";
+    case "Award / Recognition": return "e.g., Loyalty Service Award / Special Citation";
+    case "Birthday": return "e.g., Engr. Cruz's Birthday";
+    default: return "e.g., Budget Call / Town Hall Briefing";
+  }
+}
+
+function getDescriptionPlaceholder(cat: string) {
+  switch (cat) {
+    case "Pre-Bid": return "Clarification of procurement requirements and specifications...";
+    case "Bid Opening": return "Invited observers, eligibility requirements checklist...";
+    case "Award Date": return "Recommended winning bidder, NOA conditions, or delivery timeline...";
+    case "COA": return "Audit documentation, voucher inspection, or entrance briefing...";
+    case "Award / Recognition": return "Special citation for outstanding procurement management...";
+    case "Birthday": return "BAC Member / Municipal Engineering Office...";
+    default: return "Event description, agenda, or notes...";
+  }
+}
 
 export default function CalendarWidget() {
   const { data: session } = useSession();
@@ -700,37 +724,49 @@ export default function CalendarWidget() {
       </div>
 
       {/* Event Details / Category-Specific Form Modal */}
-      {showEventModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden border border-slate-100 max-h-[90vh] flex flex-col">
-            {/* Modal Header */}
-            <div className="flex justify-between items-center px-5 py-4 border-b border-slate-100 bg-slate-50/70">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-blue-100/70 text-blue-600 flex items-center justify-center">
-                  <CalendarIcon size={16} />
-                </div>
-                <h3 className="font-bold text-slate-800 text-base">
-                  {selectedEvent && !isEditingExisting
-                    ? "Event Details"
-                    : selectedEvent && isEditingExisting
-                    ? "Edit Event"
-                    : "Add New Event"}
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowEventModal(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg transition-colors"
-              >
-                <X size={18} />
-              </button>
-            </div>
+      {showEventModal && (() => {
+        const inputClass = "w-full px-3.5 py-2.5 bg-slate-50/70 hover:bg-white focus:bg-white border border-slate-200/90 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-2xs font-normal";
+        const selectClass = "w-full px-3.5 py-2.5 bg-slate-50/70 hover:bg-white focus:bg-white border border-slate-200/90 rounded-xl text-xs text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-2xs font-medium cursor-pointer";
+        const textareaClass = "w-full px-3.5 py-2.5 bg-slate-50/70 hover:bg-white focus:bg-white border border-slate-200/90 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-2xs resize-none";
 
-            {/* Modal Body */}
-            <div className="p-5 overflow-y-auto">
-              {/* VIEW MODE: If viewing existing event and not editing */}
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200/90 max-h-[90vh] flex flex-col transition-all">
+              {/* Modal Header */}
+              <div className="flex justify-between items-center px-6 py-4 border-b border-slate-100 bg-slate-50/60">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100/80 shadow-2xs">
+                    <CalendarIcon size={17} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-sm sm:text-base leading-tight">
+                      {selectedEvent && !isEditingExisting
+                        ? "Event Details"
+                        : selectedEvent && isEditingExisting
+                        ? "Edit Event"
+                        : "Add New Event"}
+                    </h3>
+                    <p className="text-[11px] text-slate-500 font-normal">
+                      {selectedEvent && !isEditingExisting
+                        ? "View event milestones and linked records"
+                        : "Schedule procurement milestones and activities"}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowEventModal(false)}
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                  title="Close"
+                >
+                  <X size={17} />
+                </button>
+              </div>
+
+              {/* Modal Body */}
               {selectedEvent && !isEditingExisting ? (
-                <div className="flex flex-col gap-4">
+                /* VIEW MODE: If viewing existing event and not editing */
+                <div className="p-6 overflow-y-auto flex flex-col gap-4">
                   {/* Category badge & Title */}
                   <div>
                     <div className="flex items-center gap-2 mb-2">
@@ -738,7 +774,7 @@ export default function CalendarWidget() {
                         const CategoryIcon = EVENT_CATEGORIES[selectedEvent.eventType]?.icon;
                         return (
                           <span
-                            className={`text-xs px-2.5 py-1 rounded-full font-bold flex items-center gap-1 ${
+                            className={`text-xs px-2.5 py-1 rounded-full font-bold flex items-center gap-1.5 ${
                               EVENT_CATEGORIES[selectedEvent.eventType]?.bg || "bg-slate-100"
                             } ${
                               EVENT_CATEGORIES[selectedEvent.eventType]?.text || "text-slate-700"
@@ -752,22 +788,22 @@ export default function CalendarWidget() {
                         );
                       })()}
                     </div>
-                    <h4 className="text-xl font-black text-slate-900 leading-snug">
+                    <h4 className="text-lg font-bold text-slate-900 leading-snug">
                       {selectedEvent.title}
                     </h4>
                   </div>
 
                   {/* Metadata Grid */}
-                  <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-600">
+                  <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200/80 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-600">
                     <div className="flex items-center gap-2">
                       <CalendarIcon size={14} className="text-blue-600 shrink-0" />
-                      <span>{format(parseISO(selectedEvent.eventDate), "MMMM d, yyyy")}</span>
+                      <span className="font-medium text-slate-700">{format(parseISO(selectedEvent.eventDate), "MMMM d, yyyy")}</span>
                     </div>
 
                     {selectedEvent.eventTime && (
                       <div className="flex items-center gap-2">
                         <Clock size={14} className="text-blue-600 shrink-0" />
-                        <span>{selectedEvent.eventTime}</span>
+                        <span className="font-medium text-slate-700">{selectedEvent.eventTime}</span>
                       </div>
                     )}
 
@@ -807,12 +843,14 @@ export default function CalendarWidget() {
 
                   {/* Linked Procurement Record */}
                   {selectedEvent.pr && (
-                    <div className="p-3 rounded-xl bg-blue-50/60 border border-blue-100 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <FileText size={16} className="text-blue-600" />
+                    <div className="p-3.5 rounded-2xl bg-blue-50/60 border border-blue-100 flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                          <FileText size={16} />
+                        </div>
                         <div>
                           <div className="text-xs font-bold text-blue-900">
-                            Linked Purchase Request: {selectedEvent.pr.prNumber}
+                            PR #{selectedEvent.pr.prNumber}
                           </div>
                           <div className="text-[11px] text-blue-700 truncate max-w-xs">
                             {selectedEvent.pr.purpose}
@@ -821,7 +859,7 @@ export default function CalendarWidget() {
                       </div>
                       <Link
                         href={`/procurement-folders/${selectedEvent.prId || selectedEvent.pr.id}`}
-                        className="text-xs font-semibold text-blue-700 hover:text-blue-800 flex items-center gap-1"
+                        className="text-xs font-semibold text-blue-700 hover:text-blue-800 flex items-center gap-1 hover:underline"
                       >
                         Open <ExternalLink size={12} />
                       </Link>
@@ -830,7 +868,7 @@ export default function CalendarWidget() {
 
                   {/* Description / Notes */}
                   {activeEventMeta.description && (
-                    <div className="text-xs text-slate-700 bg-white p-3 rounded-xl border border-slate-100 leading-relaxed">
+                    <div className="text-xs text-slate-700 bg-slate-50/60 p-3.5 rounded-2xl border border-slate-200/80 leading-relaxed">
                       <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
                         Description / Agenda
                       </div>
@@ -845,7 +883,7 @@ export default function CalendarWidget() {
                         <button
                           type="button"
                           onClick={deleteEvent}
-                          className="px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors flex items-center gap-1"
+                          className="px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors flex items-center gap-1 cursor-pointer"
                         >
                           <Trash2 size={13} />
                           Delete
@@ -853,20 +891,20 @@ export default function CalendarWidget() {
                         <button
                           type="button"
                           onClick={startEditingEvent}
-                          className="px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1"
+                          className="px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50 rounded-xl transition-colors flex items-center gap-1 cursor-pointer"
                         >
                           <Edit2 size={13} />
                           Edit
                         </button>
                       </div>
                     ) : (
-                      <div></div>
+                      <div />
                     )}
 
                     <button
                       type="button"
                       onClick={() => setShowEventModal(false)}
-                      className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-colors"
+                      className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
                     >
                       Close
                     </button>
@@ -874,626 +912,293 @@ export default function CalendarWidget() {
                 </div>
               ) : (
                 /* EDIT OR CREATE FORM MODE */
-                <form onSubmit={saveEvent} className="flex flex-col gap-4">
-                  {/* Category Selector */}
-                  <div>
-                    <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                      Event Category *
-                    </label>
-                    <select
-                      required
-                      className="form-select text-xs font-medium"
-                      value={eventType}
-                      onChange={(e) => {
-                        const newCat = e.target.value;
-                        setEventType(newCat);
-                        if (
-                          (newCat === "Pre-Bid" || newCat === "Bid Opening") &&
-                          !venue
-                        ) {
-                          setVenue("BAC Conference Room");
-                        }
-                      }}
-                    >
-                      {CREATABLE_CATEGORIES.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
-                    </select>
+                <form onSubmit={saveEvent} className="flex flex-col flex-1 overflow-hidden">
+                  <div className="p-6 overflow-y-auto space-y-4">
+                    {/* Category Selector Chips */}
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 block">
+                        Event Category
+                      </label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {CREATABLE_CATEGORIES.map((cat) => {
+                          const isSelected = eventType === cat;
+                          const meta = EVENT_CATEGORIES[cat];
+                          const Icon = meta?.icon;
+                          return (
+                            <button
+                              key={cat}
+                              type="button"
+                              onClick={() => {
+                                setEventType(cat);
+                                if ((cat === "Pre-Bid" || cat === "Bid Opening") && !venue) {
+                                  setVenue("BAC Conference Room");
+                                }
+                              }}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                                isSelected
+                                  ? `${meta?.bg || "bg-blue-50"} ${meta?.text || "text-blue-700"} ring-2 ring-blue-500/30 border border-blue-200 shadow-2xs`
+                                  : "bg-slate-50/80 hover:bg-slate-100 text-slate-600 border border-slate-200/80"
+                              }`}
+                            >
+                              {Icon ? <Icon size={13} /> : <span className={`w-2 h-2 rounded-full ${meta?.dotBg || "bg-slate-400"}`} />}
+                              {cat}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Birthday-Specific Fields */}
+                    {eventType === "Birthday" ? (
+                      <>
+                        <div>
+                          <label className="text-xs font-bold text-slate-700 mb-1.5 block">
+                            Celebrant / Person Name <span className="text-rose-500">*</span>
+                          </label>
+                          <input
+                            required
+                            type="text"
+                            className={inputClass}
+                            value={recipient}
+                            onChange={(e) => {
+                              setRecipient(e.target.value);
+                              setTitle(`${e.target.value}'s Birthday`);
+                            }}
+                            placeholder="e.g. Engr. Carlos Cruz"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-xs font-bold text-slate-700 mb-1.5 block">
+                            Event Title
+                          </label>
+                          <input
+                            type="text"
+                            className={inputClass}
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            placeholder="e.g. Engr. Cruz's Birthday"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-xs font-bold text-slate-700 mb-1.5 block">
+                            Birth Date <span className="text-rose-500">*</span>
+                          </label>
+                          <input
+                            required
+                            type="date"
+                            className={inputClass}
+                            value={eventDateStr}
+                            onChange={(e) => setEventDateStr(e.target.value)}
+                          />
+                        </div>
+
+                        {/* Annual Recurring Birthday Card */}
+                        <div className="flex items-center justify-between p-3.5 bg-pink-50/60 rounded-xl border border-pink-100/90">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-lg bg-pink-100 text-pink-600 flex items-center justify-center shrink-0">
+                              <Cake size={16} />
+                            </div>
+                            <div>
+                              <div className="text-xs font-bold text-pink-900">Annual Recurring Birthday</div>
+                              <div className="text-[11px] text-pink-700/80">Automatically repeats every year on this date</div>
+                            </div>
+                          </div>
+                          <input
+                            type="checkbox"
+                            checked={isRecurringBirthday}
+                            onChange={(e) => setIsRecurringBirthday(e.target.checked)}
+                            className="w-4 h-4 rounded text-pink-600 focus:ring-pink-500 cursor-pointer accent-pink-600"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-xs font-bold text-slate-700 mb-1.5 block">
+                            Department / Notes
+                          </label>
+                          <input
+                            type="text"
+                            className={inputClass}
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            placeholder="BAC Member / Municipal Engineering Office"
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      /* Standard Categories (Pre-Bid, Bid Opening, Award Date, COA, Award / Recognition, Other) */
+                      <>
+                        {/* Title */}
+                        <div>
+                          <label className="text-xs font-bold text-slate-700 mb-1.5 block">
+                            Title <span className="text-rose-500">*</span>
+                          </label>
+                          <input
+                            required
+                            type="text"
+                            className={inputClass}
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            placeholder={getTitlePlaceholder(eventType)}
+                          />
+                        </div>
+
+                        {/* Date & Time Row */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs font-bold text-slate-700 mb-1.5 block">
+                              Date <span className="text-rose-500">*</span>
+                            </label>
+                            <input
+                              required
+                              type="date"
+                              className={inputClass}
+                              value={eventDateStr}
+                              onChange={(e) => setEventDateStr(e.target.value)}
+                            />
+                          </div>
+                          {eventType !== "Award Date" ? (
+                            <div>
+                              <label className="text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+                                <span>Time</span>
+                                <span className="text-[10px] text-slate-400 font-normal">Optional</span>
+                              </label>
+                              <input
+                                type="time"
+                                className={inputClass}
+                                value={eventTime}
+                                onChange={(e) => setEventTime(e.target.value)}
+                              />
+                            </div>
+                          ) : null}
+                        </div>
+
+                        {/* Linked PR (Pre-Bid, Bid Opening, Award Date, COA) */}
+                        {(eventType === "Pre-Bid" || eventType === "Bid Opening" || eventType === "Award Date" || eventType === "COA") && (
+                          <div>
+                            <div className="flex items-center justify-between mb-1.5">
+                              <label className="text-xs font-bold text-slate-700">
+                                Linked Procurement Record (PR)
+                              </label>
+                              <span className="text-[10px] text-slate-400 font-normal">Optional</span>
+                            </div>
+                            <select
+                              className={selectClass}
+                              value={prId}
+                              onChange={(e) => {
+                                setPrId(e.target.value);
+                                const matched = prs.find((p) => p.id === e.target.value);
+                                if (matched) {
+                                  if (eventType === "Award Date") {
+                                    setTitle(`Award – ${matched.prNumber || "Procurement"}`);
+                                  } else if (!title) {
+                                    setTitle(`${eventType} – ${matched.prNumber}`);
+                                  }
+                                }
+                              }}
+                            >
+                              <option value="">-- None / General Event (Optional) --</option>
+                              {prs.map((p) => (
+                                <option key={p.id} value={p.id}>
+                                  {p.prNumber} – {p.purpose.slice(0, 45)}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+
+                        {/* Venue (Pre-Bid, Bid Opening, COA) */}
+                        {(eventType === "Pre-Bid" || eventType === "Bid Opening" || eventType === "COA") && (
+                          <div>
+                            <label className="text-xs font-bold text-slate-700 mb-1.5 block">
+                              Venue / Location
+                            </label>
+                            <input
+                              type="text"
+                              className={inputClass}
+                              value={venue}
+                              onChange={(e) => setVenue(e.target.value)}
+                              placeholder="e.g. BAC Conference Room, Municipal Hall"
+                            />
+                          </div>
+                        )}
+
+                        {/* Participants (Pre-Bid) */}
+                        {eventType === "Pre-Bid" && (
+                          <div>
+                            <label className="text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+                              <span>Participants</span>
+                              <span className="text-[10px] text-slate-400 font-normal">Optional</span>
+                            </label>
+                            <input
+                              type="text"
+                              className={inputClass}
+                              value={participants}
+                              onChange={(e) => setParticipants(e.target.value)}
+                              placeholder="BAC Members, TWG, Secretariat, Observers"
+                            />
+                          </div>
+                        )}
+
+                        {/* Recipient (Award / Recognition) */}
+                        {eventType === "Award / Recognition" && (
+                          <div>
+                            <label className="text-xs font-bold text-slate-700 mb-1.5 block">
+                              Recipient or Department
+                            </label>
+                            <input
+                              type="text"
+                              className={inputClass}
+                              value={recipient}
+                              onChange={(e) => setRecipient(e.target.value)}
+                              placeholder="e.g. Municipal Engineering Office / Hon. Maria Santos"
+                            />
+                          </div>
+                        )}
+
+                        {/* Description / Notes */}
+                        <div>
+                          <label className="text-xs font-bold text-slate-700 mb-1.5 block">
+                            {eventType === "Award Date" ? "Notes / Conditions" : "Description / Agenda"}
+                          </label>
+                          <textarea
+                            rows={3}
+                            className={textareaClass}
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            placeholder={getDescriptionPlaceholder(eventType)}
+                          />
+                        </div>
+                      </>
+                    )}
                   </div>
 
-                  {/* Category-Specific Form Fields */}
-
-                  {/* 1. PRE-BID CONFERENCE FORM */}
-                  {eventType === "Pre-Bid" && (
-                    <>
-                      <div>
-                        <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                          Title *
-                        </label>
-                        <input
-                          required
-                          type="text"
-                          className="form-input text-xs"
-                          value={title}
-                          onChange={(e) => setTitle(e.target.value)}
-                          placeholder="E.g., Pre-bid Conference for Office Supplies"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                            Date *
-                          </label>
-                          <input
-                            required
-                            type="date"
-                            className="form-input text-xs"
-                            value={eventDateStr}
-                            onChange={(e) => setEventDateStr(e.target.value)}
-                          />
-                        </div>
-                        <div>
-                          <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                            Time
-                          </label>
-                          <input
-                            type="time"
-                            className="form-input text-xs"
-                            value={eventTime}
-                            onChange={(e) => setEventTime(e.target.value)}
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                          Linked Procurement Record (PR)
-                        </label>
-                        <select
-                          className="form-select text-xs"
-                          value={prId}
-                          onChange={(e) => {
-                            setPrId(e.target.value);
-                            const matched = prs.find((p) => p.id === e.target.value);
-                            if (matched && !title) {
-                              setTitle(`Pre-bid Conference – ${matched.prNumber}`);
-                            }
-                          }}
-                        >
-                          <option value="">-- Select Linked PR --</option>
-                          {prs.map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {p.prNumber} – {p.purpose.slice(0, 35)}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                          Venue
-                        </label>
-                        <input
-                          type="text"
-                          className="form-input text-xs"
-                          value={venue}
-                          onChange={(e) => setVenue(e.target.value)}
-                          placeholder="E.g., BAC Conference Room, Municipal Hall"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                          Participants (Optional)
-                        </label>
-                        <input
-                          type="text"
-                          className="form-input text-xs"
-                          value={participants}
-                          onChange={(e) => setParticipants(e.target.value)}
-                          placeholder="BAC Members, TWG, Secretariat, Observers"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                          Description / Notes
-                        </label>
-                        <textarea
-                          className="form-input text-xs h-16 resize-none"
-                          value={description}
-                          onChange={(e) => setDescription(e.target.value)}
-                          placeholder="Clarification of procurement requirements and specifications..."
-                        />
-                      </div>
-                    </>
-                  )}
-
-                  {/* 2. COA ACTIVITY FORM */}
-                  {eventType === "COA" && (
-                    <>
-                      <div>
-                        <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                          Activity Title *
-                        </label>
-                        <input
-                          required
-                          type="text"
-                          className="form-input text-xs"
-                          value={title}
-                          onChange={(e) => setTitle(e.target.value)}
-                          placeholder="E.g., COA Entrance Conference / COA Visit"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                            Date *
-                          </label>
-                          <input
-                            required
-                            type="date"
-                            className="form-input text-xs"
-                            value={eventDateStr}
-                            onChange={(e) => setEventDateStr(e.target.value)}
-                          />
-                        </div>
-                        <div>
-                          <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                            Time
-                          </label>
-                          <input
-                            type="time"
-                            className="form-input text-xs"
-                            value={eventTime}
-                            onChange={(e) => setEventTime(e.target.value)}
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                          Venue
-                        </label>
-                        <input
-                          type="text"
-                          className="form-input text-xs"
-                          value={venue}
-                          onChange={(e) => setVenue(e.target.value)}
-                          placeholder="E.g., Municipal Session Hall / COA Office"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                          Related Procurement Record (Optional)
-                        </label>
-                        <select
-                          className="form-select text-xs"
-                          value={prId}
-                          onChange={(e) => setPrId(e.target.value)}
-                        >
-                          <option value="">-- None / General Activity --</option>
-                          {prs.map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {p.prNumber} – {p.purpose.slice(0, 35)}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                          Description
-                        </label>
-                        <textarea
-                          className="form-input text-xs h-16 resize-none"
-                          value={description}
-                          onChange={(e) => setDescription(e.target.value)}
-                          placeholder="Audit documentation, voucher inspection, or entrance briefing..."
-                        />
-                      </div>
-                    </>
-                  )}
-
-                  {/* 3. AWARD DATE FORM */}
-                  {eventType === "Award Date" && (
-                    <>
-                      <div>
-                        <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                          Linked Procurement Record *
-                        </label>
-                        <select
-                          required
-                          className="form-select text-xs"
-                          value={prId}
-                          onChange={(e) => {
-                            setPrId(e.target.value);
-                            const matched = prs.find((p) => p.id === e.target.value);
-                            if (matched) {
-                              setTitle(`Award – ${matched.prNumber || "Procurement"}`);
-                            }
-                          }}
-                        >
-                          <option value="">-- Select Linked PR --</option>
-                          {prs.map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {p.prNumber} – {p.purpose.slice(0, 35)}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                          Activity Title *
-                        </label>
-                        <input
-                          required
-                          type="text"
-                          className="form-input text-xs"
-                          value={title}
-                          onChange={(e) => setTitle(e.target.value)}
-                          placeholder="E.g., Notice of Award Issuance"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                          Award Date *
-                        </label>
-                        <input
-                          required
-                          type="date"
-                          className="form-input text-xs"
-                          value={eventDateStr}
-                          onChange={(e) => setEventDateStr(e.target.value)}
-                        />
-                      </div>
-
-                      <div>
-                        <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                          Notes
-                        </label>
-                        <textarea
-                          className="form-input text-xs h-16 resize-none"
-                          value={description}
-                          onChange={(e) => setDescription(e.target.value)}
-                          placeholder="Recommended winning bidder, NOA conditions, or delivery timeline..."
-                        />
-                      </div>
-                    </>
-                  )}
-
-                  {/* 4. BID OPENING FORM */}
-                  {eventType === "Bid Opening" && (
-                    <>
-                      <div>
-                        <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                          Linked Procurement Record *
-                        </label>
-                        <select
-                          required
-                          className="form-select text-xs"
-                          value={prId}
-                          onChange={(e) => {
-                            setPrId(e.target.value);
-                            const matched = prs.find((p) => p.id === e.target.value);
-                            if (matched && !title) {
-                              setTitle(`Bid Opening – ${matched.prNumber}`);
-                            }
-                          }}
-                        >
-                          <option value="">-- Select Linked PR --</option>
-                          {prs.map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {p.prNumber} – {p.purpose.slice(0, 35)}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                          Title *
-                        </label>
-                        <input
-                          required
-                          type="text"
-                          className="form-input text-xs"
-                          value={title}
-                          onChange={(e) => setTitle(e.target.value)}
-                          placeholder="E.g., Opening and Preliminary Examination of Bids"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                            Date *
-                          </label>
-                          <input
-                            required
-                            type="date"
-                            className="form-input text-xs"
-                            value={eventDateStr}
-                            onChange={(e) => setEventDateStr(e.target.value)}
-                          />
-                        </div>
-                        <div>
-                          <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                            Time
-                          </label>
-                          <input
-                            type="time"
-                            className="form-input text-xs"
-                            value={eventTime}
-                            onChange={(e) => setEventTime(e.target.value)}
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                          Venue
-                        </label>
-                        <input
-                          type="text"
-                          className="form-input text-xs"
-                          value={venue}
-                          onChange={(e) => setVenue(e.target.value)}
-                          placeholder="E.g., BAC Conference Room"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                          Notes / Observers
-                        </label>
-                        <textarea
-                          className="form-input text-xs h-16 resize-none"
-                          value={description}
-                          onChange={(e) => setDescription(e.target.value)}
-                          placeholder="Invited observers, eligibility requirements checklist..."
-                        />
-                      </div>
-                    </>
-                  )}
-
-                  {/* 5. BIRTHDAY FORM */}
-                  {eventType === "Birthday" && (
-                    <>
-                      <div>
-                        <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                          Celebrant / Person Name *
-                        </label>
-                        <input
-                          required
-                          type="text"
-                          className="form-input text-xs"
-                          value={recipient}
-                          onChange={(e) => {
-                            setRecipient(e.target.value);
-                            setTitle(`${e.target.value}'s Birthday`);
-                          }}
-                          placeholder="E.g., Engr. Carlos Cruz"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                          Event Title
-                        </label>
-                        <input
-                          type="text"
-                          className="form-input text-xs"
-                          value={title}
-                          onChange={(e) => setTitle(e.target.value)}
-                          placeholder="E.g., Engr. Cruz's Birthday"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                          Birth Date (Month & Day) *
-                        </label>
-                        <input
-                          required
-                          type="date"
-                          className="form-input text-xs"
-                          value={eventDateStr}
-                          onChange={(e) => setEventDateStr(e.target.value)}
-                        />
-                      </div>
-
-                      {/* Annual Recurrence Toggle */}
-                      <div className="flex items-center gap-2 p-3 bg-pink-50/60 rounded-xl border border-pink-100">
-                        <input
-                          id="recurringCheck"
-                          type="checkbox"
-                          checked={isRecurringBirthday}
-                          onChange={(e) => setIsRecurringBirthday(e.target.checked)}
-                          className="rounded text-pink-600 focus:ring-pink-500"
-                        />
-                        <label
-                          htmlFor="recurringCheck"
-                          className="text-xs font-bold text-pink-800 cursor-pointer"
-                        >
-                          Annual Recurring Birthday (displays every year)
-                        </label>
-                      </div>
-
-                      <div>
-                        <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                          Notes / Department
-                        </label>
-                        <input
-                          type="text"
-                          className="form-input text-xs"
-                          value={description}
-                          onChange={(e) => setDescription(e.target.value)}
-                          placeholder="BAC Member / Municipal Engineering Office"
-                        />
-                      </div>
-                    </>
-                  )}
-
-                  {/* 6. AWARD / RECOGNITION FORM */}
-                  {eventType === "Award / Recognition" && (
-                    <>
-                      <div>
-                        <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                          Award Title *
-                        </label>
-                        <input
-                          required
-                          type="text"
-                          className="form-input text-xs"
-                          value={title}
-                          onChange={(e) => setTitle(e.target.value)}
-                          placeholder="E.g., Service Award / Loyalty Recognition"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                            Date *
-                          </label>
-                          <input
-                            required
-                            type="date"
-                            className="form-input text-xs"
-                            value={eventDateStr}
-                            onChange={(e) => setEventDateStr(e.target.value)}
-                          />
-                        </div>
-                        <div>
-                          <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                            Time (Optional)
-                          </label>
-                          <input
-                            type="time"
-                            className="form-input text-xs"
-                            value={eventTime}
-                            onChange={(e) => setEventTime(e.target.value)}
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                          Recipient or Department
-                        </label>
-                        <input
-                          type="text"
-                          className="form-input text-xs"
-                          value={recipient}
-                          onChange={(e) => setRecipient(e.target.value)}
-                          placeholder="E.g., Municipal Engineering Office / Hon. Maria Santos"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                          Description
-                        </label>
-                        <textarea
-                          className="form-input text-xs h-16 resize-none"
-                          value={description}
-                          onChange={(e) => setDescription(e.target.value)}
-                          placeholder="Special citation for outstanding procurement management..."
-                        />
-                      </div>
-                    </>
-                  )}
-
-                  {/* 7. OTHER FORM */}
-                  {eventType === "Other" && (
-                    <>
-                      <div>
-                        <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                          Title *
-                        </label>
-                        <input
-                          required
-                          type="text"
-                          className="form-input text-xs"
-                          value={title}
-                          onChange={(e) => setTitle(e.target.value)}
-                          placeholder="E.g., Budget Call / Town Hall Briefing"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                            Date *
-                          </label>
-                          <input
-                            required
-                            type="date"
-                            className="form-input text-xs"
-                            value={eventDateStr}
-                            onChange={(e) => setEventDateStr(e.target.value)}
-                          />
-                        </div>
-                        <div>
-                          <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                            Time (Optional)
-                          </label>
-                          <input
-                            type="time"
-                            className="form-input text-xs"
-                            value={eventTime}
-                            onChange={(e) => setEventTime(e.target.value)}
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                          Description
-                        </label>
-                        <textarea
-                          className="form-input text-xs h-16 resize-none"
-                          value={description}
-                          onChange={(e) => setDescription(e.target.value)}
-                          placeholder="Event description or notes..."
-                        />
-                      </div>
-                    </>
-                  )}
-
-                  {/* Form Submission Controls */}
-                  <div className="flex justify-between items-center mt-3 pt-4 border-t border-slate-100">
+                  {/* Form Submission Controls - Sticky at bottom */}
+                  <div className="flex justify-between items-center px-6 py-4 border-t border-slate-100 bg-slate-50/50">
                     {selectedEvent && isEditingExisting ? (
                       <button
                         type="button"
                         onClick={() => setIsEditingExisting(false)}
-                        className="text-xs font-semibold text-slate-500 hover:text-slate-800"
+                        className="text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
                       >
-                        Back to View
+                        ← Back to Details
                       </button>
                     ) : (
-                      <div></div>
+                      <div />
                     )}
 
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => setShowEventModal(false)}
-                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-colors"
+                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors"
+                        className="px-5 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
                       >
                         {selectedEvent && isEditingExisting ? "Save Changes" : "Create Event"}
                       </button>
@@ -1503,8 +1208,8 @@ export default function CalendarWidget() {
               )}
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

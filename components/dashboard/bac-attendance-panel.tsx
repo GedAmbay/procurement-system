@@ -46,7 +46,7 @@ const DEFAULT_MEMBERS: BacMemberItem[] = [
     id: "bac-1",
     name: "Engr. Jose Reyes",
     role: "BAC_CHAIRMAN",
-    positionLabel: "BAC Chairperson",
+    positionLabel: "BAC Chairman",
     status: "ON_LEAVE",
     initials: "JR",
   },
@@ -96,9 +96,9 @@ function getInitials(name: string): string {
 function formatRoleLabel(role: string): string {
   switch (role) {
     case "BAC_CHAIRMAN":
-      return "BAC Chairperson";
+      return "BAC Chairman";
     case "BAC_VICE_CHAIRMAN":
-      return "BAC Vice Chairperson";
+      return "BAC Vice Chairman";
     case "BAC_MEMBER":
       return "BAC Member";
     default:
@@ -342,19 +342,17 @@ export default function BacAttendancePanel({
                     onClick={() =>
                       setActiveMenuMemberId(isMenuOpen ? null : m.id)
                     }
-                    className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold transition-all ${
-                      canEdit
+                    className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold transition-all ${canEdit
                         ? "cursor-pointer hover:ring-2 hover:ring-blue-400/30"
                         : "cursor-default"
-                    } ${
-                      m.status === "PRESENT"
+                      } ${m.status === "PRESENT"
                         ? "bg-emerald-50 text-emerald-700 border border-emerald-200/70 shadow-2xs"
                         : m.status === "ABSENT"
-                        ? "bg-red-50 text-red-700 border border-red-200/70 shadow-2xs"
-                        : m.status === "EXCUSED"
-                        ? "bg-amber-50 text-amber-700 border border-amber-200/70 shadow-2xs"
-                        : "bg-slate-100 text-slate-600 border border-slate-200/70"
-                    }`}
+                          ? "bg-red-50 text-red-700 border border-red-200/70 shadow-2xs"
+                          : m.status === "EXCUSED"
+                            ? "bg-amber-50 text-amber-700 border border-amber-200/70 shadow-2xs"
+                            : "bg-slate-100 text-slate-600 border border-slate-200/70"
+                      }`}
                   >
                     {m.status === "PRESENT" && (
                       <Check size={12} className="text-emerald-600 stroke-[3]" />
@@ -370,10 +368,10 @@ export default function BacAttendancePanel({
                       {m.status === "PRESENT"
                         ? "Present"
                         : m.status === "ABSENT"
-                        ? "Absent"
-                        : m.status === "EXCUSED"
-                        ? "Excused"
-                        : "Not Recorded"}
+                          ? "Absent"
+                          : m.status === "EXCUSED"
+                            ? "Excused"
+                            : "Not Recorded"}
                     </span>
                     {canEdit && <ChevronDown size={11} className="opacity-50 ml-0.5" />}
                   </button>
