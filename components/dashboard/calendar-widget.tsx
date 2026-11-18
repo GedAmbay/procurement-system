@@ -39,7 +39,6 @@ import {
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import Link from "next/link";
-import LoaderWave from "@/components/ui/loader-wave";
 
 export interface CalendarEvent {
   id: string;
@@ -524,7 +523,6 @@ export default function CalendarWidget() {
           <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
             <CalendarIcon size={20} className="text-blue-600" />
             <span>{format(currentDate, "MMMM yyyy")}</span>
-            {loading && <LoaderWave />}
           </h2>
         </div>
 

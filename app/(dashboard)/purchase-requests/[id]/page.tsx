@@ -3,11 +3,11 @@ import LoaderWave from "@/components/ui/loader-wave";
 import CustomSelect from "@/components/ui/custom-select";
 import ConfirmModal from "@/components/ui/confirm-modal";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, Fragment } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
 import { formatCurrency, normalizePrNumber, fiscalYearFromPrNumber } from "@/lib/utils";
-import { Printer, Save, CheckCircle2, Plus, Minus, Trash2, ArrowLeft, Loader2, ZoomIn, ZoomOut, Lock, Unlock, FolderOpen, Calendar } from "lucide-react";
+import { Printer, Save, CheckCircle2, Plus, Minus, Trash2, ArrowLeft, Loader2, ZoomIn, ZoomOut, Lock, Unlock, FolderOpen, Calendar, MoveUp, MoveDown, CornerDownRight } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -197,12 +197,13 @@ export default function PurchaseRequestEditor() {
   const watchLineItems = watch("lineItems");
   const watchRequestType = watch("requestType") || prData?.requestType || "PURCHASE";
   const isJob = watchRequestType === "JOB";
-  const { fields, append, remove, update } = useFieldArray({
+  const { fields, append, remove, update, insert, move } = useFieldArray({
     control,
     name: "lineItems",
   });
 
   const [activeItemIndex, setActiveItemIndex] = useState<number | null>(null);
+  const [insertAtIndex, setInsertAtIndex] = useState<number | null>(null);
   const [draftItem, setDraftItem] = useState<PrLineItem>({
     itemId: "",
     description: "",
@@ -316,8 +317,24 @@ export default function PurchaseRequestEditor() {
 
   const handleRowClick = (index: number) => {
     if (isReadOnly) return;
+    setInsertAtIndex(null);
     setActiveItemIndex(index);
     setDraftItem(watchLineItems[index]);
+  };
+
+  const handleStartInsert = (index: number) => {
+    if (isReadOnly) return;
+    setActiveItemIndex(null);
+    setInsertAtIndex(index);
+    setDraftItem({ itemId: "", description: "", unit: "", quantity: "", unitCost: "" });
+  };
+
+  const handleMoveItem = (fromIndex: number, toIndex: number) => {
+    if (isReadOnly) return;
+    if (toIndex < 0 || toIndex >= watchLineItems.length) return;
+    move(fromIndex, toIndex);
+    setActiveItemIndex(toIndex);
+    toast.success(`Moved to row ${toIndex + 1}`);
   };
 
   const handleAddOrUpdate = () => {
@@ -339,6 +356,9 @@ export default function PurchaseRequestEditor() {
     if (activeItemIndex !== null) {
       update(activeItemIndex, itemToAdd);
       toast.success("Item updated");
+    } else if (insertAtIndex !== null) {
+      insert(insertAtIndex, itemToAdd);
+      toast.success(`Item inserted at row ${insertAtIndex + 1}`);
     } else {
       append(itemToAdd);
       toast.success("Item added");
@@ -348,6 +368,7 @@ export default function PurchaseRequestEditor() {
 
   const handleClearDraft = () => {
     setActiveItemIndex(null);
+    setInsertAtIndex(null);
     setDraftItem({ itemId: "", description: "", unit: "", quantity: "", unitCost: "" });
   };
 
@@ -672,7 +693,7 @@ export default function PurchaseRequestEditor() {
                       {/* Grid Block */}
                       <div className="grid grid-cols-2 text-sm border-b-4 border-double border-black">
                         <div className="border-r-2 border-black p-2 flex flex-col justify-center">
-                          <div className="flex mb-2"><span className="w-24 whitespace-nowrap">Department :</span> <span className="border-b border-black flex-1 text-center">{offices.find(o => o.id === watchAllFields.officeId)?.name || "Office of the Mayor"}</span></div>
+                          <div className="flex mb-2"><span className="w-24 whitespace-nowrap">Department :</span> <span className="border-b border-black flex-1 text-left">{offices.find(o => o.id === watchAllFields.officeId)?.name || "Office of the Mayor"}</span></div>
                           <div className="flex"><span className="w-24 whitespace-nowrap">Section :</span> <span className="border-b border-black flex-1 text-center">{"\u00A0"}</span></div>
                         </div>
                         <div className="p-2 flex flex-col justify-between">
@@ -710,14 +731,55 @@ export default function PurchaseRequestEditor() {
                             const hasSpecs = !isSpec && idx + 1 < watchLineItems.length && (!watchLineItems[idx + 1].quantity || watchLineItems[idx + 1].quantity === 0);
 
                             return (
-                              <tr key={idx} onClick={() => handleRowClick(idx)} className={`h-6 ${!isReadOnly ? `cursor-pointer transition-colors ${activeItemIndex === idx ? "bg-blue-100 hover:bg-blue-200" : "hover:bg-blue-50"}` : ""}`}>
-                                <td className="border border-black border-l-0 p-0 leading-tight text-center align-top">{displayNo}</td>
-                                <td className="border border-black p-0 leading-tight text-center align-top">{isSpec ? "" : item.quantity}</td>
-                                <td className="border border-black p-0 leading-tight text-center align-top">{isSpec ? "" : item.unit}</td>
-                                <td className={`border border-black p-0 px-1 leading-tight whitespace-normal break-words align-top ${isSpec ? "pl-4 text-sm" : (hasSpecs ? "font-bold" : "")}`}>{item.description}</td>
-                                <td className="border border-black p-0 leading-tight text-right align-top pr-1">{isSpec ? "" : (item.unitCost ? formatCurrency(item.unitCost).replace('₱', '') : '0.00')}</td>
-                                <td className="border border-black border-r-0 p-0 leading-tight text-right align-top pr-1">{isSpec ? "" : ((item.quantity && item.unitCost) ? formatCurrency(item.quantity * item.unitCost).replace('₱', '') : '0.00')}</td>
-                              </tr>
+                              <React.Fragment key={idx}>
+                                {insertAtIndex === idx && !isReadOnly && (
+                                  <tr className="no-print">
+                                    <td colSpan={6} className="p-0 border-x-0 border-y-2 border-blue-500 bg-blue-50/50">
+                                      <div className="flex items-center justify-center py-0.5 text-[10px] font-bold text-blue-700">
+                                        <span className="bg-blue-600 text-white px-2 py-0.2 rounded-full text-[9px] uppercase tracking-wider">
+                                          Insert Row {idx + 1} Here
+                                        </span>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                                <tr key={idx} onClick={() => handleRowClick(idx)} className={`group/row h-6 ${!isReadOnly ? `cursor-pointer transition-colors ${activeItemIndex === idx ? "bg-blue-100 hover:bg-blue-200" : (insertAtIndex === idx ? "bg-amber-50/60" : "hover:bg-blue-50")}` : ""}`}>
+                                  <td className="border border-black border-l-0 p-0 leading-tight text-center align-top relative">
+                                    {!isReadOnly && (
+                                      <div className="absolute top-1/2 left-[-26px] -translate-y-1/2 opacity-0 group-hover/row:opacity-100 transition-opacity no-print z-30 flex items-center">
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleStartInsert(idx + 1);
+                                          }}
+                                          className="w-5 h-5 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-md transition-transform hover:scale-110"
+                                          title={`Insert row below ${isSpec ? "specification" : `Item #${displayNo || idx + 1}`}`}
+                                        >
+                                          <Plus size={12} className="stroke-[3]" />
+                                        </button>
+                                      </div>
+                                    )}
+                                    {displayNo}
+                                  </td>
+                                  <td className="border border-black p-0 leading-tight text-center align-top">{isSpec ? "" : item.quantity}</td>
+                                  <td className="border border-black p-0 leading-tight text-center align-top">{isSpec ? "" : item.unit}</td>
+                                  <td className={`border border-black p-0 px-1 leading-tight whitespace-normal break-words align-top ${isSpec ? "pl-4 text-sm" : (hasSpecs ? "font-bold" : "")}`}>{item.description}</td>
+                                  <td className="border border-black p-0 leading-tight text-right align-top pr-1">{isSpec ? "" : (item.unitCost ? formatCurrency(item.unitCost).replace('₱', '') : '0.00')}</td>
+                                  <td className="border border-black border-r-0 p-0 leading-tight text-right align-top pr-1">{isSpec ? "" : ((item.quantity && item.unitCost) ? formatCurrency(item.quantity * item.unitCost).replace('₱', '') : '0.00')}</td>
+                                </tr>
+                                {insertAtIndex === watchLineItems.length && idx === watchLineItems.length - 1 && !isReadOnly && (
+                                  <tr className="no-print">
+                                    <td colSpan={6} className="p-0 border-x-0 border-y-2 border-blue-500 bg-blue-50/50">
+                                      <div className="flex items-center justify-center py-0.5 text-[10px] font-bold text-blue-700">
+                                        <span className="bg-blue-600 text-white px-2 py-0.2 rounded-full text-[9px] uppercase tracking-wider">
+                                          Insert Row {watchLineItems.length + 1} Here (At End)
+                                        </span>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                              </React.Fragment>
                             );
                           }) : null}
                           {/* Empty rows filler */}
@@ -821,18 +883,18 @@ export default function PurchaseRequestEditor() {
                           </tr>
                           <tr className="border-none">
                             <td className="border border-black border-l-0 border-y-0 py-0 px-1 pl-2 italic text-left text-[13px] leading-tight">Printed Name:</td>
-                            <td className="border border-black py-0 px-1 font-bold uppercase text-[12px] leading-tight">
+                            <td className="border border-black py-1 px-1 font-bold uppercase text-[12px] leading-tight">
                               {signatories.find(s => s.id === watchAllFields.requestedBySignatoryId)?.name || ""}
                             </td>
-                            <td className="border border-black py-0 px-1 font-bold uppercase text-[12px] leading-tight">EDSEL J. AMBUBUYOG</td>
-                            <td className="border border-black border-r-0 py-0 px-1 font-bold uppercase text-[12px] leading-tight">HON. TOMAS U. ESTOPEREZ JR.</td>
+                            <td className="border border-black py-1 px-1 font-bold uppercase text-[12px] leading-tight">EDSEL J. AMBUBUYOG</td>
+                            <td className="border border-black border-r-0 py-1 px-1 font-bold uppercase text-[12px] leading-tight">HON. TOMAS U. ESTOPEREZ JR.</td>
                           </tr>
                           <tr className="border-none">
                             <td className="border border-black border-l-0 border-t-0 border-b-0 py-0 px-1 pl-2 italic text-left h-[30px] text-[13px] leading-tight">Designation:</td>
                             <td className="border border-black border-b-0 py-0 px-1 text-[13px] leading-tight">
                               {signatories.find(s => s.id === watchAllFields.requestedBySignatoryId)?.position || ""}
                             </td>
-                            <td className="border border-black border-b-0 py-0 px-1 text-[13px] leading-tight">Acting Municipal Treasurer</td>
+                            <td className="border border-black border-b-0 py-0 px-1 text-[13px] leading-tight">Municipal Treasurer</td>
                             <td className="border border-black border-b-0 border-r-0 py-0 px-1 text-[13px] leading-tight">Municipal Mayor</td>
                           </tr>
                         </tbody>
@@ -872,286 +934,391 @@ export default function PurchaseRequestEditor() {
 
           <div className="flex-1 overflow-y-auto p-5 pt-0">
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3.5">
-            {/* Type Toggle: Purchase Request vs Job Request */}
-            <div>
-              <label className="form-label">Request Type</label>
-              <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-lg border border-slate-200">
-                <button
-                  type="button"
-                  onClick={() => !isReadOnly && setValue("requestType", "PURCHASE")}
-                  disabled={isReadOnly}
-                  className={`py-1.5 px-3 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${!isJob
-                    ? "bg-white text-blue-600 shadow-sm border border-slate-200/60"
-                    : "text-slate-500 hover:text-slate-800"
-                    }`}
-                >
-                  <span>Purchase Request</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => !isReadOnly && setValue("requestType", "JOB")}
-                  disabled={isReadOnly}
-                  className={`py-1.5 px-3 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${isJob
-                    ? "bg-indigo-600 text-white shadow-sm"
-                    : "text-slate-500 hover:text-slate-800"
-                    }`}
-                >
-                  <span>Job Request</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Document Numbering */}
-            <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
+              {/* Type Toggle: Purchase Request vs Job Request */}
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-bold text-slate-800">
-                    {isJob ? "JR Number" : "PR Number"}
-                  </label>
-                </div>
-                <input
-                  type="text"
-                  {...register("prNumber")}
-                  disabled={isReadOnly}
-                  onBlur={(e) => {
-                    const val = e.target.value?.trim();
-                    if (val) {
-                      const normalized = normalizePrNumber(val);
-                      setValue("prNumber", normalized);
-                      const derivedYear = fiscalYearFromPrNumber(normalized);
-                      if (derivedYear) {
-                        setValue("fiscalYear", derivedYear);
-                      }
-                    }
-                  }}
-                  placeholder="e.g. 26-01-001"
-                  className="form-input font-mono font-bold text-sm bg-white"
-                />
-                <p className="text-[10px] text-slate-500 mt-1">
-                  Leave blank if not yet assigned by custodian. Can be updated at any time.
-                </p>
-              </div>
-
-              {/* Show/Hide Document Number on Document Toggle */}
-              <div className="flex items-center justify-between pt-2 border-t border-slate-200">
-                <label
-                  className="text-xs font-semibold text-slate-700 cursor-pointer select-none"
-                  onClick={() => setShowPrNo(!showPrNo)}
-                >
-                  Print {isJob ? "JR Number" : "PR Number"} on document
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setShowPrNo(!showPrNo)}
-                  style={{
-                    width: "44px",
-                    height: "24px",
-                    borderRadius: "12px",
-                    background: showPrNo ? "#10b981" : "#cbd5e1",
-                    position: "relative",
-                    border: "none",
-                    cursor: "pointer",
-                    transition: "background 0.3s",
-                    boxShadow: "inset 0 1px 3px rgba(0,0,0,0.1)",
-                  }}
-                  title={showPrNo ? "Hide from document" : "Show on document"}
-                >
-                  <div
-                    style={{
-                      width: "20px",
-                      height: "20px",
-                      borderRadius: "50%",
-                      background: "#fff",
-                      position: "absolute",
-                      top: "2px",
-                      left: showPrNo ? "22px" : "2px",
-                      transition: "left 0.3s",
-                      boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
-                    }}
-                  />
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <label className="form-label">Requesting Office</label>
-              <CustomSelect
-                value={watchAllFields.officeId || ""}
-                onChange={(val) => setValue("officeId", val, { shouldValidate: true, shouldDirty: true })}
-                options={offices.map((o) => ({ value: o.id, label: o.name }))}
-                placeholder="Select Office..."
-                disabled={isReadOnly}
-              />
-            </div>
-
-            <div>
-              <label className="form-label">Requested By (Signatory)</label>
-              <CustomSelect
-                value={watchAllFields.requestedBySignatoryId || ""}
-                onChange={(val) => setValue("requestedBySignatoryId", val, { shouldValidate: true, shouldDirty: true })}
-                options={signatories.map((s) => ({
-                  value: s.id,
-                  label: s.name,
-                  sublabel: s.position,
-                }))}
-                placeholder="Select Signatory..."
-                disabled={isReadOnly}
-              />
-            </div>
-
-            <div>
-              <label className="form-label">Purpose</label>
-              <textarea
-                {...register("purpose")}
-                className="form-input"
-                style={{ minHeight: "80px", resize: "vertical" }}
-                placeholder="Enter purpose of procurement..."
-                disabled={isReadOnly}
-              />
-            </div>
-
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <input
-                type="checkbox"
-                id="isDirectAcquisition"
-                {...register("isDirectAcquisition")}
-                disabled={isReadOnly}
-                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-              />
-              <label htmlFor="isDirectAcquisition" className="text-sm font-medium text-slate-700 cursor-pointer">
-                Direct Acquisition <span className="text-xs text-slate-500 font-normal">(Skips RFQ and abstract phases)</span>
-              </label>
-            </div>
-
-            <div style={{ paddingTop: "1rem", borderTop: "1px solid #e2e8f0" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
-                <h3 style={{ fontWeight: "700", color: "#334155", fontSize: "0.9375rem" }}>
-                  {activeItemIndex !== null ? "Edit Item" : "Add New Item"}
-                </h3>
-                {activeItemIndex !== null && !isReadOnly && (
+                <label className="form-label">Request Type</label>
+                <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-lg border border-slate-200">
                   <button
                     type="button"
-                    onClick={handleClearDraft}
-                    className="btn btn-secondary btn-sm"
+                    onClick={() => !isReadOnly && setValue("requestType", "PURCHASE")}
+                    disabled={isReadOnly}
+                    className={`py-1.5 px-3 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${!isJob
+                      ? "bg-white text-blue-600 shadow-sm border border-slate-200/60"
+                      : "text-slate-500 hover:text-slate-800"
+                      }`}
                   >
-                    Cancel Edit
+                    <span>Purchase Request</span>
                   </button>
-                )}
+                  <button
+                    type="button"
+                    onClick={() => !isReadOnly && setValue("requestType", "JOB")}
+                    disabled={isReadOnly}
+                    className={`py-1.5 px-3 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${isJob
+                      ? "bg-indigo-600 text-white shadow-sm"
+                      : "text-slate-500 hover:text-slate-800"
+                      }`}
+                  >
+                    <span>Job Request</span>
+                  </button>
+                </div>
               </div>
 
-              {!isReadOnly && (
-                <div style={{ borderRadius: "1rem", background: "var(--color-page-bg)", boxShadow: "inset 4px 4px 8px rgba(163,177,198,0.5), inset -4px -4px 8px rgba(255,255,255,0.9)", padding: "1rem" }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "0.75rem", marginBottom: "1rem" }}>
-                    <div>
-                      <label className="form-label">Catalog Item <span style={{ fontWeight: "400", color: "#94a3b8" }}>(optional)</span></label>
-                      <CustomSelect
-                        value={draftItem.itemId || ""}
-                        onChange={(val) => handleItemSelect(val)}
-                        options={[
-                          { value: "", label: "-- Custom Item --" },
-                          ...items.map((item) => ({
-                            value: item.id,
-                            label: item.description,
-                            sublabel: item.unit ? `${item.unit} · ₱${Number(item.standardCost || 0).toLocaleString()}` : undefined,
-                          })),
-                        ]}
-                        placeholder="-- Custom Item --"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="form-label">Description</label>
-                      <input
-                        value={draftItem.description}
-                        onChange={(e) => setDraftItem({ ...draftItem, description: e.target.value })}
-                        className="form-input"
-                        placeholder="Enter description..."
-                      />
-                    </div>
-
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
-                      <div>
-                        <label className="form-label">Unit of Issue</label>
-                        <input
-                          value={draftItem.unit}
-                          onChange={(e) => setDraftItem({ ...draftItem, unit: e.target.value })}
-                          className="form-input"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="form-label">Quantity</label>
-                        <input
-                          type="number"
-                          step="1"
-                          min="0"
-                          value={draftItem.quantity}
-                          onChange={(e) => setDraftItem({ ...draftItem, quantity: e.target.value === "" ? "" : Number(e.target.value) })}
-                          className="form-input"
-                          style={{ textAlign: "right" }}
-                          placeholder="0"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="form-label">Cost</label>
-                        <input
-                          type="number"
-                          step="0.25"
-                          min="0"
-                          value={draftItem.unitCost}
-                          onChange={(e) => setDraftItem({ ...draftItem, unitCost: e.target.value === "" ? "" : Number(e.target.value) })}
-                          className="form-input"
-                          style={{ textAlign: "right" }}
-                          placeholder="0.00"
-                        />
-                      </div>
-                    </div>
+              {/* Document Numbering */}
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-bold text-slate-800">
+                      {isJob ? "JR Number" : "PR Number"}
+                    </label>
                   </div>
+                  <input
+                    type="text"
+                    {...register("prNumber")}
+                    disabled={isReadOnly}
+                    onBlur={(e) => {
+                      const val = e.target.value?.trim();
+                      if (val) {
+                        const normalized = normalizePrNumber(val);
+                        setValue("prNumber", normalized);
+                        const derivedYear = fiscalYearFromPrNumber(normalized);
+                        if (derivedYear) {
+                          setValue("fiscalYear", derivedYear);
+                        }
+                      }
+                    }}
+                    placeholder="e.g. 26-01-001"
+                    className="form-input font-mono font-bold text-sm bg-white"
+                  />
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    Leave blank if not yet assigned by custodian. Can be updated at any time.
+                  </p>
+                </div>
 
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid #e2e8f0", paddingTop: "0.75rem" }}>
-                    <div style={{ fontSize: "0.875rem", fontWeight: "700", color: "#059669" }}>
-                      Est: {formatCurrency(Number(draftItem.quantity) * Number(draftItem.unitCost))}
-                    </div>
-                    <div style={{ display: "flex", gap: "0.5rem" }}>
-                      {activeItemIndex !== null ? (
+                {/* Show/Hide Document Number on Document Toggle */}
+                <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+                  <label
+                    className="text-xs font-semibold text-slate-700 cursor-pointer select-none"
+                    onClick={() => setShowPrNo(!showPrNo)}
+                  >
+                    Print {isJob ? "JR Number" : "PR Number"} on document
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowPrNo(!showPrNo)}
+                    style={{
+                      width: "44px",
+                      height: "24px",
+                      borderRadius: "12px",
+                      background: showPrNo ? "#10b981" : "#cbd5e1",
+                      position: "relative",
+                      border: "none",
+                      cursor: "pointer",
+                      transition: "background 0.3s",
+                      boxShadow: "inset 0 1px 3px rgba(0,0,0,0.1)",
+                    }}
+                    title={showPrNo ? "Hide from document" : "Show on document"}
+                  >
+                    <div
+                      style={{
+                        width: "20px",
+                        height: "20px",
+                        borderRadius: "50%",
+                        background: "#fff",
+                        position: "absolute",
+                        top: "2px",
+                        left: showPrNo ? "22px" : "2px",
+                        transition: "left 0.3s",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+                      }}
+                    />
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="form-label">Requesting Office</label>
+                <CustomSelect
+                  value={watchAllFields.officeId || ""}
+                  onChange={(val) => setValue("officeId", val, { shouldValidate: true, shouldDirty: true })}
+                  options={offices.map((o) => ({ value: o.id, label: o.name }))}
+                  placeholder="Select Office..."
+                  disabled={isReadOnly}
+                />
+              </div>
+
+              <div>
+                <label className="form-label">Requested By (Signatory)</label>
+                <CustomSelect
+                  value={watchAllFields.requestedBySignatoryId || ""}
+                  onChange={(val) => setValue("requestedBySignatoryId", val, { shouldValidate: true, shouldDirty: true })}
+                  options={signatories.map((s) => ({
+                    value: s.id,
+                    label: s.name,
+                    sublabel: s.position,
+                  }))}
+                  placeholder="Select Signatory..."
+                  disabled={isReadOnly}
+                />
+              </div>
+
+              <div>
+                <label className="form-label">Purpose</label>
+                <textarea
+                  {...register("purpose")}
+                  className="form-input"
+                  style={{ minHeight: "80px", resize: "vertical" }}
+                  placeholder="Enter purpose of procurement..."
+                  disabled={isReadOnly}
+                />
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <input
+                  type="checkbox"
+                  id="isDirectAcquisition"
+                  {...register("isDirectAcquisition")}
+                  disabled={isReadOnly}
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <label htmlFor="isDirectAcquisition" className="text-sm font-medium text-slate-700 cursor-pointer">
+                  Direct Acquisition <span className="text-xs text-slate-500 font-normal">(Skips RFQ and abstract phases)</span>
+                </label>
+              </div>
+
+              <div style={{ paddingTop: "1rem", borderTop: "1px solid #e2e8f0" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem" }}>
+                  <h3 style={{ fontWeight: "700", color: "#334155", fontSize: "0.9375rem" }}>
+                    {activeItemIndex !== null
+                      ? `Edit Item (Row ${activeItemIndex + 1})`
+                      : insertAtIndex !== null
+                        ? `Insert Item (Row ${insertAtIndex + 1})`
+                        : "Add New Item"}
+                  </h3>
+                  {(activeItemIndex !== null || insertAtIndex !== null) && !isReadOnly && (
+                    <button
+                      type="button"
+                      onClick={handleClearDraft}
+                      className="btn btn-secondary btn-sm"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
+
+                {!isReadOnly && (
+                  <>
+                    {/* Action Toolbar when editing an existing row */}
+                    {activeItemIndex !== null && (
+                      <div className="flex flex-wrap items-center gap-1.5 p-2 mb-3 bg-slate-100/80 border border-slate-200 rounded-xl text-xs">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mr-1">Insert / Reorder:</span>
                         <button
                           type="button"
-                          onClick={handleDeleteItem}
-                          className="btn btn-danger btn-sm"
-                          style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}
+                          onClick={() => handleStartInsert(activeItemIndex)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 shadow-2xs transition-colors"
+                          title="Insert a new row immediately above this item"
                         >
-                          <Trash2 size={13} /> Delete
+                          <Plus size={12} className="text-blue-600" /> Insert Above
                         </button>
-                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleStartInsert(activeItemIndex + 1)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 shadow-2xs transition-colors"
+                          title="Insert a new row immediately below this item"
+                        >
+                          <CornerDownRight size={12} className="text-blue-600" /> Insert Below
+                        </button>
+                        <div className="w-[1px] h-4 bg-slate-300 mx-0.5" />
+                        <button
+                          type="button"
+                          disabled={activeItemIndex === 0}
+                          onClick={() => handleMoveItem(activeItemIndex, activeItemIndex - 1)}
+                          className="inline-flex items-center gap-1 px-2 py-1 font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none shadow-2xs transition-colors"
+                          title="Move this item up"
+                        >
+                          <MoveUp size={12} />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={activeItemIndex === watchLineItems.length - 1}
+                          onClick={() => handleMoveItem(activeItemIndex, activeItemIndex + 1)}
+                          className="inline-flex items-center gap-1 px-2 py-1 font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none shadow-2xs transition-colors"
+                          title="Move this item down"
+                        >
+                          <MoveDown size={12} />
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Highlight banner when in Insertion Mode */}
+                    {insertAtIndex !== null && (
+                      <div className="mb-3 p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-900 flex items-center justify-between shadow-2xs">
+                        <div className="flex items-center gap-2">
+                          <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-[10px] shrink-0">
+                            {insertAtIndex + 1}
+                          </div>
+                          <div>
+                            <span className="font-bold">
+                              Inserting at Row {insertAtIndex + 1}
+                            </span>
+                            <p className="text-[11px] text-blue-700">
+                              {insertAtIndex === 0
+                                ? "At the very top (before Row 1)"
+                                : `Between Row ${insertAtIndex} and Row ${insertAtIndex + 1}`}
+                            </p>
+                          </div>
+                        </div>
                         <button
                           type="button"
                           onClick={handleClearDraft}
-                          className="btn btn-secondary btn-sm"
-                          style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}
+                          className="text-xs font-semibold px-2 py-1 rounded bg-white border border-blue-200 text-blue-700 hover:bg-blue-100 transition-colors shadow-2xs"
                         >
-                          Clear
+                          Reset to End
                         </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={handleAddOrUpdate}
-                        className="btn btn-primary btn-sm"
-                      >
-                        {activeItemIndex !== null ? "Update" : "Add Item"}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
+                      </div>
+                    )}
 
-              {isReadOnly && watchLineItems.length === 0 && (
-                <div style={{ textAlign: "center", padding: "1.5rem", border: "2px dashed #e2e8f0", borderRadius: "0.75rem", color: "#94a3b8", fontSize: "0.875rem" }}>
-                  No line items added.
-                </div>
-              )}
-            </div>
-          </form>
+                    {/* Position selector when adding new items */}
+                    {activeItemIndex === null && insertAtIndex === null && watchLineItems.length > 0 && (
+                      <div className="flex items-center justify-between mb-3 px-1 text-xs">
+                        <span className="text-slate-500 font-medium">Position:</span>
+                        <select
+                          value="end"
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val !== "end") {
+                              handleStartInsert(Number(val));
+                            }
+                          }}
+                          className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-slate-700 font-semibold focus:outline-blue-500 cursor-pointer shadow-2xs max-w-[240px] truncate"
+                        >
+                          <option value="end">At the end (Row {watchLineItems.length + 1})</option>
+                          <option value="0">At the top (before Row 1)</option>
+                          {watchLineItems.map((it, i) => {
+                            const isSpec = !it.quantity || it.quantity === 0;
+                            const descPreview = it.description.length > 22 ? it.description.slice(0, 22) + "..." : it.description;
+                            return (
+                              <option key={i} value={i + 1}>
+                                After Row {i + 1}: {isSpec ? `(Spec) ${descPreview}` : descPreview}
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </div>
+                    )}
+
+                    <div style={{ borderRadius: "1rem", background: "var(--color-page-bg)", boxShadow: "inset 4px 4px 8px rgba(163,177,198,0.5), inset -4px -4px 8px rgba(255,255,255,0.9)", padding: "1rem" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                        <div>
+                          <label className="form-label">Catalog Item <span style={{ fontWeight: "400", color: "#94a3b8" }}>(optional)</span></label>
+                          <CustomSelect
+                            value={draftItem.itemId || ""}
+                            onChange={(val) => handleItemSelect(val)}
+                            options={[
+                              { value: "", label: "-- Custom Item --" },
+                              ...items.map((item) => ({
+                                value: item.id,
+                                label: item.description,
+                                sublabel: item.unit ? `${item.unit} · ₱${Number(item.standardCost || 0).toLocaleString()}` : undefined,
+                              })),
+                            ]}
+                            placeholder="-- Custom Item --"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="form-label">Description</label>
+                          <input
+                            value={draftItem.description}
+                            onChange={(e) => setDraftItem({ ...draftItem, description: e.target.value })}
+                            className="form-input"
+                            placeholder="Enter description..."
+                          />
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
+                          <div>
+                            <label className="form-label">Unit of Issue</label>
+                            <input
+                              value={draftItem.unit}
+                              onChange={(e) => setDraftItem({ ...draftItem, unit: e.target.value })}
+                              className="form-input"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="form-label">Quantity</label>
+                            <input
+                              type="number"
+                              step="1"
+                              min="0"
+                              value={draftItem.quantity}
+                              onChange={(e) => setDraftItem({ ...draftItem, quantity: e.target.value === "" ? "" : Number(e.target.value) })}
+                              className="form-input"
+                              style={{ textAlign: "right" }}
+                              placeholder="0"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="form-label">Cost</label>
+                            <input
+                              type="number"
+                              step="0.25"
+                              min="0"
+                              value={draftItem.unitCost}
+                              onChange={(e) => setDraftItem({ ...draftItem, unitCost: e.target.value === "" ? "" : Number(e.target.value) })}
+                              className="form-input"
+                              style={{ textAlign: "right" }}
+                              placeholder="0.00"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid #e2e8f0", paddingTop: "0.75rem" }}>
+                        <div style={{ fontSize: "0.875rem", fontWeight: "700", color: "#059669" }}>
+                          Est: {formatCurrency(Number(draftItem.quantity) * Number(draftItem.unitCost))}
+                        </div>
+                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                          {activeItemIndex !== null ? (
+                            <button
+                              type="button"
+                              onClick={handleDeleteItem}
+                              className="btn btn-danger btn-sm"
+                              style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}
+                            >
+                              <Trash2 size={13} /> Delete
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={handleClearDraft}
+                              className="btn btn-secondary btn-sm"
+                              style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}
+                            >
+                              Clear
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={handleAddOrUpdate}
+                            className="btn btn-primary btn-sm"
+                          >
+                            {activeItemIndex !== null ? "Update" : insertAtIndex !== null ? "Insert Item" : "Add Item"}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {isReadOnly && watchLineItems.length === 0 && (
+                  <div style={{ textAlign: "center", padding: "1.5rem", border: "2px dashed #e2e8f0", borderRadius: "0.75rem", color: "#94a3b8", fontSize: "0.875rem" }}>
+                    No line items added.
+                  </div>
+                )}
+              </div>
+            </form>
           </div>
 
           {/* Dedicated Pinned Footer: Grand Total */}

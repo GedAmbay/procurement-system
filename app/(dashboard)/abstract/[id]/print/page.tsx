@@ -74,7 +74,7 @@ export default function AbstractLivePreviewPage() {
         if (next[sigId]) {
           next[sigId] = {
             ...next[sigId],
-            annotation: "(ON LEAVE)",
+            annotation: "ON LEAVE",
           };
           updatedCount++;
         }
@@ -259,6 +259,10 @@ export default function AbstractLivePreviewPage() {
 
   const cell: React.CSSProperties = { border: "1px solid #000", padding: "2px 2px", fontSize: "13px", verticalAlign: "middle" };
   const headerCell: React.CSSProperties = { ...cell, fontWeight: "700", textAlign: "center", background: "#fff", padding: 0 };
+  const cellLeft: React.CSSProperties = { ...cell, borderLeft: "none" };
+  const cellRight: React.CSSProperties = { ...cell, borderRight: "none" };
+  const headerCellLeft: React.CSSProperties = { ...headerCell, borderLeft: "none" };
+  const headerCellRight: React.CSSProperties = { ...headerCell, borderRight: "none" };
 
   const isReadOnly = data.status !== "DRAFT" && !isUnlocked;
 
@@ -535,18 +539,18 @@ export default function AbstractLivePreviewPage() {
                       </div>
 
                       {/* Main Table */}
-                      <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "15px" }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse", borderLeft: "none", borderRight: "none", marginBottom: "15px" }}>
                         <tbody>
                           <tr>
-                            <th style={{ ...headerCell, width: "26px" }} rowSpan={3}>NO.</th>
+                            <th style={{ ...headerCellLeft, width: "26px" }} rowSpan={3}>NO.</th>
                             <th style={{ ...headerCell, width: "35%" }} rowSpan={3}>DESCRIPTION</th>
                             <th style={{ ...headerCell, width: "38px" }} rowSpan={3}>QTY</th>
                             <th style={{ ...headerCell, width: "34px" }} rowSpan={3}>UNIT</th>
-                            <th style={{ ...headerCell }} colSpan={displayQuotes.length * 2}>SUPPLIER&apos;S NAME</th>
+                            <th style={{ ...headerCellRight }} colSpan={displayQuotes.length * 2}>SUPPLIER&apos;S NAME</th>
                           </tr>
                           <tr>
                             {displayQuotes.map((q: any, i: number) => (
-                              <th key={i} style={{ ...headerCell, fontSize: "13px" }} colSpan={2}>
+                              <th key={i} style={{ ...(i === displayQuotes.length - 1 ? headerCellRight : headerCell), fontSize: "13px" }} colSpan={2}>
                                 {q ? q.supplier?.name?.toUpperCase() : `SUPPLIER ${i + 1}`}
                               </th>
                             ))}
@@ -555,7 +559,7 @@ export default function AbstractLivePreviewPage() {
                             {displayQuotes.map((_: any, i: number) => (
                               <React.Fragment key={i}>
                                 <th key={`up-${i}`} style={{ ...headerCell, width: "8%", fontSize: "13px" }}>UNIT PRICE</th>
-                                <th key={`tp-${i}`} style={{ ...headerCell, width: "8%", fontSize: "13px" }}>TOTAL PRICE</th>
+                                <th key={`tp-${i}`} style={{ ...(i === displayQuotes.length - 1 ? headerCellRight : headerCell), width: "8%", fontSize: "13px" }}>TOTAL PRICE</th>
                               </React.Fragment>
                             ))}
                           </tr>
@@ -579,7 +583,7 @@ export default function AbstractLivePreviewPage() {
 
                             return (
                               <tr key={item.id} className={`group ${hasBreak ? 'break-before-page' : ''}`} style={hasBreak ? { pageBreakBefore: 'always', breakBefore: 'page' } : {}}>
-                                <td style={{ ...cell, textAlign: "center", fontWeight: "700", verticalAlign: "top", position: "relative" }}>
+                                <td style={{ ...cellLeft, textAlign: "center", fontWeight: "700", verticalAlign: "top", position: "relative" }}>
                                   <div className="absolute top-0 left-[-24px] h-[24px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer no-print z-50 -translate-y-1/2" onClick={() => togglePageBreak(idx)}>
                                     <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white shadow-sm ${hasBreak ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'}`} title={hasBreak ? "Remove Page Break" : "Insert Page Break Above"}>
                                       {hasBreak ? <Minus size={12} /> : <Plus size={12} />}
@@ -600,7 +604,7 @@ export default function AbstractLivePreviewPage() {
                                       <td key={`up-${qi}`} style={{ ...cell, textAlign: "right" }}>
                                         {isSpec ? "" : fmt2(prices.unitPrice)}
                                       </td>
-                                      <td key={`tp-${qi}`} style={{ ...cell, textAlign: "right" }}>
+                                      <td key={`tp-${qi}`} style={{ ...(qi === displayQuotes.length - 1 ? cellRight : cell), textAlign: "right" }}>
                                         {isSpec ? "" : fmt2(prices.totalPrice)}
                                       </td>
                                     </React.Fragment>
@@ -615,7 +619,7 @@ export default function AbstractLivePreviewPage() {
                             const hasBreak = pageBreaks.includes(idx);
                             return (
                               <tr key={idx} className={`group ${hasBreak ? 'break-before-page' : ''}`} style={hasBreak ? { pageBreakBefore: 'always', breakBefore: 'page', height: "24px" } : { height: "24px" }}>
-                                <td style={{ ...cell, position: "relative" }}>
+                                <td style={{ ...cellLeft, position: "relative" }}>
                                   <div className="absolute top-0 left-[-24px] h-[24px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer no-print z-50 -translate-y-1/2" onClick={() => togglePageBreak(idx)}>
                                     <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white shadow-sm ${hasBreak ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'}`} title={hasBreak ? "Remove Page Break" : "Insert Page Break Above"}>
                                       {hasBreak ? <Minus size={12} /> : <Plus size={12} />}
@@ -627,7 +631,10 @@ export default function AbstractLivePreviewPage() {
                                 </td>
                                 <td style={cell}></td><td style={cell}></td><td style={cell}></td>
                                 {displayQuotes.map((_: any, qi: number) => (
-                                  <React.Fragment key={qi}><td key={`fu-${qi}`} style={cell}></td><td key={`ft-${qi}`} style={cell}></td></React.Fragment>
+                                  <React.Fragment key={qi}>
+                                    <td key={`fu-${qi}`} style={cell}></td>
+                                    <td key={`ft-${qi}`} style={qi === displayQuotes.length - 1 ? cellRight : cell}></td>
+                                  </React.Fragment>
                                 ))}
                               </tr>
                             );
@@ -635,7 +642,7 @@ export default function AbstractLivePreviewPage() {
 
                           {/* TOTAL row */}
                           <tr className={`group ${pageBreaks.includes('total') ? 'break-before-page' : ''}`} style={pageBreaks.includes('total') ? { pageBreakBefore: 'always', breakBefore: 'page' } : {}}>
-                            <td style={{ ...headerCell, borderTop: "2px solid #000", textAlign: "center", position: "relative" }} colSpan={4}>
+                            <td style={{ ...headerCellLeft, borderTop: "2px solid #000", textAlign: "center", position: "relative" }} colSpan={4}>
                               <div className="absolute top-0 left-[-24px] h-[24px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer no-print z-50 -translate-y-1/2" onClick={() => togglePageBreak('total')}>
                                 <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white shadow-sm ${pageBreaks.includes('total') ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'}`} title={pageBreaks.includes('total') ? "Remove Page Break" : "Insert Page Break Above"}>
                                   {pageBreaks.includes('total') ? <Minus size={12} /> : <Plus size={12} />}
@@ -649,7 +656,7 @@ export default function AbstractLivePreviewPage() {
                             {displayQuotes.map((q: any, qi: number) => {
                               const isWinner = q && recommendedQuote && q.id === recommendedQuote.id;
                               return (
-                                <td key={`tot-${qi}`} colSpan={2} style={{ ...cell, borderTop: "2px solid #000", textAlign: "right", fontWeight: isWinner ? "700" : "normal", fontSize: isWinner ? "14px" : "13px" }}>
+                                <td key={`tot-${qi}`} colSpan={2} style={{ ...(qi === displayQuotes.length - 1 ? cellRight : cell), borderTop: "2px solid #000", textAlign: "right", fontWeight: isWinner ? "700" : "normal", fontSize: isWinner ? "14px" : "13px" }}>
                                   {q && q.totalAmount > 0 ? fmt2(q.totalAmount) : ""}
                                 </td>
                               );
