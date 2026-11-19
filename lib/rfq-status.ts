@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { propagateRfqDescriptions } from "@/lib/line-item-descriptions";
 
 export interface RfqCompletionCheckResult {
   isComplete: boolean;
@@ -139,14 +140,15 @@ export async function syncRfqItemsWithPr(
   const prItems = pr.lineItems || [];
   const rfqItems = rfq.lineItems || [];
 
-  // Check if line items are already in sync
+  // Check if line items are already in sync.
+  // Manually edited descriptions (e.g. brand removed) are intentionally allowed to differ from the PR.
   const isIdentical =
     prItems.length === rfqItems.length &&
     prItems.every((pi: any, idx: number) => {
       const ri = rfqItems[idx];
       return (
         ri &&
-        ri.description === pi.description &&
+        (ri.descriptionEdited || ri.description === pi.description) &&
         ri.unit === pi.unit &&
         ri.quantity === pi.quantity &&
         ri.unitCost === pi.unitCost &&
@@ -160,15 +162,20 @@ export async function syncRfqItemsWithPr(
 
   const quotations = rfq.quotations || [];
 
-  // When no quotations exist, safely recreate all RFQ line items to match PR exactly
+  // When no quotations exist, safely recreate all RFQ line items to match PR exactly,
+  // carrying over any manually edited descriptions at the same row position.
   if (quotations.length === 0) {
     await db.rfqLineItem.deleteMany({ where: { rfqId } });
     for (let idx = 0; idx < prItems.length; idx++) {
       const pi = prItems[idx];
+      const prev = rfqItems[idx];
+      const keepEdit = !!prev?.descriptionEdited;
       await db.rfqLineItem.create({
         data: {
           rfqId,
-          description: pi.description,
+          description: keepEdit ? prev.description : pi.description,
+          descriptionEdited: keepEdit,
+          sourceDescription: keepEdit ? prev.sourceDescription : null,
           unit: pi.unit,
           quantity: pi.quantity,
           unitCost: pi.unitCost,
@@ -177,6 +184,7 @@ export async function syncRfqItemsWithPr(
         }
       });
     }
+    await propagateRfqDescriptions(rfqId, db);
     return true;
   }
 
@@ -184,10 +192,11 @@ export async function syncRfqItemsWithPr(
   for (let idx = 0; idx < prItems.length; idx++) {
     const pi = prItems[idx];
     if (idx < rfqItems.length) {
+      const ri = rfqItems[idx];
       await db.rfqLineItem.update({
-        where: { id: rfqItems[idx].id },
+        where: { id: ri.id },
         data: {
-          description: pi.description,
+          description: ri.descriptionEdited ? ri.description : pi.description,
           unit: pi.unit,
           quantity: pi.quantity,
           unitCost: pi.unitCost,
@@ -235,6 +244,7 @@ export async function syncRfqItemsWithPr(
     });
   }
 
+  await propagateRfqDescriptions(rfqId, db);
   return true;
 }
 

@@ -22,6 +22,7 @@ import {
   Check,
   CheckCircle2,
   PackageSearch,
+  User,
 } from "lucide-react";
 import LoaderWave from "@/components/ui/loader-wave";
 import FormModal from "@/components/ui/form-modal";
@@ -40,7 +41,9 @@ interface RFQ {
     office: { name: string; code: string };
   };
   status: string;
+  lastModifiedBy?: string | null;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export default function RFQPage() {
@@ -54,7 +57,7 @@ export default function RFQPage() {
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: "", end: "" });
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showDeptDropdown, setShowDeptDropdown] = useState(false);
-  const [sortKey, setSortKey] = useState<"rfqNumber" | "abc" | "status" | "createdAt">("createdAt");
+  const [sortKey, setSortKey] = useState<"rfqNumber" | "abc" | "status" | "updatedAt">("updatedAt");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   // Selection state
@@ -144,12 +147,12 @@ export default function RFQPage() {
 
         // Date range filter
         if (dateRange.start) {
-          const rfqDate = new Date(rfq.createdAt).getTime();
+          const rfqDate = new Date(rfq.updatedAt || rfq.createdAt).getTime();
           const startDate = new Date(dateRange.start).setHours(0, 0, 0, 0);
           if (rfqDate < startDate) return false;
         }
         if (dateRange.end) {
-          const rfqDate = new Date(rfq.createdAt).getTime();
+          const rfqDate = new Date(rfq.updatedAt || rfq.createdAt).getTime();
           const endDate = new Date(dateRange.end).setHours(23, 59, 59, 999);
           if (rfqDate > endDate) return false;
         }
@@ -172,8 +175,8 @@ export default function RFQPage() {
         return true;
       })
       .sort((a, b) => {
-        let valA: any = a.createdAt;
-        let valB: any = b.createdAt;
+        let valA: any = a.updatedAt || a.createdAt;
+        let valB: any = b.updatedAt || b.createdAt;
 
         if (sortKey === "rfqNumber") {
           valA = a.rfqNumber || "";
@@ -590,15 +593,20 @@ export default function RFQPage() {
                     </div>
                   </th>
 
-                  {/* Date */}
+                  {/* Modified By */}
+                  <th className="px-4 py-3.5">
+                    <span>Modified By</span>
+                  </th>
+
+                  {/* Date Modified */}
                   <th
                     className="px-4 py-3.5 cursor-pointer hover:text-slate-900"
-                    onClick={() => toggleSort("createdAt")}
+                    onClick={() => toggleSort("updatedAt")}
                   >
                     <div className="inline-flex items-center gap-1">
-                      <span>Date</span>
+                      <span>Date Modified</span>
                       <span className="text-[10px] text-slate-400">
-                        {sortKey === "createdAt" ? (sortDir === "asc" ? "▲" : "▼") : "▾"}
+                        {sortKey === "updatedAt" ? (sortDir === "asc" ? "▲" : "▼") : "▾"}
                       </span>
                     </div>
                   </th>
@@ -669,9 +677,17 @@ export default function RFQPage() {
                         <StatusBadge status={rfq.status} />
                       </td>
 
-                      {/* Date */}
+                      {/* Modified By */}
                       <td className="px-4 py-4 whitespace-nowrap text-slate-600 text-xs">
-                        {new Date(rfq.createdAt).toLocaleDateString("en-US", {
+                        <div className="inline-flex items-center gap-1.5 font-medium">
+                          <User size={13} className="text-slate-400 shrink-0" />
+                          <span>{rfq.lastModifiedBy || "—"}</span>
+                        </div>
+                      </td>
+
+                      {/* Date Modified */}
+                      <td className="px-4 py-4 whitespace-nowrap text-slate-600 text-xs">
+                        {new Date(rfq.updatedAt || rfq.createdAt).toLocaleDateString("en-US", {
                           month: "short",
                           day: "numeric",
                           year: "numeric",

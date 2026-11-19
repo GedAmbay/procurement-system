@@ -39,14 +39,42 @@ export async function GET(req: NextRequest) {
             prNumber: true,
             purpose: true,
             totalAmount: true,
-            office: { select: { name: true, code: true } }
+            office: { select: { name: true, code: true } },
+            requestedBy: { select: { name: true } },
           }
         },
+        createdBy: {
+          select: { name: true }
+        },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { updatedAt: "desc" },
     });
 
-    return NextResponse.json(rfqs);
+    const rfqIds = rfqs.map((r) => r.id);
+    const recentLogs = rfqIds.length > 0
+      ? await prisma.documentAuditLog.findMany({
+          where: {
+            documentId: { in: rfqIds },
+            action: { in: ["SAVE", "UPDATE", "CREATE"] },
+          },
+          orderBy: { createdAt: "desc" },
+          include: { user: { select: { name: true } } },
+        })
+      : [];
+
+    const lastLogMap = new Map<string, string>();
+    for (const log of recentLogs) {
+      if (!lastLogMap.has(log.documentId) && log.user?.name) {
+        lastLogMap.set(log.documentId, log.user.name);
+      }
+    }
+
+    const result = rfqs.map((rfq) => ({
+      ...rfq,
+      lastModifiedBy: lastLogMap.get(rfq.id) || rfq.createdBy?.name || rfq.pr?.requestedBy?.name || null,
+    }));
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error("Fetch RFQs Error:", error);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });

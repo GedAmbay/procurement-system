@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { CheckSquare, Eye, Printer, Clock, CheckCircle2, ExternalLink } from "lucide-react";
+import { CheckSquare, Eye, Printer, Clock, CheckCircle2, ExternalLink, User } from "lucide-react";
 import DataTable from "@/components/ui/data-table";
 import FormModal from "@/components/ui/form-modal";
 import StatusBadge from "@/components/ui/status-badge";
@@ -23,7 +23,9 @@ interface Acceptance {
   AIRNumber?: string | null;
   po: { poNumber: string; supplier: { name: string } };
   status: string;
+  lastModifiedBy?: string | null;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export default function AcceptancesPage() {
@@ -69,7 +71,7 @@ export default function AcceptancesPage() {
     {
       key: "airNumber",
       label: "AIR Number",
-      width: "24%",
+      width: "20%",
       render: (row: Acceptance) => (
         <Link
           href={`/acceptances/${row.id}`}
@@ -83,7 +85,7 @@ export default function AcceptancesPage() {
     {
       key: "poNumber",
       label: "PO Number",
-      width: "20%",
+      width: "16%",
       render: (row: Acceptance) => (
         row.po?.poNumber && row.poId ? (
           <Link
@@ -103,7 +105,7 @@ export default function AcceptancesPage() {
     {
       key: "supplier",
       label: "Supplier",
-      width: "32%",
+      width: "22%",
       align: "left",
       render: (row: Acceptance) => (
         <div style={{ fontSize: "0.875rem", color: "#334155", fontWeight: 500 }}>
@@ -114,19 +116,35 @@ export default function AcceptancesPage() {
     {
       key: "status",
       label: "Status",
-      width: "12%",
-      align: "center",
+      width: "14%",
+      align: "left",
       render: (row: Acceptance) => <StatusBadge status={row.status} />,
     },
     {
-      key: "createdAt",
-      label: "Date Created",
+      key: "lastModifiedBy",
+      label: "Modified By",
+      width: "16%",
+      align: "left",
+      render: (row: Acceptance) => (
+        <div className="inline-flex items-center gap-1.5 text-xs text-slate-600 font-medium">
+          <User size={13} className="text-slate-400 shrink-0" />
+          <span>{row.lastModifiedBy || "—"}</span>
+        </div>
+      ),
+    },
+    {
+      key: "updatedAt",
+      label: "Date Modified",
       width: "12%",
-      align: "center",
+      align: "left",
       sortable: true,
       render: (row: Acceptance) => (
-        <span style={{ fontSize: "0.8125rem", color: "#64748b", display: "block", whiteSpace: "nowrap" }}>
-          {new Date(row.createdAt).toLocaleDateString("en-PH")}
+        <span className="text-slate-600 text-xs whitespace-nowrap">
+          {new Date(row.updatedAt || row.createdAt).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })}
         </span>
       ),
     }
@@ -153,7 +171,7 @@ export default function AcceptancesPage() {
           { label: "Partial", value: "PARTIAL" },
           { label: "Completed", value: "COMPLETED" },
         ]}
-        dateFilterKey="createdAt"
+        dateFilterKey="updatedAt"
         departmentFilterKey={(row: any) => row.po?.pr?.office?.name || row.po?.abstract?.rfq?.pr?.office?.name || ""}
       />
       {showModal && (

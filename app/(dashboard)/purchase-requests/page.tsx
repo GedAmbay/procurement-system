@@ -16,7 +16,9 @@ interface PR {
   fundSource: { name: string; code: string } | null;
   totalAmount: number;
   status: string;
+  lastModifiedBy?: string | null;
   createdAt: string;
+  updatedAt?: string;
   isDirectAcquisition?: boolean;
   requestType?: string;
 }
@@ -82,10 +84,10 @@ export default function PurchaseRequestsPage() {
     {
       key: "totalAmount",
       label: "Total Amount",
-      align: "center",
+      align: "right",
       sortable: true,
       render: (row: PR) => (
-        <div style={{ fontWeight: "700", color: "#059669" }}>
+        <div className="font-bold text-[#059669] font-mono text-sm">
           {formatCurrency(row.totalAmount)}
         </div>
       ),
@@ -93,29 +95,33 @@ export default function PurchaseRequestsPage() {
     },
 
     {
-      key: "createdAt",
-      label: "Date",
-      align: "center",
-      sortable: true,
+      key: "lastModifiedBy",
+      label: "Modified By",
+      align: "left",
       render: (row: PR) => (
-        <span style={{ fontSize: "0.8125rem", color: "#64748b", display: "block" }}>
-          {new Date(row.createdAt).toLocaleDateString("en-PH")}
-        </span>
+        <div className="inline-flex items-center gap-1.5 text-xs text-slate-600 font-medium">
+          <User size={13} className="text-slate-400 shrink-0" />
+          <span>{row.lastModifiedBy || row.requestedBy?.name || "—"}</span>
+        </div>
       ),
-      width: "120px",
+      width: "160px",
     },
 
     {
-      key: "requestedBy",
-      label: "Created By",
-      align: "center",
+      key: "updatedAt",
+      label: "Date Modified",
+      align: "left",
+      sortable: true,
       render: (row: PR) => (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.375rem", fontSize: "0.8125rem", color: "#475569", fontWeight: 500 }}>
-          <User size={13} style={{ color: "#94a3b8" }} />
-          <span>{row.requestedBy?.name || "—"}</span>
-        </div>
+        <span className="text-slate-600 text-xs whitespace-nowrap">
+          {new Date(row.updatedAt || row.createdAt).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })}
+        </span>
       ),
-      width: "150px",
+      width: "130px",
     },
   ];
 
@@ -166,7 +172,7 @@ export default function PurchaseRequestsPage() {
         ]}
         emptyIcon={<FileText size={40} style={{ opacity: 0.3 }} />}
         emptyText="No Purchase Requests found"
-        dateFilterKey="createdAt"
+        dateFilterKey="updatedAt"
         departmentFilterKey={(row) => row.office?.name || row.office?.code || ""}
       />
     </div>

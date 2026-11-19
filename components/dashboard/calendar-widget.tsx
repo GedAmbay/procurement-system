@@ -702,23 +702,6 @@ export default function CalendarWidget() {
           <Trophy size={13} className="text-amber-500" />
           <span>Award</span>
         </button>
-
-        <button
-          type="button"
-          onClick={() =>
-            setSelectedCategory(
-              selectedCategory === "On Leave / Absent" ? "ALL" : "On Leave / Absent"
-            )
-          }
-          className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full transition-all ${
-            selectedCategory === "On Leave / Absent"
-              ? "bg-rose-100 text-rose-800 font-bold"
-              : "hover:bg-slate-100"
-          }`}
-        >
-          <CalendarX size={13} className="text-rose-500" />
-          <span>On Leave / Not Present</span>
-        </button>
       </div>
 
       {/* Event Details / Category-Specific Form Modal */}

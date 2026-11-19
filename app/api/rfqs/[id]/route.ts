@@ -3,6 +3,15 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { requireRole } from "@/lib/auth-utils";
 import { syncRfqStatus, syncRfqItemsWithPr } from "@/lib/rfq-status";
+import { applyRfqDescriptionEdits, parseDescriptionEdits } from "@/lib/line-item-descriptions";
+
+// PR line item text is needed by the editor to show "Edited" / "PR changed" markers
+const prLineItemsSelect = {
+  lineItems: {
+    orderBy: { sortOrder: "asc" as const },
+    select: { id: true, description: true, sortOrder: true },
+  },
+};
 
 export async function GET(
   req: NextRequest,
@@ -30,6 +39,7 @@ export async function GET(
           include: {
             office: true,
             requestedBy: true,
+            ...prLineItemsSelect,
           }
         },
         createdBy: true,
@@ -139,18 +149,27 @@ export async function PATCH(
       dataToUpdate.remarks = body.remarks ? body.remarks : null;
     }
 
-    if (Object.keys(dataToUpdate).length > 0) {
-      const updatedRfq = await prisma.rfq.update({
-        where: { id },
-        data: dataToUpdate,
-        include: {
-          pr: { include: { office: true } },
-          createdBy: true,
-          signatory: true,
-          lineItems: { orderBy: { sortOrder: "asc" } },
-          quotations: { include: { supplier: true, lineItems: true } },
-        },
-      });
+    // Manual line item description edits from the live preview
+    const descriptionEdits = parseDescriptionEdits(body.lineItemDescriptions) || [];
+
+    if (Object.keys(dataToUpdate).length > 0 || descriptionEdits.length > 0) {
+      const updatedRfq = await prisma.$transaction(async (tx) => {
+        if (descriptionEdits.length > 0) {
+          await applyRfqDescriptionEdits(id, descriptionEdits, tx);
+        }
+        return tx.rfq.update({
+          where: { id },
+          data: dataToUpdate,
+          include: {
+            pr: { include: { office: true, ...prLineItemsSelect } },
+            createdBy: true,
+            signatory: true,
+            abstract: { select: { id: true, abstractNumber: true, status: true } },
+            lineItems: { orderBy: { sortOrder: "asc" } },
+            quotations: { include: { supplier: true, lineItems: true } },
+          },
+        });
+      }, { timeout: 20000 });
 
       const user = session.user as any;
       if (user?.id) {

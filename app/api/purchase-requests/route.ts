@@ -54,10 +54,34 @@ export async function GET(req: NextRequest) {
       requestedBy: { select: { name: true } },
       fundSource: { select: { name: true, code: true } },
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: { updatedAt: "desc" },
   });
 
-  return NextResponse.json(prs);
+  const prIds = prs.map((p) => p.id);
+  const recentLogs = prIds.length > 0
+    ? await prisma.documentAuditLog.findMany({
+        where: {
+          documentId: { in: prIds },
+          action: { in: ["SAVE", "UPDATE", "CREATE"] },
+        },
+        orderBy: { createdAt: "desc" },
+        include: { user: { select: { name: true } } },
+      })
+    : [];
+
+  const lastLogMap = new Map<string, string>();
+  for (const log of recentLogs) {
+    if (!lastLogMap.has(log.documentId) && log.user?.name) {
+      lastLogMap.set(log.documentId, log.user.name);
+    }
+  }
+
+  const result = prs.map((pr) => ({
+    ...pr,
+    lastModifiedBy: lastLogMap.get(pr.id) || pr.requestedBy?.name || null,
+  }));
+
+  return NextResponse.json(result);
 }
 
 export async function POST(req: NextRequest) {

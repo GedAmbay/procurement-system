@@ -42,6 +42,9 @@ export async function GET(req: NextRequest) {
     const abstracts = await prisma.abstractOfCanvass.findMany({
       where: whereClause,
       include: {
+        createdBy: {
+          select: { name: true }
+        },
         purchaseOrders: {
           select: {
             supplier: {
@@ -70,12 +73,32 @@ export async function GET(req: NextRequest) {
           }
         },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { updatedAt: "desc" },
     });
 
-    const mapped = abstracts.map(a => ({
+    const abstractIds = abstracts.map((a) => a.id);
+    const recentLogs = abstractIds.length > 0
+      ? await prisma.documentAuditLog.findMany({
+          where: {
+            documentId: { in: abstractIds },
+            action: { in: ["SAVE", "UPDATE", "CREATE"] },
+          },
+          orderBy: { createdAt: "desc" },
+          include: { user: { select: { name: true } } },
+        })
+      : [];
+
+    const lastLogMap = new Map<string, string>();
+    for (const log of recentLogs) {
+      if (!lastLogMap.has(log.documentId) && log.user?.name) {
+        lastLogMap.set(log.documentId, log.user.name);
+      }
+    }
+
+    const mapped = abstracts.map((a) => ({
       ...a,
       status: a.status === "SIGNED" ? "COMPLETED" : a.status,
+      lastModifiedBy: lastLogMap.get(a.id) || a.createdBy?.name || null,
     }));
 
     return NextResponse.json(mapped);

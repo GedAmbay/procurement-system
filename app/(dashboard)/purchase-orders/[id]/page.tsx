@@ -11,6 +11,7 @@ import { Printer, Save, ArrowLeft, Loader2, Send, ZoomIn, ZoomOut, Minus, Plus, 
 import Link from "next/link";
 import { toast } from "sonner";
 import { formatCurrency, numberToWords } from "@/lib/utils";
+import EditableDescriptionCell from "@/components/documents/editable-description-cell";
 
 interface POFormValues {
   poNumber?: string;
@@ -44,6 +45,13 @@ export default function PurchaseOrderEditor() {
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [lastSavedBy, setLastSavedBy] = useState<string | null>(null);
+  // Unsaved line item description edits typed directly in the live preview, keyed by PO line item id
+  const [descDrafts, setDescDrafts] = useState<Record<string, string>>({});
+
+  const getDescriptionEdits = () =>
+    (poData?.lineItems || [])
+      .filter((item: any) => descDrafts[item.id] !== undefined && descDrafts[item.id] !== item.description)
+      .map((item: any) => ({ id: item.id, description: descDrafts[item.id] }));
 
   const handleUnlockConfirm = async (password?: string) => {
     if (!password) {
@@ -163,6 +171,7 @@ export default function PurchaseOrderEditor() {
         paymentTerms: data.paymentTerms,
         orderType: data.orderType || "PURCHASE",
         requestingOffice: data.requestingOffice,
+        lineItemDescriptions: getDescriptionEdits(),
       };
 
       const res = await fetch(`/api/purchase-orders/${params.id}`, {
@@ -174,6 +183,7 @@ export default function PurchaseOrderEditor() {
       if (res.ok) {
         const updated = await res.json();
         setPoData((prev: any) => ({ ...prev, ...updated }));
+        setDescDrafts({});
         setLastSaved(new Date());
         if (updated.lastSavedBy) {
           setLastSavedBy(updated.lastSavedBy);
@@ -262,6 +272,14 @@ export default function PurchaseOrderEditor() {
   const linkedPrNumber = poData.abstract?.rfq?.pr?.prNumber || poData.pr?.prNumber || "PENDING";
   const lineItems = poData.lineItems || [];
   const acceptances = poData.acceptances || [];
+
+  // Reference rows for descriptions: RFQ rows (or PR rows for direct acquisition), matched by row position
+  const rfqRowsBySort = new Map<number, any>(
+    (poData.abstract?.rfq?.lineItems || []).map((r: any) => [r.sortOrder, r])
+  );
+  const refRows: any[] = poData.abstract?.rfq?.lineItems || poData.pr?.lineItems || [];
+  const refLabel = poData.abstract?.rfq ? "RFQ" : "PR";
+  const pendingDescCount = getDescriptionEdits().length;
 
   return (
     <div className="flex flex-col gap-3.5 p-3 sm:p-4 bg-[#e9edf4] w-full max-w-full min-w-0 overflow-hidden flex-1 print:!block print:!h-auto print:!overflow-visible print:!m-0 print:!p-0 print:!bg-white print:!w-full print:!max-w-none" style={{ height: 'calc(var(--full-vh) - 88px)' }}>
@@ -590,21 +608,34 @@ export default function PurchaseOrderEditor() {
 
                             const hasSpecs = !isSpec && idx + 1 < lineItems.length && (!lineItems[idx + 1].quantity || lineItems[idx + 1].quantity === 0);
 
-                            // Match price from winning quote if line item price on PO is not set yet
+                            // Match price from winning quote if line item price on PO is not set yet.
+                            // Quotation lines point to RFQ rows; match by row position (descriptions may differ on the PO).
+                            const rfqRowId = rfqRowsBySort.get(item.sortOrder)?.id;
                             const quoteLine = winningQuote?.lineItems?.find(
-                              (qli: any) =>
-                                qli.rfqLineItemId === item.id ||
-                                qli.rfqLineItem?.sortOrder === item.sortOrder ||
-                                qli.rfqLineItem?.description?.trim().toLowerCase() === item.description?.trim().toLowerCase()
+                              (qli: any) => rfqRowId && qli.rfqLineItemId === rfqRowId
                             );
                             const unitCost = item.unitPrice > 0 ? item.unitPrice : (quoteLine?.unitPrice || 0);
                             const itemAmount = item.totalPrice > 0 ? item.totalPrice : (quoteLine?.totalPrice || (unitCost * (item.quantity || 0)));
 
+                            const refDesc: string | undefined = refRows.find((r: any) => r.sortOrder === item.sortOrder)?.description;
+                            const currentDesc: string = descDrafts[item.id] ?? item.description;
+                            const isEditedDesc = refDesc !== undefined && currentDesc.trim() !== refDesc;
+
                             return (
-                              <tr key={idx}>
+                              <tr key={item.id || idx}>
                                 <td className="border-r border-black p-[2px] text-center">{displayNo}</td>
                                 <td className="border-r border-black p-[2px] text-center">{isSpec ? "" : item.unit}</td>
-                                <td className={`border-r border-black p-[2px] px-2 break-words ${isSpec ? "pl-4 text-sm" : (hasSpecs ? "font-bold" : "")}`}>{item.description}</td>
+                                <td className={`border-r border-black p-[2px] px-2 break-words ${isSpec ? "pl-4 text-sm" : (hasSpecs ? "font-bold" : "")}`}>
+                                  <EditableDescriptionCell
+                                    group="po-desc"
+                                    value={currentDesc}
+                                    readOnly={isReadOnly}
+                                    onChange={(val) => setDescDrafts((d) => ({ ...d, [item.id]: val }))}
+                                    edited={isEditedDesc}
+                                    sourceLabel={refLabel}
+                                    onReset={refDesc !== undefined ? () => setDescDrafts((d) => ({ ...d, [item.id]: refDesc })) : undefined}
+                                  />
+                                </td>
                                 <td className="border-r border-black p-[2px] text-center">{isSpec ? "" : item.quantity}</td>
                                 <td className="border-r border-black p-[2px] px-2 text-right">{isSpec ? "" : (unitCost > 0 ? formatCurrency(unitCost).replace('₱', '') : "")}</td>
                                 <td className="p-[2px] px-2 text-right">{isSpec ? "" : (itemAmount > 0 ? formatCurrency(itemAmount).replace('₱', '') : "")}</td>
@@ -947,6 +978,18 @@ export default function PurchaseOrderEditor() {
                 </div>
               </div>
             </div>
+
+            {!isReadOnly && (
+              <div className="rounded-lg border border-blue-100 bg-blue-50/60 p-3 text-[11px] leading-snug text-slate-600">
+                <p className="font-semibold text-slate-800 mb-0.5">Item descriptions</p>
+                <p>Click any description in the preview to edit it (e.g. add the supplier&apos;s brand or model). Edited rows keep your text and also appear on the Acceptance report.</p>
+                {pendingDescCount > 0 && (
+                  <p className="mt-1.5 font-semibold text-amber-700">
+                    {pendingDescCount} unsaved description change{pendingDescCount > 1 ? "s" : ""}. Click Save to keep them.
+                  </p>
+                )}
+              </div>
+            )}
 
             <div className="pt-2 text-[11px] text-slate-400 flex items-center gap-1.5">
               <CheckCircle2 size={13} className="text-emerald-500" />

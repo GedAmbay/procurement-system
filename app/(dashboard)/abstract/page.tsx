@@ -6,7 +6,7 @@ import Link from "next/link";
 import DataTable from "@/components/ui/data-table";
 import StatusBadge from "@/components/ui/status-badge";
 import { formatCurrency } from "@/lib/utils";
-import { Send, Clock, CheckCircle2, ClipboardList, XCircle, ExternalLink } from "lucide-react";
+import { Send, Clock, CheckCircle2, ClipboardList, XCircle, ExternalLink, User } from "lucide-react";
 
 interface abstract {
   id: string;
@@ -27,7 +27,9 @@ interface abstract {
     supplier: { name: string };
   }[];
   status: string;
+  lastModifiedBy?: string | null;
   createdAt: string;
+  updatedAt?: string;
 }
 
 const STATUS_COLORS: Record<string, { bg: string; color: string; icon: React.ReactNode }> = {
@@ -83,7 +85,7 @@ export default function abstractPage() {
     {
       key: "awardedSupplier",
       label: "Awarded Supplier",
-      align: "center",
+      align: "left",
       render: (row: abstract) => {
         const winningSupplier =
           row.purchaseOrders?.[0]?.supplier?.name ||
@@ -104,21 +106,37 @@ export default function abstractPage() {
     {
       key: "status",
       label: "Status",
-      align: "center",
+      align: "left",
       render: (row: abstract) => <StatusBadge status={row.status} />,
+      width: "140px",
+    },
+    {
+      key: "lastModifiedBy",
+      label: "Modified By",
+      align: "left",
+      render: (row: abstract) => (
+        <div className="inline-flex items-center gap-1.5 text-xs text-slate-600 font-medium">
+          <User size={13} className="text-slate-400 shrink-0" />
+          <span>{row.lastModifiedBy || "—"}</span>
+        </div>
+      ),
       width: "160px",
     },
     {
-      key: "createdAt",
-      label: "Date",
-      align: "center",
+      key: "updatedAt",
+      label: "Date Modified",
+      align: "left",
       sortable: true,
       render: (row: abstract) => (
-        <span style={{ fontSize: "0.8125rem", color: "#64748b" }}>
-          {new Date(row.createdAt).toLocaleDateString("en-PH")}
+        <span className="text-slate-600 text-xs whitespace-nowrap">
+          {new Date(row.updatedAt || row.createdAt).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })}
         </span>
       ),
-      width: "120px",
+      width: "130px",
     }
   ];
 
@@ -164,7 +182,7 @@ export default function abstractPage() {
           { label: "Issued", value: "ISSUED" },
           { label: "Completed", value: "COMPLETED" },
         ]}
-        dateFilterKey="createdAt"
+        dateFilterKey="updatedAt"
         departmentFilterKey={(row) => row.rfq?.pr?.office?.name || ""}
       />
     </div>

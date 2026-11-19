@@ -29,9 +29,10 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const pos = await prisma.purchaseOrder.findMany({
+    let finalPos = await prisma.purchaseOrder.findMany({
       where: whereClause,
       include: {
+        createdBy: { select: { name: true } },
         supplier: true,
         pr: {
           select: { prNumber: true, purpose: true, office: true, isDirectAcquisition: true, requestType: true } as any
@@ -51,16 +52,17 @@ export async function GET(req: NextRequest) {
           }
         }
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { updatedAt: "desc" },
     });
 
     // Auto-heal / sync any PO missing supplier if abstract has bids
-    const posToSync = pos.filter((p: any) => !p.supplierId && p.abstractId);
+    const posToSync = finalPos.filter((p: any) => !p.supplierId && p.abstractId);
     if (posToSync.length > 0) {
       await Promise.all(posToSync.map((p: any) => syncAwardedSupplierToPO(p.abstractId)));
-      const refreshedPos = await prisma.purchaseOrder.findMany({
+      finalPos = await prisma.purchaseOrder.findMany({
         where: whereClause,
         include: {
+          createdBy: { select: { name: true } },
           supplier: true,
           pr: {
             select: { prNumber: true, purpose: true, office: true, isDirectAcquisition: true, requestType: true } as any
@@ -80,12 +82,35 @@ export async function GET(req: NextRequest) {
             }
           }
         },
-        orderBy: { createdAt: "desc" },
+        orderBy: { updatedAt: "desc" },
       });
-      return NextResponse.json(refreshedPos);
     }
 
-    return NextResponse.json(pos);
+    const poIds = finalPos.map((p) => p.id);
+    const recentLogs = poIds.length > 0
+      ? await prisma.documentAuditLog.findMany({
+          where: {
+            documentId: { in: poIds },
+            action: { in: ["SAVE", "UPDATE", "CREATE"] },
+          },
+          orderBy: { createdAt: "desc" },
+          include: { user: { select: { name: true } } },
+        })
+      : [];
+
+    const lastLogMap = new Map<string, string>();
+    for (const log of recentLogs) {
+      if (!lastLogMap.has(log.documentId) && log.user?.name) {
+        lastLogMap.set(log.documentId, log.user.name);
+      }
+    }
+
+    const result = finalPos.map((p) => ({
+      ...p,
+      lastModifiedBy: lastLogMap.get(p.id) || p.createdBy?.name || null,
+    }));
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error("Fetch POs Error:", error);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });

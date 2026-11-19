@@ -15,7 +15,6 @@ import {
 import { formatCurrency } from "@/lib/utils";
 import CalendarWidget from "./calendar-widget";
 import AnnouncementsPanel from "./announcements-panel";
-import BacAttendancePanel from "./bac-attendance-panel";
 
 interface DashboardClientProps {
   data: {
@@ -228,10 +227,9 @@ export default function DashboardClient({ data, user }: DashboardClientProps) {
           <CalendarWidget />
         </div>
 
-        {/* Right Column: Announcements + BAC Attendance (~35% width) */}
+        {/* Right Column: Announcements (~35% width) */}
         <div className="xl:col-span-4 w-full flex flex-col gap-6">
           <AnnouncementsPanel />
-          <BacAttendancePanel initialMembers={data.bacSignatories} />
         </div>
       </div>
     </div>

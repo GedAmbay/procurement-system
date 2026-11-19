@@ -3,6 +3,15 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { requireRole } from "@/lib/auth-utils";
 import { syncAwardedSupplierToPO } from "@/lib/po-award-sync";
+import { applyPoDescriptionEdits, parseDescriptionEdits } from "@/lib/line-item-descriptions";
+
+// Reference text (RFQ rows, or PR rows for direct acquisition) used to show "Edited" markers / reset
+const refLineItemsSelect = {
+  lineItems: {
+    orderBy: { sortOrder: "asc" as const },
+    select: { id: true, description: true, sortOrder: true },
+  },
+};
 
 export async function GET(
   req: NextRequest,
@@ -24,12 +33,13 @@ export async function GET(
         supplier: true,
         lineItems: { orderBy: { sortOrder: "asc" } },
         pr: {
-          include: { office: true }
+          include: { office: true, ...refLineItemsSelect }
         },
         abstract: {
           include: {
             rfq: {
               include: {
+                ...refLineItemsSelect,
                 pr: {
                   include: { office: true }
                 },
@@ -64,12 +74,13 @@ export async function GET(
           supplier: true,
           lineItems: { orderBy: { sortOrder: "asc" } },
           pr: {
-            include: { office: true }
+            include: { office: true, ...refLineItemsSelect }
           },
           abstract: {
             include: {
               rfq: {
                 include: {
+                  ...refLineItemsSelect,
                   pr: {
                     include: { office: true }
                   },
@@ -143,8 +154,17 @@ export async function PATCH(
       }
     }
 
+    const descriptionEdits = parseDescriptionEdits(body.lineItemDescriptions) || [];
+    if (descriptionEdits.length > 0) {
+      await prisma.$transaction(
+        (tx) => applyPoDescriptionEdits(id, descriptionEdits, tx),
+        { timeout: 20000 }
+      );
+    }
+
     const updatedPO = await prisma.purchaseOrder.update({
       where: { id },
+      include: { lineItems: { orderBy: { sortOrder: "asc" } } },
       data: {
         ...(poNumberToSave !== undefined ? { poNumber: poNumberToSave } : {}),
         status: body.status !== undefined ? body.status : po.status,

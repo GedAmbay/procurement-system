@@ -11,6 +11,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import ConfirmModal from "@/components/ui/confirm-modal";
+import EditableDescriptionCell from "@/components/documents/editable-description-cell";
 
 export default function RfqLivePreviewPage() {
   const params = useParams();
@@ -30,6 +31,24 @@ export default function RfqLivePreviewPage() {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [lastSavedBy, setLastSavedBy] = useState<string | null>(null);
   const [, setTick] = useState(0);
+  // Unsaved line item description edits typed directly in the live preview, keyed by RFQ line item id
+  const [descDrafts, setDescDrafts] = useState<Record<string, string>>({});
+  // Rows where the user chose "Keep mine" after the PR description changed
+  const [keepIds, setKeepIds] = useState<Set<string>>(new Set());
+
+  const getDescriptionEdits = () => {
+    if (!rfq?.lineItems) return [];
+    return rfq.lineItems
+      .filter((item: any) =>
+        (descDrafts[item.id] !== undefined && descDrafts[item.id] !== item.description) || keepIds.has(item.id)
+      )
+      .map((item: any) => ({ id: item.id, description: descDrafts[item.id] ?? item.description }));
+  };
+
+  const clearDescriptionDrafts = () => {
+    setDescDrafts({});
+    setKeepIds(new Set());
+  };
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -110,6 +129,7 @@ export default function RfqLivePreviewPage() {
         rfqNumber: data.rfqNumber?.trim() || null,
         signatoryId: data.signatoryId || null,
         deadline: data.deadline || null,
+        lineItemDescriptions: getDescriptionEdits(),
       };
 
       const res = await fetch(`/api/rfqs/${params.id}`, {
@@ -125,12 +145,8 @@ export default function RfqLivePreviewPage() {
 
       const updated = await res.json();
       setRfq(updated);
+      clearDescriptionDrafts();
       setLastSaved(new Date(updated.updatedAt || Date.now()));
-      if (updated.lastSavedBy) {
-        setLastSavedBy(updated.lastSavedBy);
-      } else if (session?.user?.name) {
-        setLastSavedBy(session.user.name);
-      }
       if (updated.lastSavedBy) {
         setLastSavedBy(updated.lastSavedBy);
       } else if (session?.user?.name) {
@@ -163,6 +179,10 @@ export default function RfqLivePreviewPage() {
       if (watchDeadline) {
         payload.deadline = watchDeadline;
       }
+      const descriptionEdits = getDescriptionEdits();
+      if (descriptionEdits.length > 0) {
+        payload.lineItemDescriptions = descriptionEdits;
+      }
 
       const res = await fetch(`/api/rfqs/${params.id}`, {
         method: "PATCH",
@@ -177,6 +197,7 @@ export default function RfqLivePreviewPage() {
 
       const updated = await res.json();
       setRfq(updated);
+      clearDescriptionDrafts();
       setLastSaved(new Date(updated.updatedAt || Date.now()));
       if (updated.lastSavedBy) {
         setLastSavedBy(updated.lastSavedBy);
@@ -211,6 +232,7 @@ export default function RfqLivePreviewPage() {
   if (!rfq) return <div>Error loading data</div>;
 
   const isReadOnly = rfq.status !== "DRAFT" && !isUnlocked;
+  const pendingDescCount = getDescriptionEdits().length;
 
   const getSavedTimeText = () => {
     if (!lastSaved) return "Saved just now";
@@ -506,10 +528,31 @@ export default function RfqLivePreviewPage() {
 
                           const hasSpecs = !isSpec && idx + 1 < rfq.lineItems.length && (!rfq.lineItems[idx + 1].quantity || rfq.lineItems[idx + 1].quantity === 0);
 
+                          // Description editing: compare against the PR text at the same row
+                          const prDesc: string | undefined = (rfq.pr?.lineItems || []).find((p: any) => p.sortOrder === item.sortOrder)?.description;
+                          const currentDesc: string = descDrafts[item.id] ?? item.description;
+                          const isEditedDesc = prDesc !== undefined && currentDesc.trim() !== prDesc;
+                          const prChanged =
+                            !!item.descriptionEdited && !keepIds.has(item.id) && prDesc !== undefined &&
+                            item.sourceDescription !== prDesc && currentDesc.trim() !== prDesc;
+
                           return (
-                            <tr key={idx} className="h-6">
+                            <tr key={item.id || idx} className="h-6">
                               <td className="border-x border-black py-0 px-1 text-center align-top leading-normal">{displayNo}</td>
-                              <td className={`border-x border-black py-0 px-2.5 align-top leading-normal ${isSpec ? "pl-6 text-[14px]" : (hasSpecs ? "font-bold" : "")}`}>{item.description}</td>
+                              <td className={`border-x border-black py-0 px-2.5 align-top leading-normal ${isSpec ? "pl-6 text-[14px]" : (hasSpecs ? "font-bold" : "")}`}>
+                                <EditableDescriptionCell
+                                  group="rfq-desc"
+                                  value={currentDesc}
+                                  readOnly={isReadOnly}
+                                  onChange={(val) => setDescDrafts((d) => ({ ...d, [item.id]: val }))}
+                                  edited={isEditedDesc}
+                                  sourceLabel="PR"
+                                  onReset={prDesc !== undefined ? () => setDescDrafts((d) => ({ ...d, [item.id]: prDesc })) : undefined}
+                                  sourceChanged={prChanged}
+                                  sourceText={prDesc}
+                                  onKeepMine={() => setKeepIds((s) => new Set(s).add(item.id))}
+                                />
+                              </td>
                               <td className="border-x border-black py-0 px-1 text-center align-top leading-normal">{isSpec ? "" : item.quantity}</td>
                               <td className="border-x border-black py-0 px-1 text-center align-top leading-normal">{isSpec ? "" : item.unit}</td>
                               <td className="border-x border-black py-0 px-2 text-center align-top">
@@ -687,6 +730,17 @@ export default function RfqLivePreviewPage() {
             </div>
 
             <div className="mt-auto pt-4 border-t border-slate-100">
+              {!isReadOnly && (
+                <div className="mb-3 rounded-lg border border-blue-100 bg-blue-50/60 p-3 text-[11px] leading-snug text-slate-600">
+                  <p className="font-semibold text-slate-800 mb-0.5">Item descriptions</p>
+                  <p>Click any description in the preview to edit it (e.g. remove brand names). Edited rows stay as you typed them even when the PR is updated, and also appear on the Abstract and Purchase Order.</p>
+                  {pendingDescCount > 0 && (
+                    <p className="mt-1.5 font-semibold text-amber-700">
+                      {pendingDescCount} unsaved description change{pendingDescCount > 1 ? "s" : ""}. Click Save to keep them.
+                    </p>
+                  )}
+                </div>
+              )}
               {isReadOnly ? (
                 <div className="flex items-center gap-2 text-xs text-slate-500">
                   <Lock size={14} className="text-slate-400 shrink-0" />

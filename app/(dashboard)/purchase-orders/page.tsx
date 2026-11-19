@@ -6,7 +6,7 @@ import Link from "next/link";
 import DataTable from "@/components/ui/data-table";
 import StatusBadge from "@/components/ui/status-badge";
 import { formatCurrency } from "@/lib/utils";
-import { FileText, Truck, Clock, CheckCircle2, FileSignature, ExternalLink } from "lucide-react";
+import { FileText, Truck, Clock, CheckCircle2, FileSignature, ExternalLink, User } from "lucide-react";
 
 interface PO {
   id: string;
@@ -22,7 +22,9 @@ interface PO {
   supplier?: { name: string };
   totalAmount: number;
   status: string;
+  lastModifiedBy?: string | null;
   createdAt: string;
+  updatedAt?: string;
 }
 
 const STATUS_COLORS: Record<string, { bg: string; color: string; icon: React.ReactNode }> = {
@@ -106,6 +108,7 @@ export default function PurchaseOrdersPage() {
     {
       key: "totalAmount",
       label: "Amount",
+      align: "right",
       sortable: true,
       render: (row: PO) => {
         let amount = row.totalAmount;
@@ -117,31 +120,47 @@ export default function PurchaseOrdersPage() {
           }
         }
         return (
-          <div style={{ fontWeight: "700", color: "#059669" }}>
+          <div className="font-bold text-[#059669] font-mono text-sm text-right">
             {formatCurrency(amount)}
           </div>
         );
       },
-      width: "130px",
+      width: "140px",
     },
     {
       key: "status",
       label: "Status",
-      align: "center",
+      align: "left",
       render: (row: PO) => <StatusBadge status={row.status} />,
+      width: "140px",
+    },
+    {
+      key: "lastModifiedBy",
+      label: "Modified By",
+      align: "left",
+      render: (row: PO) => (
+        <div className="inline-flex items-center gap-1.5 text-xs text-slate-600 font-medium">
+          <User size={13} className="text-slate-400 shrink-0" />
+          <span>{row.lastModifiedBy || "—"}</span>
+        </div>
+      ),
       width: "160px",
     },
     {
-      key: "createdAt",
-      label: "Date",
-      align: "center",
+      key: "updatedAt",
+      label: "Date Modified",
+      align: "left",
       sortable: true,
       render: (row: PO) => (
-        <span style={{ fontSize: "0.8125rem", color: "#64748b" }}>
-          {new Date(row.createdAt).toLocaleDateString("en-PH")}
+        <span className="text-slate-600 text-xs whitespace-nowrap">
+          {new Date(row.updatedAt || row.createdAt).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })}
         </span>
       ),
-      width: "100px",
+      width: "130px",
     }
   ];
 
@@ -185,7 +204,7 @@ export default function PurchaseOrdersPage() {
           { label: "Completed", value: "COMPLETED" },
           { label: "Cancelled", value: "CANCELLED" },
         ]}
-        dateFilterKey="createdAt"
+        dateFilterKey="updatedAt"
         departmentFilterKey={(row) => row.pr?.office?.name || row.abstract?.rfq?.pr?.office?.name || ""}
         customFilters={[
           { label: "Direct Acquisition", filterFn: (row: PO) => !!row.pr?.isDirectAcquisition || !!row.abstract?.rfq?.pr?.isDirectAcquisition, colorClass: "bg-teal-100 text-teal-800" }

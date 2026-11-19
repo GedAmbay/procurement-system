@@ -13,11 +13,26 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const role = searchParams.get("role") ?? "";
 
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999);
+
   const signatories = await prisma.signatory.findMany({
     where: {
       ...(role ? { role } : {}),
+      isActive: true,
     },
-    include: { office: true },
+    include: {
+      office: true,
+      bacLeaves: {
+        where: {
+          status: "APPROVED",
+          startDate: { lte: todayEnd },
+          endDate: { gte: todayStart },
+        },
+      },
+    },
     orderBy: { name: "asc" },
   });
 

@@ -242,13 +242,14 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
 
       // Date Filter
       if (dateFilterKey) {
-        if (dateRange.start) {
-          const rowDate = new Date(row[dateFilterKey] as any).getTime();
+        const rawDate = row[dateFilterKey] || (row as any).updatedAt || (row as any).createdAt;
+        if (dateRange.start && rawDate) {
+          const rowDate = new Date(rawDate as any).getTime();
           const startDate = new Date(dateRange.start).setHours(0, 0, 0, 0);
           if (rowDate < startDate) return false;
         }
-        if (dateRange.end) {
-          const rowDate = new Date(row[dateFilterKey] as any).getTime();
+        if (dateRange.end && rawDate) {
+          const rowDate = new Date(rawDate as any).getTime();
           const endDate = new Date(dateRange.end).setHours(23, 59, 59, 999);
           if (rowDate > endDate) return false;
         }
@@ -291,6 +292,13 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
       if (bValue === null || bValue === undefined) return -1;
 
       if (typeof aValue === "string" && typeof bValue === "string") {
+        const isDateA = !isNaN(Date.parse(aValue)) && (aValue.includes("-") || aValue.includes("/"));
+        const isDateB = !isNaN(Date.parse(bValue)) && (bValue.includes("-") || bValue.includes("/"));
+        if (isDateA && isDateB) {
+          const timeA = new Date(aValue).getTime();
+          const timeB = new Date(bValue).getTime();
+          return sortConfig.direction === "asc" ? timeA - timeB : timeB - timeA;
+        }
         return sortConfig.direction === "asc"
           ? aValue.localeCompare(bValue)
           : bValue.localeCompare(aValue);
@@ -690,8 +698,9 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
                       <th
                         key={col.key}
                         style={{ width: col.width, textAlign: (col.align || "left") as any }}
-                        className={`px-4 py-3.5 whitespace-nowrap ${isLast ? "pr-6" : ""} ${col.sortable ? "cursor-pointer hover:text-slate-900" : ""
-                          }`}
+                        className={`px-4 py-3.5 whitespace-nowrap ${isLast ? "pr-6" : ""} ${col.sortable ? "cursor-pointer hover:text-slate-900" : ""} ${
+                          col.align === "right" ? "text-right" : col.align === "center" ? "text-center" : "text-left"
+                        }`}
                         onClick={() => {
                           if (!col.sortable) return;
                           let nextDirection: "asc" | "desc" = "asc";
@@ -760,7 +769,9 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
                           <td
                             key={col.key}
                             style={{ width: col.width, textAlign: (col.align || "left") as any }}
-                            className={`px-4 py-4 ${isLast ? "pr-6" : ""}`}
+                            className={`px-4 py-4 ${isLast ? "pr-6" : ""} ${
+                              col.align === "right" ? "text-right" : col.align === "center" ? "text-center" : "text-left"
+                            }`}
                           >
                             {col.render ? col.render(row) : String((row as any)[col.key] ?? "—")}
                           </td>
