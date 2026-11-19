@@ -198,7 +198,7 @@ export async function PATCH(
       }
 
       return updated;
-    }, { timeout: 20000 });
+    });
 
     return NextResponse.json({ ...updatedPR, lastSavedBy: user.name || null });
   } catch (error) {

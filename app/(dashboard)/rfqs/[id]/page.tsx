@@ -11,7 +11,8 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import ConfirmModal from "@/components/ui/confirm-modal";
-import EditableDescriptionCell from "@/components/documents/editable-description-cell";
+import { EditablePreviewCell } from "@/components/documents/editable-preview-cell";
+import { EditablePreviewInput } from "@/components/documents/editable-preview-input";
 
 export default function RfqLivePreviewPage() {
   const params = useParams();
@@ -31,24 +32,17 @@ export default function RfqLivePreviewPage() {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [lastSavedBy, setLastSavedBy] = useState<string | null>(null);
   const [, setTick] = useState(0);
-  // Unsaved line item description edits typed directly in the live preview, keyed by RFQ line item id
-  const [descDrafts, setDescDrafts] = useState<Record<string, string>>({});
-  // Rows where the user chose "Keep mine" after the PR description changed
-  const [keepIds, setKeepIds] = useState<Set<string>>(new Set());
 
-  const getDescriptionEdits = () => {
-    if (!rfq?.lineItems) return [];
-    return rfq.lineItems
-      .filter((item: any) =>
-        (descDrafts[item.id] !== undefined && descDrafts[item.id] !== item.description) || keepIds.has(item.id)
-      )
-      .map((item: any) => ({ id: item.id, description: descDrafts[item.id] ?? item.description }));
-  };
-
-  const clearDescriptionDrafts = () => {
-    setDescDrafts({});
-    setKeepIds(new Set());
-  };
+  // Live Sheet Direct Editing States (Excel-like Sheet Inputs)
+  const [docDate, setDocDate] = useState<string>("");
+  const [company, setCompany] = useState<string>("");
+  const [companyAddress, setCompanyAddress] = useState<string>("");
+  const [projectRefNo, setProjectRefNo] = useState<string>("");
+  const [projectName, setProjectName] = useState<string>("");
+  const [projectLocation, setProjectLocation] = useState<string>("Pandan, Antique");
+  const [deliveryPeriod, setDeliveryPeriod] = useState<string>("");
+  const [supplierContactPerson, setSupplierContactPerson] = useState<string>("");
+  const [supplierContactNo, setSupplierContactNo] = useState<string>("");
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -122,15 +116,88 @@ export default function RfqLivePreviewPage() {
     loadData();
   }, [params.id, reset]);
 
+  const handleItemDescriptionChange = (index: number, newDesc: string) => {
+    setRfq((prev: any) => {
+      if (!prev || !prev.lineItems) return prev;
+      const newLineItems = [...prev.lineItems];
+      const item = newLineItems[index];
+      if (item) {
+        newLineItems[index] = {
+          ...item,
+          description: newDesc,
+          descriptionEdited: true,
+        };
+      }
+      return { ...prev, lineItems: newLineItems };
+    });
+  };
+
+  const handleResetItemDescription = (index: number) => {
+    setRfq((prev: any) => {
+      if (!prev || !prev.lineItems) return prev;
+      const newLineItems = [...prev.lineItems];
+      const item = newLineItems[index];
+      const prItem = prev.pr?.lineItems?.[index];
+      if (item && prItem) {
+        newLineItems[index] = {
+          ...item,
+          description: prItem.description,
+          descriptionEdited: false,
+        };
+      }
+      return { ...prev, lineItems: newLineItems };
+    });
+  };
+
+  const handleItemQtyChange = (index: number, newQty: string) => {
+    setRfq((prev: any) => {
+      if (!prev || !prev.lineItems) return prev;
+      const newLineItems = [...prev.lineItems];
+      const item = newLineItems[index];
+      if (item) {
+        const parsed = parseFloat(newQty);
+        newLineItems[index] = {
+          ...item,
+          quantity: isNaN(parsed) ? 0 : parsed,
+        };
+      }
+      return { ...prev, lineItems: newLineItems };
+    });
+  };
+
+  const handleItemUnitChange = (index: number, newUnit: string) => {
+    setRfq((prev: any) => {
+      if (!prev || !prev.lineItems) return prev;
+      const newLineItems = [...prev.lineItems];
+      const item = newLineItems[index];
+      if (item) {
+        newLineItems[index] = {
+          ...item,
+          unit: newUnit,
+        };
+      }
+      return { ...prev, lineItems: newLineItems };
+    });
+  };
+
   const onSubmit = async (data: any) => {
     setSubmitting(true);
     try {
-      const payload = {
+      const payload: any = {
         rfqNumber: data.rfqNumber?.trim() || null,
         signatoryId: data.signatoryId || null,
         deadline: data.deadline || null,
-        lineItemDescriptions: getDescriptionEdits(),
       };
+
+      if (rfq?.lineItems && Array.isArray(rfq.lineItems)) {
+        payload.lineItems = rfq.lineItems.map((li: any) => ({
+          id: li.id,
+          description: li.description,
+          descriptionEdited: !!li.descriptionEdited,
+          quantity: li.quantity,
+          unit: li.unit,
+        }));
+      }
 
       const res = await fetch(`/api/rfqs/${params.id}`, {
         method: "PATCH",
@@ -145,7 +212,6 @@ export default function RfqLivePreviewPage() {
 
       const updated = await res.json();
       setRfq(updated);
-      clearDescriptionDrafts();
       setLastSaved(new Date(updated.updatedAt || Date.now()));
       if (updated.lastSavedBy) {
         setLastSavedBy(updated.lastSavedBy);
@@ -179,9 +245,14 @@ export default function RfqLivePreviewPage() {
       if (watchDeadline) {
         payload.deadline = watchDeadline;
       }
-      const descriptionEdits = getDescriptionEdits();
-      if (descriptionEdits.length > 0) {
-        payload.lineItemDescriptions = descriptionEdits;
+      if (rfq?.lineItems && Array.isArray(rfq.lineItems)) {
+        payload.lineItems = rfq.lineItems.map((li: any) => ({
+          id: li.id,
+          description: li.description,
+          descriptionEdited: !!li.descriptionEdited,
+          quantity: li.quantity,
+          unit: li.unit,
+        }));
       }
 
       const res = await fetch(`/api/rfqs/${params.id}`, {
@@ -197,7 +268,6 @@ export default function RfqLivePreviewPage() {
 
       const updated = await res.json();
       setRfq(updated);
-      clearDescriptionDrafts();
       setLastSaved(new Date(updated.updatedAt || Date.now()));
       if (updated.lastSavedBy) {
         setLastSavedBy(updated.lastSavedBy);
@@ -232,7 +302,6 @@ export default function RfqLivePreviewPage() {
   if (!rfq) return <div>Error loading data</div>;
 
   const isReadOnly = rfq.status !== "DRAFT" && !isUnlocked;
-  const pendingDescCount = getDescriptionEdits().length;
 
   const getSavedTimeText = () => {
     if (!lastSaved) return "Saved just now";
@@ -444,28 +513,80 @@ export default function RfqLivePreviewPage() {
                     <div className="flex justify-between items-start mb-2">
                       <div className="font-bold italic text-[12px]">LGU of PANDAN, ANTIQUE</div>
                       <div className="w-[290px] mr-[16%]">
-                        <div className="flex mt-4 mb-1"><span className="w-[155px] italic">Project Reference Number</span> <span className="border-b border-black w-[120px]"></span></div>
-                        <div className="flex mb-1"><span className="w-[155px] italic">Name of the Project</span> <span className="border-b border-black w-[120px]"></span></div>
-                        <div className="flex mb-1"><span className="w-[155px] italic">Location of the Project</span> <span className="border-b border-black w-[120px]"></span></div>
+                        <div className="flex mt-4 mb-1">
+                          <span className="w-[155px] italic">Project Reference Number</span>
+                          <EditablePreviewInput
+                            value={projectRefNo}
+                            onChange={setProjectRefNo}
+                            disabled={isReadOnly}
+                            className="w-[120px] text-[11px]"
+                          />
+                        </div>
+                        <div className="flex mb-1">
+                          <span className="w-[155px] italic">Name of the Project</span>
+                          <EditablePreviewInput
+                            value={projectName || (rfq.pr?.purpose ? rfq.pr.purpose.substring(0, 30) : "")}
+                            onChange={setProjectName}
+                            disabled={isReadOnly}
+                            className="w-[120px] text-[11px]"
+                          />
+                        </div>
+                        <div className="flex mb-1">
+                          <span className="w-[155px] italic">Location of the Project</span>
+                          <EditablePreviewInput
+                            value={projectLocation}
+                            onChange={setProjectLocation}
+                            disabled={isReadOnly}
+                            className="w-[120px] text-[11px]"
+                          />
+                        </div>
                       </div>
                     </div>
 
                     <div className="mb-3">
-                      <div >Standard Form Number: SF-GOOD-60</div>
+                      <div>Standard Form Number: SF-GOOD-60</div>
                       <div>Revised on: May 24, 2004</div>
                       <h2 className="text-[25px]">Standard Form Title: <span className="font-bold text-[25px] italic">REQUEST FOR QUOTATION</span></h2>
                     </div>
 
                     <div className="flex justify-end mb-4 text-[13px] mr-[16%]">
                       <div className="w-[290px]">
-                        <div className="flex mb-1"><span className="w-20">Date:</span> <span className="border-b border-black flex-1 text-center"></span></div>
-                        <div className="flex mb-1"><span className="w-20">Quotation:</span> <span className="border-b border-black flex-1 text-center font-bold">{showRfqNo ? (watchRfqNumber || rfq.rfqNumber || "") : ""}</span></div>
+                        <div className="flex mb-1">
+                          <span className="w-20">Date:</span>
+                          <span className="border-b border-black flex-1 text-center"></span>
+                        </div>
+                        <div className="flex mb-1">
+                          <span className="w-20">Quotation:</span>
+                          <EditablePreviewInput
+                            value={showRfqNo ? (watchRfqNumber || rfq.rfqNumber || "") : ""}
+                            onChange={(val) => setValue("rfqNumber", val, { shouldValidate: true, shouldDirty: true })}
+                            disabled={isReadOnly}
+                            align="center"
+                            className="flex-1 font-bold font-mono"
+                          />
+                        </div>
                       </div>
                     </div>
 
                     <div className="mb-4 text-[13px]">
-                      <div className="flex mb-1 w-[400px]"><span className="w-16">Company</span> <span className="border-b border-black flex-1 uppercase font-bold"></span></div>
-                      <div className="flex mb-1 w-[400px]"><span className="w-16">Address</span> <span className="border-b border-black flex-1"></span></div>
+                      <div className="flex mb-1 w-[400px]">
+                        <span className="w-16">Company</span>
+                        <EditablePreviewInput
+                          value={company}
+                          onChange={setCompany}
+                          disabled={isReadOnly}
+                          className="flex-1 uppercase font-bold"
+                        />
+                      </div>
+                      <div className="flex mb-1 w-[400px]">
+                        <span className="w-16">Address</span>
+                        <EditablePreviewInput
+                          value={companyAddress}
+                          onChange={setCompanyAddress}
+                          disabled={isReadOnly}
+                          className="flex-1"
+                        />
+                      </div>
                     </div>
 
                     <div className="mb-8 indent-[42px] text-[13px]">
@@ -483,7 +604,15 @@ export default function RfqLivePreviewPage() {
 
                     <div className="mb-4 text-xs font-bold leading-tight text-[13px]">
                       NOTE:<br />
-                      <span className="ml-7 inline-block w-4">1</span> DELIVERY PERIOD WITHIN _____________________ CALENDAR DAYS.<br />
+                      <span className="ml-7 inline-block w-4">1</span> DELIVERY PERIOD WITHIN{" "}
+                      <EditablePreviewInput
+                        value={deliveryPeriod}
+                        onChange={setDeliveryPeriod}
+                        disabled={isReadOnly}
+                        align="center"
+                        className="w-24 font-bold text-center inline-block"
+                      />{" "}
+                      CALENDAR DAYS.<br />
                       <span className="ml-7 inline-block w-4">2</span> WARRANTY SHALL BE FOR A PERIOD OF SIX (6) MONTHS FOR SUPPLIES & MATERIALS,<br />
                       <span className="ml-7 inline-block w-4"></span>  ONE (1) YEAR FOR EQUIPMENT, FROM DATE OF ACCEPTANCE BY THE PROCURING<br />
                       <span className="ml-7 inline-block w-4"></span>  ENTITY.<br />
@@ -528,33 +657,45 @@ export default function RfqLivePreviewPage() {
 
                           const hasSpecs = !isSpec && idx + 1 < rfq.lineItems.length && (!rfq.lineItems[idx + 1].quantity || rfq.lineItems[idx + 1].quantity === 0);
 
-                          // Description editing: compare against the PR text at the same row
-                          const prDesc: string | undefined = (rfq.pr?.lineItems || []).find((p: any) => p.sortOrder === item.sortOrder)?.description;
-                          const currentDesc: string = descDrafts[item.id] ?? item.description;
-                          const isEditedDesc = prDesc !== undefined && currentDesc.trim() !== prDesc;
-                          const prChanged =
-                            !!item.descriptionEdited && !keepIds.has(item.id) && prDesc !== undefined &&
-                            item.sourceDescription !== prDesc && currentDesc.trim() !== prDesc;
-
                           return (
-                            <tr key={item.id || idx} className="h-6">
+                            <tr key={idx} className="h-6">
                               <td className="border-x border-black py-0 px-1 text-center align-top leading-normal">{displayNo}</td>
-                              <td className={`border-x border-black py-0 px-2.5 align-top leading-normal ${isSpec ? "pl-6 text-[14px]" : (hasSpecs ? "font-bold" : "")}`}>
-                                <EditableDescriptionCell
-                                  group="rfq-desc"
-                                  value={currentDesc}
-                                  readOnly={isReadOnly}
-                                  onChange={(val) => setDescDrafts((d) => ({ ...d, [item.id]: val }))}
-                                  edited={isEditedDesc}
-                                  sourceLabel="PR"
-                                  onReset={prDesc !== undefined ? () => setDescDrafts((d) => ({ ...d, [item.id]: prDesc })) : undefined}
-                                  sourceChanged={prChanged}
-                                  sourceText={prDesc}
-                                  onKeepMine={() => setKeepIds((s) => new Set(s).add(item.id))}
+                              <td className="border-x border-black py-0 px-1.5 align-top leading-normal">
+                                <EditablePreviewCell
+                                  value={item.description}
+                                  originalPrValue={rfq.pr?.lineItems?.[idx]?.description}
+                                  isEdited={!!item.descriptionEdited}
+                                  isReadOnly={isReadOnly}
+                                  isSpec={isSpec}
+                                  hasSpecs={hasSpecs}
+                                  onChange={(newDesc) => handleItemDescriptionChange(idx, newDesc)}
+                                  onReset={() => handleResetItemDescription(idx)}
                                 />
                               </td>
-                              <td className="border-x border-black py-0 px-1 text-center align-top leading-normal">{isSpec ? "" : item.quantity}</td>
-                              <td className="border-x border-black py-0 px-1 text-center align-top leading-normal">{isSpec ? "" : item.unit}</td>
+                              <td className="border-x border-black py-0 px-1 text-center align-top leading-normal">
+                                {isSpec ? "" : (
+                                  <EditablePreviewInput
+                                    value={item.quantity !== undefined && item.quantity !== null ? String(item.quantity) : ""}
+                                    onChange={(val) => handleItemQtyChange(idx, val)}
+                                    disabled={isReadOnly}
+                                    align="center"
+                                    underline={false}
+                                    className="w-full text-center"
+                                  />
+                                )}
+                              </td>
+                              <td className="border-x border-black py-0 px-1 text-center align-top leading-normal">
+                                {isSpec ? "" : (
+                                  <EditablePreviewInput
+                                    value={item.unit || ""}
+                                    onChange={(val) => handleItemUnitChange(idx, val)}
+                                    disabled={isReadOnly}
+                                    align="center"
+                                    underline={false}
+                                    className="w-full text-center"
+                                  />
+                                )}
+                              </td>
                               <td className="border-x border-black py-0 px-2 text-center align-top">
                                 {!isSpec && (
                                   <div className="flex items-end">
@@ -604,9 +745,21 @@ export default function RfqLivePreviewPage() {
 
                     <div className="flex justify-end text-center mt-8 pb-4">
                       <div className="w-[250px]">
-                        <div className="border-b border-black mb-1 h-4"></div>
+                        <EditablePreviewInput
+                          value={supplierContactPerson}
+                          onChange={setSupplierContactPerson}
+                          disabled={isReadOnly}
+                          align="center"
+                          className="w-full text-[13px] font-bold"
+                        />
                         <div className="mb-4 text-[13px]">Printed Name/Signature</div>
-                        <div className="border-b border-black mb-1 h-4"></div>
+                        <EditablePreviewInput
+                          value={supplierContactNo}
+                          onChange={setSupplierContactNo}
+                          disabled={isReadOnly}
+                          align="center"
+                          className="w-full text-[13px]"
+                        />
                         <div className="text-[13px]">Tel No./ Cell phone No.</div>
                       </div>
                     </div>
@@ -632,7 +785,7 @@ export default function RfqLivePreviewPage() {
 
         {/* Right Side: Data Entry Form */}
         <div className="no-print w-[320px] lg:w-[340px] shrink-0 bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6 flex flex-col overflow-y-auto">
-          <div className="mb-5">
+          <div className="mb-4">
             <h2 className="text-base font-bold text-slate-900">RFQ Details</h2>
             <p className="text-xs text-slate-500 mt-1">
               {isReadOnly ? "Read-only while the RFQ is issued." : "Update the details for the Request for Quotation."}
@@ -730,17 +883,6 @@ export default function RfqLivePreviewPage() {
             </div>
 
             <div className="mt-auto pt-4 border-t border-slate-100">
-              {!isReadOnly && (
-                <div className="mb-3 rounded-lg border border-blue-100 bg-blue-50/60 p-3 text-[11px] leading-snug text-slate-600">
-                  <p className="font-semibold text-slate-800 mb-0.5">Item descriptions</p>
-                  <p>Click any description in the preview to edit it (e.g. remove brand names). Edited rows stay as you typed them even when the PR is updated, and also appear on the Abstract and Purchase Order.</p>
-                  {pendingDescCount > 0 && (
-                    <p className="mt-1.5 font-semibold text-amber-700">
-                      {pendingDescCount} unsaved description change{pendingDescCount > 1 ? "s" : ""}. Click Save to keep them.
-                    </p>
-                  )}
-                </div>
-              )}
               {isReadOnly ? (
                 <div className="flex items-center gap-2 text-xs text-slate-500">
                   <Lock size={14} className="text-slate-400 shrink-0" />

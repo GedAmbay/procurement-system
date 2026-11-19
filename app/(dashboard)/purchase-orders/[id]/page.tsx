@@ -2,6 +2,8 @@
 import LoaderWave from "@/components/ui/loader-wave";
 import CustomSelect from "@/components/ui/custom-select";
 import ConfirmModal from "@/components/ui/confirm-modal";
+import { EditablePreviewCell } from "@/components/documents/editable-preview-cell";
+import { EditablePreviewInput } from "@/components/documents/editable-preview-input";
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -11,7 +13,6 @@ import { Printer, Save, ArrowLeft, Loader2, Send, ZoomIn, ZoomOut, Minus, Plus, 
 import Link from "next/link";
 import { toast } from "sonner";
 import { formatCurrency, numberToWords } from "@/lib/utils";
-import EditableDescriptionCell from "@/components/documents/editable-description-cell";
 
 interface POFormValues {
   poNumber?: string;
@@ -45,13 +46,8 @@ export default function PurchaseOrderEditor() {
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [lastSavedBy, setLastSavedBy] = useState<string | null>(null);
-  // Unsaved line item description edits typed directly in the live preview, keyed by PO line item id
-  const [descDrafts, setDescDrafts] = useState<Record<string, string>>({});
-
-  const getDescriptionEdits = () =>
-    (poData?.lineItems || [])
-      .filter((item: any) => descDrafts[item.id] !== undefined && descDrafts[item.id] !== item.description)
-      .map((item: any) => ({ id: item.id, description: descDrafts[item.id] }));
+  const [customAddress, setCustomAddress] = useState<string>("");
+  const [customTin, setCustomTin] = useState<string>("");
 
   const handleUnlockConfirm = async (password?: string) => {
     if (!password) {
@@ -159,10 +155,69 @@ export default function PurchaseOrderEditor() {
     loadData();
   }, [params.id, reset]);
 
+  const handleItemDescriptionChange = (index: number, newDesc: string) => {
+    setPoData((prev: any) => {
+      if (!prev || !prev.lineItems) return prev;
+      const newLineItems = [...prev.lineItems];
+      const item = newLineItems[index];
+      if (item) {
+        newLineItems[index] = {
+          ...item,
+          description: newDesc,
+          descriptionEdited: true,
+        };
+      }
+      return { ...prev, lineItems: newLineItems };
+    });
+  };
+
+  const handleResetItemDescription = (index: number) => {
+    setPoData((prev: any) => {
+      if (!prev || !prev.lineItems) return prev;
+      const newLineItems = [...prev.lineItems];
+      const item = newLineItems[index];
+      const prItem = prev.pr?.lineItems?.[index] || prev.abstract?.rfq?.pr?.lineItems?.[index];
+      if (item && prItem) {
+        newLineItems[index] = {
+          ...item,
+          description: prItem.description,
+          descriptionEdited: false,
+        };
+      }
+      return { ...prev, lineItems: newLineItems };
+    });
+  };
+
+  const handleItemFieldChange = (index: number, field: string, val: string) => {
+    setPoData((prev: any) => {
+      if (!prev || !prev.lineItems) return prev;
+      const newLineItems = [...prev.lineItems];
+      const item = newLineItems[index];
+      if (item) {
+        if (field === "quantity") {
+          const qty = parseFloat(val);
+          const safeQty = isNaN(qty) ? 0 : qty;
+          const price = item.unitPrice || 0;
+          newLineItems[index] = { ...item, quantity: safeQty, totalPrice: safeQty * price };
+        } else if (field === "unitPrice") {
+          const price = parseFloat(val);
+          const safePrice = isNaN(price) ? 0 : price;
+          const qty = item.quantity || 0;
+          newLineItems[index] = { ...item, unitPrice: safePrice, totalPrice: qty * safePrice };
+        } else if (field === "unit") {
+          newLineItems[index] = { ...item, unit: val };
+        } else if (field === "propertyNo") {
+          newLineItems[index] = { ...item, propertyNo: val };
+        }
+      }
+      return { ...prev, lineItems: newLineItems };
+    });
+  };
+
   const onSubmit = async (data: POFormValues) => {
     setSubmitting(true);
     try {
-      const payload = {
+      const payload: any = {
         poNumber: data.poNumber,
         supplierId: data.supplierId,
         deliveryDate: data.deliveryDate,
@@ -171,8 +226,19 @@ export default function PurchaseOrderEditor() {
         paymentTerms: data.paymentTerms,
         orderType: data.orderType || "PURCHASE",
         requestingOffice: data.requestingOffice,
-        lineItemDescriptions: getDescriptionEdits(),
       };
+
+      if (poData?.lineItems && Array.isArray(poData.lineItems)) {
+        payload.lineItems = poData.lineItems.map((li: any) => ({
+          id: li.id,
+          description: li.description,
+          descriptionEdited: !!li.descriptionEdited,
+          quantity: li.quantity,
+          unit: li.unit,
+          unitPrice: li.unitPrice,
+          totalPrice: li.totalPrice,
+        }));
+      }
 
       const res = await fetch(`/api/purchase-orders/${params.id}`, {
         method: "PATCH",
@@ -183,7 +249,6 @@ export default function PurchaseOrderEditor() {
       if (res.ok) {
         const updated = await res.json();
         setPoData((prev: any) => ({ ...prev, ...updated }));
-        setDescDrafts({});
         setLastSaved(new Date());
         if (updated.lastSavedBy) {
           setLastSavedBy(updated.lastSavedBy);
@@ -272,14 +337,6 @@ export default function PurchaseOrderEditor() {
   const linkedPrNumber = poData.abstract?.rfq?.pr?.prNumber || poData.pr?.prNumber || "PENDING";
   const lineItems = poData.lineItems || [];
   const acceptances = poData.acceptances || [];
-
-  // Reference rows for descriptions: RFQ rows (or PR rows for direct acquisition), matched by row position
-  const rfqRowsBySort = new Map<number, any>(
-    (poData.abstract?.rfq?.lineItems || []).map((r: any) => [r.sortOrder, r])
-  );
-  const refRows: any[] = poData.abstract?.rfq?.lineItems || poData.pr?.lineItems || [];
-  const refLabel = poData.abstract?.rfq ? "RFQ" : "PR";
-  const pendingDescCount = getDescriptionEdits().length;
 
   return (
     <div className="flex flex-col gap-3.5 p-3 sm:p-4 bg-[#e9edf4] w-full max-w-full min-w-0 overflow-hidden flex-1 print:!block print:!h-auto print:!overflow-visible print:!m-0 print:!p-0 print:!bg-white print:!w-full print:!max-w-none" style={{ height: 'calc(var(--full-vh) - 88px)' }}>
@@ -519,9 +576,12 @@ export default function PurchaseOrderEditor() {
                           {/* Row 2: Address line 1 */}
                           <div className="flex items-end mt-1">
                             <span className="font-bold whitespace-nowrap mr-2">Address :</span>
-                            <span className="flex-1 font-bold border-b border-black text-left leading-tight">
-                              {addressLine1}
-                            </span>
+                            <EditablePreviewInput
+                              value={customAddress || addressLine1}
+                              onChange={setCustomAddress}
+                              disabled={isReadOnly}
+                              className="flex-1 font-bold text-left leading-tight"
+                            />
                           </div>
 
                           {/* Row 3: Address line 2 (two rows for address) */}
@@ -535,15 +595,41 @@ export default function PurchaseOrderEditor() {
                           {/* Row 4: TIN */}
                           <div className="flex items-end mt-1">
                             <span className="font-bold whitespace-nowrap mr-2">TIN :</span>
-                            <span className="flex-1 font-bold text-left leading-tight">
-                            </span>
+                            <EditablePreviewInput
+                              value={customTin}
+                              onChange={setCustomTin}
+                              disabled={isReadOnly}
+                              className="flex-1 font-bold text-left leading-tight"
+                            />
                           </div>
                         </div>
                         <div className="col-span-3 p-1 px-2 flex flex-col justify-between">
-                          <div className="flex items-end"><span className="font-bold whitespace-nowrap mr-2 pt-1">{isJob ? "J.O. No. :" : "P.O. No. :"}</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{showPoNo ? (watchAll.poNumber || poData?.poNumber || "") : ""}</span></div>
-                          <div className="flex items-end mt-1"><span className="font-bold whitespace-nowrap mr-2">Date :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{watchAll.deliveryDate ? new Date(watchAll.deliveryDate).toLocaleDateString('en-PH') : ""}</span></div>
-                          <div className="flex items-end mt-1"><span className="font-bold whitespace-nowrap mr-2">Mode of Procurement :</span> <span className="flex-1 font-bold border-b border-black text-center leading-tight">{watchAll.modeOfProcurement}</span></div>
-                          <div className="flex items-end mt-1"><span className="font-bold whitespace-nowrap mr-2">{isJob ? "JR No./s :" : "PR No./s :"}</span> <span className="flex-1 font-bold text-center leading-tight">{showPrNo && linkedPrNumber !== "PENDING" ? linkedPrNumber : ""}</span></div>
+                          <div className="flex items-end">
+                            <span className="font-bold whitespace-nowrap mr-2 pt-1">{isJob ? "J.O. No. :" : "P.O. No. :"}</span>
+                            <EditablePreviewInput
+                              value={showPoNo ? (watchAll.poNumber || "") : ""}
+                              onChange={(val) => setValue("poNumber", val, { shouldValidate: true, shouldDirty: true })}
+                              disabled={isReadOnly}
+                              align="center"
+                              className="flex-1 font-bold"
+                            />
+                          </div>
+                          <div className="flex items-end mt-1">
+                            <span className="font-bold whitespace-nowrap mr-2">Date :</span>
+                            <span className="flex-1 font-bold border-b border-black text-center leading-tight">
+                              {watchAll.deliveryDate ? new Date(watchAll.deliveryDate).toLocaleDateString('en-PH') : ""}
+                            </span>
+                          </div>
+                          <div className="flex items-end mt-1">
+                            <span className="font-bold whitespace-nowrap mr-2">Mode of Procurement :</span>
+                            <span className="flex-1 font-bold border-b border-black text-center leading-tight">
+                              {watchAll.modeOfProcurement}
+                            </span>
+                          </div>
+                          <div className="flex items-end mt-1">
+                            <span className="font-bold whitespace-nowrap mr-2">{isJob ? "JR No./s :" : "PR No./s :"}</span>
+                            <span className="flex-1 font-bold text-center leading-tight">{showPrNo && linkedPrNumber !== "PENDING" ? linkedPrNumber : ""}</span>
+                          </div>
                         </div>
                       </div>
 
@@ -556,21 +642,41 @@ export default function PurchaseOrderEditor() {
                         <div className="col-span-3 border-r-[2px] border-black">
                           <div className="flex items-center border-b border-black p-0 px-1">
                             <span className="font-bold w-36 whitespace-nowrap">Place of Delivery :</span>
-                            <span className="font-bold flex-1">{watchAll.placeOfDelivery}</span>
+                            <EditablePreviewInput
+                              value={watchAll.placeOfDelivery || ""}
+                              onChange={(val) => setValue("placeOfDelivery", val, { shouldValidate: true, shouldDirty: true })}
+                              disabled={isReadOnly}
+                              underline={false}
+                              className="font-bold flex-1"
+                            />
                           </div>
                           <div className="flex items-center p-0 px-1">
                             <span className="font-bold w-36 whitespace-nowrap">Date of Delivery :</span>
-                            <span className="font-bold flex-1">{watchAll.deliveryDate ? new Date(watchAll.deliveryDate).toLocaleDateString('en-PH') : ""}</span>
+                            <span className="font-bold flex-1 pl-1">
+                              {watchAll.deliveryDate ? new Date(watchAll.deliveryDate).toLocaleDateString('en-PH') : ""}
+                            </span>
                           </div>
                         </div>
                         <div className="col-span-3">
                           <div className="flex items-center p-0 px-1">
                             <span className="font-bold w-32 whitespace-nowrap">Delivery Term :</span>
-                            <span className="font-bold flex-1">{watchAll.deliveryTerms}</span>
+                            <EditablePreviewInput
+                              value={watchAll.deliveryTerms || ""}
+                              onChange={(val) => setValue("deliveryTerms", val, { shouldValidate: true, shouldDirty: true })}
+                              disabled={isReadOnly}
+                              underline={false}
+                              className="font-bold flex-1"
+                            />
                           </div>
                           <div className="flex items-center p-0 px-1">
                             <span className="font-bold w-32 whitespace-nowrap">Payment Term :</span>
-                            <span className="font-bold flex-1">{watchAll.paymentTerms}</span>
+                            <EditablePreviewInput
+                              value={watchAll.paymentTerms || ""}
+                              onChange={(val) => setValue("paymentTerms", val, { shouldValidate: true, shouldDirty: true })}
+                              disabled={isReadOnly}
+                              underline={false}
+                              className="font-bold flex-1"
+                            />
                           </div>
                         </div>
                       </div>
@@ -608,37 +714,79 @@ export default function PurchaseOrderEditor() {
 
                             const hasSpecs = !isSpec && idx + 1 < lineItems.length && (!lineItems[idx + 1].quantity || lineItems[idx + 1].quantity === 0);
 
-                            // Match price from winning quote if line item price on PO is not set yet.
-                            // Quotation lines point to RFQ rows; match by row position (descriptions may differ on the PO).
-                            const rfqRowId = rfqRowsBySort.get(item.sortOrder)?.id;
+                            // Match price from winning quote if line item price on PO is not set yet
                             const quoteLine = winningQuote?.lineItems?.find(
-                              (qli: any) => rfqRowId && qli.rfqLineItemId === rfqRowId
+                              (qli: any) =>
+                                qli.rfqLineItemId === item.id ||
+                                qli.rfqLineItem?.sortOrder === item.sortOrder ||
+                                qli.rfqLineItem?.description?.trim().toLowerCase() === item.description?.trim().toLowerCase()
                             );
                             const unitCost = item.unitPrice > 0 ? item.unitPrice : (quoteLine?.unitPrice || 0);
                             const itemAmount = item.totalPrice > 0 ? item.totalPrice : (quoteLine?.totalPrice || (unitCost * (item.quantity || 0)));
 
-                            const refDesc: string | undefined = refRows.find((r: any) => r.sortOrder === item.sortOrder)?.description;
-                            const currentDesc: string = descDrafts[item.id] ?? item.description;
-                            const isEditedDesc = refDesc !== undefined && currentDesc.trim() !== refDesc;
-
                             return (
-                              <tr key={item.id || idx}>
-                                <td className="border-r border-black p-[2px] text-center">{displayNo}</td>
-                                <td className="border-r border-black p-[2px] text-center">{isSpec ? "" : item.unit}</td>
-                                <td className={`border-r border-black p-[2px] px-2 break-words ${isSpec ? "pl-4 text-sm" : (hasSpecs ? "font-bold" : "")}`}>
-                                  <EditableDescriptionCell
-                                    group="po-desc"
-                                    value={currentDesc}
-                                    readOnly={isReadOnly}
-                                    onChange={(val) => setDescDrafts((d) => ({ ...d, [item.id]: val }))}
-                                    edited={isEditedDesc}
-                                    sourceLabel={refLabel}
-                                    onReset={refDesc !== undefined ? () => setDescDrafts((d) => ({ ...d, [item.id]: refDesc })) : undefined}
+                              <tr key={idx}>
+                                <td className="border-r border-black p-[2px] text-center">
+                                  <EditablePreviewInput
+                                    value={item.propertyNo || displayNo}
+                                    onChange={(val) => handleItemFieldChange(idx, "propertyNo", val)}
+                                    disabled={isReadOnly}
+                                    align="center"
+                                    underline={false}
+                                    className="w-full text-center"
                                   />
                                 </td>
-                                <td className="border-r border-black p-[2px] text-center">{isSpec ? "" : item.quantity}</td>
-                                <td className="border-r border-black p-[2px] px-2 text-right">{isSpec ? "" : (unitCost > 0 ? formatCurrency(unitCost).replace('₱', '') : "")}</td>
-                                <td className="p-[2px] px-2 text-right">{isSpec ? "" : (itemAmount > 0 ? formatCurrency(itemAmount).replace('₱', '') : "")}</td>
+                                <td className="border-r border-black p-[2px] text-center">
+                                  {isSpec ? "" : (
+                                    <EditablePreviewInput
+                                      value={item.unit || ""}
+                                      onChange={(val) => handleItemFieldChange(idx, "unit", val)}
+                                      disabled={isReadOnly}
+                                      align="center"
+                                      underline={false}
+                                      className="w-full text-center"
+                                    />
+                                  )}
+                                </td>
+                                <td className="border-r border-black p-[2px] px-1.5 align-top">
+                                  <EditablePreviewCell
+                                    value={item.description}
+                                    originalPrValue={poData.pr?.lineItems?.[idx]?.description || poData.abstract?.rfq?.pr?.lineItems?.[idx]?.description}
+                                    isEdited={!!item.descriptionEdited}
+                                    isReadOnly={isReadOnly}
+                                    isSpec={isSpec}
+                                    hasSpecs={hasSpecs}
+                                    onChange={(newDesc) => handleItemDescriptionChange(idx, newDesc)}
+                                    onReset={() => handleResetItemDescription(idx)}
+                                  />
+                                </td>
+                                <td className="border-r border-black p-[2px] text-center">
+                                  {isSpec ? "" : (
+                                    <EditablePreviewInput
+                                      value={item.quantity !== undefined && item.quantity !== null ? String(item.quantity) : ""}
+                                      onChange={(val) => handleItemFieldChange(idx, "quantity", val)}
+                                      disabled={isReadOnly}
+                                      align="center"
+                                      underline={false}
+                                      className="w-full text-center"
+                                    />
+                                  )}
+                                </td>
+                                <td className="border-r border-black p-[2px] px-2 text-right">
+                                  {isSpec ? "" : (
+                                    <EditablePreviewInput
+                                      value={unitCost > 0 ? String(unitCost) : ""}
+                                      onChange={(val) => handleItemFieldChange(idx, "unitPrice", val)}
+                                      disabled={isReadOnly}
+                                      align="right"
+                                      underline={false}
+                                      className="w-full text-right"
+                                    />
+                                  )}
+                                </td>
+                                <td className="p-[2px] px-2 text-right">
+                                  {isSpec ? "" : (itemAmount > 0 ? formatCurrency(itemAmount).replace('₱', '') : "")}
+                                </td>
                               </tr>
                             );
                           })}
@@ -978,18 +1126,6 @@ export default function PurchaseOrderEditor() {
                 </div>
               </div>
             </div>
-
-            {!isReadOnly && (
-              <div className="rounded-lg border border-blue-100 bg-blue-50/60 p-3 text-[11px] leading-snug text-slate-600">
-                <p className="font-semibold text-slate-800 mb-0.5">Item descriptions</p>
-                <p>Click any description in the preview to edit it (e.g. add the supplier&apos;s brand or model). Edited rows keep your text and also appear on the Acceptance report.</p>
-                {pendingDescCount > 0 && (
-                  <p className="mt-1.5 font-semibold text-amber-700">
-                    {pendingDescCount} unsaved description change{pendingDescCount > 1 ? "s" : ""}. Click Save to keep them.
-                  </p>
-                )}
-              </div>
-            )}
 
             <div className="pt-2 text-[11px] text-slate-400 flex items-center gap-1.5">
               <CheckCircle2 size={13} className="text-emerald-500" />

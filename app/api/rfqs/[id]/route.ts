@@ -3,15 +3,6 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { requireRole } from "@/lib/auth-utils";
 import { syncRfqStatus, syncRfqItemsWithPr } from "@/lib/rfq-status";
-import { applyRfqDescriptionEdits, parseDescriptionEdits } from "@/lib/line-item-descriptions";
-
-// PR line item text is needed by the editor to show "Edited" / "PR changed" markers
-const prLineItemsSelect = {
-  lineItems: {
-    orderBy: { sortOrder: "asc" as const },
-    select: { id: true, description: true, sortOrder: true },
-  },
-};
 
 export async function GET(
   req: NextRequest,
@@ -39,7 +30,7 @@ export async function GET(
           include: {
             office: true,
             requestedBy: true,
-            ...prLineItemsSelect,
+            lineItems: { orderBy: { sortOrder: "asc" } },
           }
         },
         createdBy: true,
@@ -149,27 +140,47 @@ export async function PATCH(
       dataToUpdate.remarks = body.remarks ? body.remarks : null;
     }
 
-    // Manual line item description edits from the live preview
-    const descriptionEdits = parseDescriptionEdits(body.lineItemDescriptions) || [];
-
-    if (Object.keys(dataToUpdate).length > 0 || descriptionEdits.length > 0) {
-      const updatedRfq = await prisma.$transaction(async (tx) => {
-        if (descriptionEdits.length > 0) {
-          await applyRfqDescriptionEdits(id, descriptionEdits, tx);
+    // Handle updates to lineItems (description, quantity, unit edits)
+    if (body.lineItems && Array.isArray(body.lineItems)) {
+      for (const item of body.lineItems) {
+        if (item.id) {
+          const qty = item.quantity !== undefined ? parseFloat(item.quantity) : undefined;
+          await prisma.rfqLineItem.update({
+            where: { id: item.id },
+            data: {
+              ...(item.description !== undefined ? { description: item.description } : {}),
+              ...(item.descriptionEdited !== undefined ? { descriptionEdited: item.descriptionEdited } : {}),
+              ...(qty !== undefined && !isNaN(qty) ? { quantity: qty } : {}),
+              ...(item.unit !== undefined ? { unit: item.unit } : {}),
+            }
+          });
         }
-        return tx.rfq.update({
-          where: { id },
-          data: dataToUpdate,
-          include: {
-            pr: { include: { office: true, ...prLineItemsSelect } },
-            createdBy: true,
-            signatory: true,
-            abstract: { select: { id: true, abstractNumber: true, status: true } },
-            lineItems: { orderBy: { sortOrder: "asc" } },
-            quotations: { include: { supplier: true, lineItems: true } },
-          },
-        });
-      }, { timeout: 20000 });
+      }
+    }
+
+    if (Object.keys(dataToUpdate).length > 0 || (body.lineItems && body.lineItems.length > 0)) {
+      const updatedRfq = Object.keys(dataToUpdate).length > 0
+        ? await prisma.rfq.update({
+            where: { id },
+            data: dataToUpdate,
+            include: {
+              pr: { include: { office: true, lineItems: { orderBy: { sortOrder: "asc" } } } },
+              createdBy: true,
+              signatory: true,
+              lineItems: { orderBy: { sortOrder: "asc" } },
+              quotations: { include: { supplier: true, lineItems: true } },
+            },
+          })
+        : await prisma.rfq.findUnique({
+            where: { id },
+            include: {
+              pr: { include: { office: true, lineItems: { orderBy: { sortOrder: "asc" } } } },
+              createdBy: true,
+              signatory: true,
+              lineItems: { orderBy: { sortOrder: "asc" } },
+              quotations: { include: { supplier: true, lineItems: true } },
+            },
+          });
 
       const user = session.user as any;
       if (user?.id) {

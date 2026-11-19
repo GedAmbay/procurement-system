@@ -206,10 +206,7 @@ model RfqLineItem {
   unitCost           Float
   totalCost          Float
   sortOrder          Int                 @default(0)
-  // True when the description was manually edited (e.g. brand removed) and must not be overwritten by PR sync
   descriptionEdited  Boolean             @default(false)
-  // PR description at the time the edit was made/confirmed; used to flag "PR changed" afterwards
-  sourceDescription  String?
   quotationLineItems QuotationLineItem[]
   rfq                Rfq                 @relation(fields: [rfqId], references: [id], onDelete: Cascade)
 
@@ -330,8 +327,7 @@ model PoLineItem {
   unitPrice       Float
   totalPrice      Float
   sortOrder       Int                  @default(0)
-  // True when the description was manually edited (e.g. supplier brand/model added) and must not follow RFQ text
-  descriptionEdited Boolean            @default(false)
+  descriptionEdited Boolean             @default(false)
   po              PurchaseOrder        @relation(fields: [poId], references: [id], onDelete: Cascade)
   acceptanceItems AcceptanceLineItem[]
 

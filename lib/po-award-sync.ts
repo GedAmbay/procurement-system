@@ -77,16 +77,16 @@ export async function syncAwardedSupplierToPO(
           }
         });
 
-        // Update line items pricing from the winning quotation.
-        // Match by row position first: PO descriptions may legitimately differ from the RFQ
-        // (e.g. supplier brand/model added), so description is only a last-resort fallback.
+        // Update line items pricing from the winning quotation (prefer matching by sortOrder/ID over description)
         for (const poLine of po.lineItems) {
-          const quoteLine =
-            lowestBid.lineItems.find((qli: any) => qli.rfqLineItem?.sortOrder === poLine.sortOrder) ||
-            lowestBid.lineItems.find(
-              (qli: any) =>
-                qli.rfqLineItem?.description?.trim().toLowerCase() === poLine.description?.trim().toLowerCase()
-            );
+          const quoteLine = lowestBid.lineItems.find(
+            (qli: any) =>
+              qli.rfqLineItemId === poLine.id ||
+              (qli.rfqLineItem && qli.rfqLineItem.sortOrder === poLine.sortOrder)
+          ) || lowestBid.lineItems.find(
+            (qli: any) =>
+              qli.rfqLineItem?.description?.trim().toLowerCase() === poLine.description?.trim().toLowerCase()
+          );
 
           if (quoteLine && (quoteLine.unitPrice > 0 || quoteLine.totalPrice > 0)) {
             await db.poLineItem.update({

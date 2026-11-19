@@ -3,15 +3,6 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { requireRole } from "@/lib/auth-utils";
 import { syncAwardedSupplierToPO } from "@/lib/po-award-sync";
-import { applyPoDescriptionEdits, parseDescriptionEdits } from "@/lib/line-item-descriptions";
-
-// Reference text (RFQ rows, or PR rows for direct acquisition) used to show "Edited" markers / reset
-const refLineItemsSelect = {
-  lineItems: {
-    orderBy: { sortOrder: "asc" as const },
-    select: { id: true, description: true, sortOrder: true },
-  },
-};
 
 export async function GET(
   req: NextRequest,
@@ -33,13 +24,12 @@ export async function GET(
         supplier: true,
         lineItems: { orderBy: { sortOrder: "asc" } },
         pr: {
-          include: { office: true, ...refLineItemsSelect }
+          include: { office: true, lineItems: { orderBy: { sortOrder: "asc" } } }
         },
         abstract: {
           include: {
             rfq: {
               include: {
-                ...refLineItemsSelect,
                 pr: {
                   include: { office: true }
                 },
@@ -74,13 +64,12 @@ export async function GET(
           supplier: true,
           lineItems: { orderBy: { sortOrder: "asc" } },
           pr: {
-            include: { office: true, ...refLineItemsSelect }
+            include: { office: true, lineItems: { orderBy: { sortOrder: "asc" } } }
           },
           abstract: {
             include: {
               rfq: {
                 include: {
-                  ...refLineItemsSelect,
                   pr: {
                     include: { office: true }
                   },
@@ -154,17 +143,30 @@ export async function PATCH(
       }
     }
 
-    const descriptionEdits = parseDescriptionEdits(body.lineItemDescriptions) || [];
-    if (descriptionEdits.length > 0) {
-      await prisma.$transaction(
-        (tx) => applyPoDescriptionEdits(id, descriptionEdits, tx),
-        { timeout: 20000 }
-      );
+    // Handle updates to lineItems (description, brand, quantity, unit, price edits)
+    if (body.lineItems && Array.isArray(body.lineItems)) {
+      for (const item of body.lineItems) {
+        if (item.id) {
+          const qty = item.quantity !== undefined ? parseFloat(item.quantity) : undefined;
+          const price = item.unitPrice !== undefined ? parseFloat(item.unitPrice) : undefined;
+          const totalPrice = qty !== undefined && price !== undefined ? qty * price : undefined;
+          await prisma.poLineItem.update({
+            where: { id: item.id },
+            data: {
+              ...(item.description !== undefined ? { description: item.description } : {}),
+              ...(item.descriptionEdited !== undefined ? { descriptionEdited: item.descriptionEdited } : {}),
+              ...(qty !== undefined && !isNaN(qty) ? { quantity: qty } : {}),
+              ...(item.unit !== undefined ? { unit: item.unit } : {}),
+              ...(price !== undefined && !isNaN(price) ? { unitPrice: price } : {}),
+              ...(totalPrice !== undefined && !isNaN(totalPrice) ? { totalPrice } : {}),
+            }
+          });
+        }
+      }
     }
 
     const updatedPO = await prisma.purchaseOrder.update({
       where: { id },
-      include: { lineItems: { orderBy: { sortOrder: "asc" } } },
       data: {
         ...(poNumberToSave !== undefined ? { poNumber: poNumberToSave } : {}),
         status: body.status !== undefined ? body.status : po.status,
@@ -176,6 +178,13 @@ export async function PATCH(
         paymentTerms: body.paymentTerms !== undefined ? body.paymentTerms : po.paymentTerms,
         remarks: body.requestingOffice !== undefined ? body.requestingOffice : (body.remarks !== undefined ? body.remarks : po.remarks),
       } as any,
+      include: {
+        lineItems: { orderBy: { sortOrder: "asc" } },
+        supplier: true,
+        pr: { include: { office: true, lineItems: { orderBy: { sortOrder: "asc" } } } },
+        abstract: true,
+        createdBy: true,
+      }
     });
 
     // Sync orderType change back to PR if updated
