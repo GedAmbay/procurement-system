@@ -25,18 +25,32 @@ export async function GET(req: NextRequest) {
     },
     include: {
       office: true,
-      bacLeaves: {
+    },
+    orderBy: { name: "asc" },
+  });
+
+  // Safely query active leaves without breaking when the relation is not directly on Signatory model
+  let activeLeaves: any[] = [];
+  try {
+    if (typeof (prisma as any).bacLeaveRecord?.findMany === "function") {
+      activeLeaves = await (prisma as any).bacLeaveRecord.findMany({
         where: {
           status: "APPROVED",
           startDate: { lte: todayEnd },
           endDate: { gte: todayStart },
         },
-      },
-    },
-    orderBy: { name: "asc" },
-  });
+      });
+    }
+  } catch (err) {
+    console.error("BAC leaves query error in signatories route:", err);
+  }
 
-  return NextResponse.json(signatories);
+  const enrichedSignatories = signatories.map((sig) => ({
+    ...sig,
+    bacLeaves: activeLeaves.filter((l) => l.signatoryId === sig.id),
+  }));
+
+  return NextResponse.json(enrichedSignatories);
 }
 
 export async function POST(req: NextRequest) {

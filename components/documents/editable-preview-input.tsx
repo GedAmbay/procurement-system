@@ -36,12 +36,12 @@ export function EditablePreviewInput({
       onChange={(e) => onChange(e.target.value)}
       onKeyDown={onKeyDown}
       className={`bg-transparent outline-none transition-colors px-1 py-0.5 rounded-[2px] ${alignClass} ${
-        underline ? "border-b border-black" : "border border-transparent"
+        underline ? "border-b border-black print:border-b print:border-black" : "border border-transparent print:border-transparent"
       } ${
         !disabled
           ? "cursor-text hover:bg-blue-50/50 hover:border-blue-400 focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-400 focus:shadow-xs"
           : "cursor-default"
-      } print:border-b print:border-black print:bg-transparent print:placeholder-transparent ${className}`}
+      } print:bg-transparent print:placeholder-transparent ${className}`}
       style={{
         fontFamily: "inherit",
         fontSize: "inherit",

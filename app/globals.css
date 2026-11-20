@@ -921,7 +921,7 @@ tbody td {
   }
 
   thead {
-    display: table-header-group;
+    display: table-row-group !important;
   }
 
   * {

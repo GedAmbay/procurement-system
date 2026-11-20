@@ -154,7 +154,6 @@ export async function PATCH(
             where: { id: item.id },
             data: {
               ...(item.description !== undefined ? { description: item.description } : {}),
-              ...(item.descriptionEdited !== undefined ? { descriptionEdited: item.descriptionEdited } : {}),
               ...(qty !== undefined && !isNaN(qty) ? { quantity: qty } : {}),
               ...(item.unit !== undefined ? { unit: item.unit } : {}),
               ...(price !== undefined && !isNaN(price) ? { unitPrice: price } : {}),

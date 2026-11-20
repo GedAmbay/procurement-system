@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useForm } from "react-hook-form";
-import { Printer, Save, ArrowLeft, Loader2, ZoomIn, ZoomOut, Send, Clock, CheckCircle2, Lock, Unlock, Minus, Plus, User, LayoutGrid, Check } from "lucide-react";
+import { Printer, Save, ArrowLeft, Loader2, ZoomIn, ZoomOut, Send, Clock, CheckCircle2, Lock, Unlock, Minus, Plus, User, LayoutGrid, Check, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -39,10 +39,32 @@ export default function RfqLivePreviewPage() {
   const [companyAddress, setCompanyAddress] = useState<string>("");
   const [projectRefNo, setProjectRefNo] = useState<string>("");
   const [projectName, setProjectName] = useState<string>("");
-  const [projectLocation, setProjectLocation] = useState<string>("Pandan, Antique");
+  const [projectLocation, setProjectLocation] = useState<string>("");
   const [deliveryPeriod, setDeliveryPeriod] = useState<string>("");
   const [supplierContactPerson, setSupplierContactPerson] = useState<string>("");
   const [supplierContactNo, setSupplierContactNo] = useState<string>("");
+
+  // Line item deletion states
+  const [itemToDelete, setItemToDelete] = useState<{ index: number; description: string } | null>(null);
+  const [deletedLineItemIds, setDeletedLineItemIds] = useState<string[]>([]);
+
+  const handleConfirmDeleteRow = () => {
+    if (!itemToDelete) return;
+    const targetIdx = itemToDelete.index;
+    const item = rfq?.lineItems?.[targetIdx];
+    if (item?.id) {
+      setDeletedLineItemIds(prev => [...prev, item.id]);
+    }
+    setRfq((prev: any) => {
+      if (!prev || !prev.lineItems) return prev;
+      return {
+        ...prev,
+        lineItems: prev.lineItems.filter((_: any, i: number) => i !== targetIdx),
+      };
+    });
+    setItemToDelete(null);
+    toast.success("Line item removed. Remember to save changes.");
+  };
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -193,10 +215,13 @@ export default function RfqLivePreviewPage() {
         payload.lineItems = rfq.lineItems.map((li: any) => ({
           id: li.id,
           description: li.description,
-          descriptionEdited: !!li.descriptionEdited,
           quantity: li.quantity,
           unit: li.unit,
         }));
+      }
+
+      if (deletedLineItemIds.length > 0) {
+        payload.deletedLineItemIds = deletedLineItemIds;
       }
 
       const res = await fetch(`/api/rfqs/${params.id}`, {
@@ -212,6 +237,7 @@ export default function RfqLivePreviewPage() {
 
       const updated = await res.json();
       setRfq(updated);
+      setDeletedLineItemIds([]);
       setLastSaved(new Date(updated.updatedAt || Date.now()));
       if (updated.lastSavedBy) {
         setLastSavedBy(updated.lastSavedBy);
@@ -249,10 +275,13 @@ export default function RfqLivePreviewPage() {
         payload.lineItems = rfq.lineItems.map((li: any) => ({
           id: li.id,
           description: li.description,
-          descriptionEdited: !!li.descriptionEdited,
           quantity: li.quantity,
           unit: li.unit,
         }));
+      }
+
+      if (deletedLineItemIds.length > 0) {
+        payload.deletedLineItemIds = deletedLineItemIds;
       }
 
       const res = await fetch(`/api/rfqs/${params.id}`, {
@@ -268,6 +297,7 @@ export default function RfqLivePreviewPage() {
 
       const updated = await res.json();
       setRfq(updated);
+      setDeletedLineItemIds([]);
       setLastSaved(new Date(updated.updatedAt || Date.now()));
       if (updated.lastSavedBy) {
         setLastSavedBy(updated.lastSavedBy);
@@ -513,31 +543,31 @@ export default function RfqLivePreviewPage() {
                     <div className="flex justify-between items-start mb-2">
                       <div className="font-bold italic text-[12px]">LGU of PANDAN, ANTIQUE</div>
                       <div className="w-[290px] mr-[16%]">
-                        <div className="flex mt-4 mb-1">
-                          <span className="w-[155px] italic">Project Reference Number</span>
+                        <div className="flex mt-4 mb-1 items-end">
+                          <span className="shrink-0 italic">Project Reference Number</span>
                           <EditablePreviewInput
                             value={projectRefNo}
                             onChange={setProjectRefNo}
                             disabled={isReadOnly}
-                            className="w-[120px] text-[11px]"
+                            className="flex-1 text-[11px] ml-1 h-[17px] py-0 px-0.5"
                           />
                         </div>
-                        <div className="flex mb-1">
-                          <span className="w-[155px] italic">Name of the Project</span>
+                        <div className="flex mb-1 items-end">
+                          <span className="shrink-0 italic">Name of the Project</span>
                           <EditablePreviewInput
-                            value={projectName || (rfq.pr?.purpose ? rfq.pr.purpose.substring(0, 30) : "")}
+                            value={projectName}
                             onChange={setProjectName}
                             disabled={isReadOnly}
-                            className="w-[120px] text-[11px]"
+                            className="flex-1 text-[11px] ml-1 h-[17px] py-0 px-0.5"
                           />
                         </div>
-                        <div className="flex mb-1">
-                          <span className="w-[155px] italic">Location of the Project</span>
+                        <div className="flex mb-1 items-end">
+                          <span className="shrink-0 italic">Location of the Project</span>
                           <EditablePreviewInput
                             value={projectLocation}
                             onChange={setProjectLocation}
                             disabled={isReadOnly}
-                            className="w-[120px] text-[11px]"
+                            className="flex-1 text-[11px] ml-1 h-[17px] py-0 px-0.5"
                           />
                         </div>
                       </div>
@@ -631,7 +661,7 @@ export default function RfqLivePreviewPage() {
                     </div>
 
                     <table className="w-full border-collapse border-[3px] border-black mb-1 table-fixed">
-                      <thead className="[&_th]:!font-sans" style={{ fontFamily: "Arial, Helvetica, sans-serif" }}>
+                      <thead className="[&_th]:!font-sans print:!table-row-group" style={{ fontFamily: "Arial, Helvetica, sans-serif" }}>
                         <tr>
                           <th style={{ fontFamily: "Arial, Helvetica, sans-serif" }} className="border-x border-b-[3px] border-black py-0 px-1 w-[6%] text-center align-middle font-bold">ITEM <br />NO.</th>
                           <th style={{ fontFamily: "Arial, Helvetica, sans-serif" }} className="border-x border-b-[3px] border-black py-0 px-2 text-center align-middle font-bold">ITEM & DESCRIPTION</th>
@@ -658,7 +688,7 @@ export default function RfqLivePreviewPage() {
                           const hasSpecs = !isSpec && idx + 1 < rfq.lineItems.length && (!rfq.lineItems[idx + 1].quantity || rfq.lineItems[idx + 1].quantity === 0);
 
                           return (
-                            <tr key={idx} className="h-6">
+                            <tr key={idx} className="group/row h-6 relative hover:bg-slate-50/60 transition-colors">
                               <td className="border-x border-black py-0 px-1 text-center align-top leading-normal">{displayNo}</td>
                               <td className="border-x border-black py-0 px-1.5 align-top leading-normal">
                                 <EditablePreviewCell
@@ -703,10 +733,22 @@ export default function RfqLivePreviewPage() {
                                   </div>
                                 )}
                               </td>
-                              <td className="border-x border-black py-1 px-2 align-top">
+                              <td className="border-x border-black py-1 px-2 align-top relative">
                                 {!isSpec && (
                                   <div className="flex items-end">
                                     <span className="mr-1">P ___________</span>
+                                  </div>
+                                )}
+                                {!isReadOnly && (
+                                  <div className="absolute top-1/2 -right-8 -translate-y-1/2 opacity-0 group-hover/row:opacity-100 transition-opacity no-print z-20 flex items-center">
+                                    <button
+                                      type="button"
+                                      onClick={() => setItemToDelete({ index: idx, description: item.description })}
+                                      className="w-6 h-6 rounded-full bg-red-50 hover:bg-red-600 text-red-500 hover:text-white flex items-center justify-center border border-red-200 hover:border-red-600 shadow-sm transition-all hover:scale-110 cursor-pointer"
+                                      title={`Delete ${isSpec ? "specification" : `Item #${displayNo || idx + 1}`}`}
+                                    >
+                                      <Trash2 size={13} />
+                                    </button>
                                   </div>
                                 )}
                               </td>
@@ -916,6 +958,16 @@ export default function RfqLivePreviewPage() {
         message="This document has been finalized. Are you sure you want to unlock it for editing?"
         confirmText="Unlock Document"
         requirePassword={true}
+        isDestructive={true}
+      />
+
+      <ConfirmModal
+        isOpen={!!itemToDelete}
+        onClose={() => setItemToDelete(null)}
+        onConfirm={handleConfirmDeleteRow}
+        title="Delete Line Item"
+        message={`Are you sure you want to remove "${itemToDelete?.description || "this line item"}" from this RFQ?`}
+        confirmText="Delete Row"
         isDestructive={true}
       />
     </div>

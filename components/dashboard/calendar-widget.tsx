@@ -35,6 +35,7 @@ import {
   Trash2,
   Edit2,
   ExternalLink,
+  Flag,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
@@ -49,6 +50,8 @@ export interface CalendarEvent {
   notes: string | null;
   prId: string | null;
   pr?: { id?: string; prNumber: string; purpose: string };
+  isHoliday?: boolean;
+  holidayType?: string;
 }
 
 interface ParsedEventMeta {
@@ -140,6 +143,22 @@ export const EVENT_CATEGORIES: Record<
     dotBg: "bg-amber-500",
     icon: Trophy,
   },
+  Holiday: {
+    label: "National Holiday",
+    bg: "bg-red-50",
+    text: "text-red-700",
+    border: "border-red-200",
+    dotBg: "bg-red-500",
+    icon: Flag,
+  },
+  "National Holiday": {
+    label: "National Holiday",
+    bg: "bg-red-50",
+    text: "text-red-700",
+    border: "border-red-200",
+    dotBg: "bg-red-500",
+    icon: Flag,
+  },
   "On Leave / Absent": {
     label: "On Leave / Absent",
     bg: "bg-rose-50",
@@ -178,6 +197,7 @@ const CREATABLE_CATEGORIES = [
   "Bid Opening",
   "Award Date",
   "COA",
+  "Holiday",
   "Birthday",
   "Award / Recognition",
   "Other",
@@ -189,6 +209,7 @@ function getTitlePlaceholder(cat: string) {
     case "Bid Opening": return "e.g., Opening & Preliminary Examination of Bids";
     case "Award Date": return "e.g., Notice of Award Issuance";
     case "COA": return "e.g., COA Entrance Conference / Audit Inspection";
+    case "Holiday": return "e.g., Pandan Town Fiesta / Special Local Holiday";
     case "Award / Recognition": return "e.g., Loyalty Service Award / Special Citation";
     case "Birthday": return "e.g., Engr. Cruz's Birthday";
     default: return "e.g., Budget Call / Town Hall Briefing";
@@ -201,6 +222,7 @@ function getDescriptionPlaceholder(cat: string) {
     case "Bid Opening": return "Invited observers, eligibility requirements checklist...";
     case "Award Date": return "Recommended winning bidder, NOA conditions, or delivery timeline...";
     case "COA": return "Audit documentation, voucher inspection, or entrance briefing...";
+    case "Holiday": return "Non-working holiday or local celebration details...";
     case "Award / Recognition": return "Special citation for outstanding procurement management...";
     case "Birthday": return "BAC Member / Municipal Engineering Office...";
     default: return "Event description, agenda, or notes...";
@@ -457,7 +479,11 @@ export default function CalendarWidget() {
               ) : (
                 <span
                   className={`text-xs font-semibold ${
-                    isCurrentMonth ? "text-slate-700" : "text-slate-400"
+                    dayEvents.some((e) => e.eventType === "Holiday" || e.eventType === "National Holiday")
+                      ? "text-red-600 font-bold"
+                      : isCurrentMonth
+                      ? "text-slate-700"
+                      : "text-slate-400"
                   }`}
                 >
                   {formattedDate}
@@ -702,6 +728,23 @@ export default function CalendarWidget() {
           <Trophy size={13} className="text-amber-500" />
           <span>Award</span>
         </button>
+
+        <button
+          type="button"
+          onClick={() =>
+            setSelectedCategory(
+              selectedCategory === "Holiday" ? "ALL" : "Holiday"
+            )
+          }
+          className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full transition-all ${
+            selectedCategory === "Holiday"
+              ? "bg-red-100 text-red-800 font-bold"
+              : "hover:bg-slate-100"
+          }`}
+        >
+          <Flag size={13} className="text-red-600" />
+          <span>National Holiday</span>
+        </button>
       </div>
 
       {/* Event Details / Category-Specific Form Modal */}
@@ -859,7 +902,16 @@ export default function CalendarWidget() {
 
                   {/* Actions footer */}
                   <div className="mt-2 pt-4 border-t border-slate-100 flex items-center justify-between">
-                    {canEdit ? (
+                    {selectedEvent &&
+                    (selectedEvent.eventType === "Holiday" ||
+                      selectedEvent.eventType === "National Holiday" ||
+                      selectedEvent.id?.startsWith("ph-holiday-") ||
+                      selectedEvent.isHoliday) ? (
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-red-700 bg-red-50 border border-red-200/80 px-3 py-1.5 rounded-xl shadow-2xs">
+                        <Flag size={13} className="text-red-600" />
+                        <span>Official Philippine National Holiday</span>
+                      </div>
+                    ) : canEdit ? (
                       <div className="flex items-center gap-2">
                         <button
                           type="button"

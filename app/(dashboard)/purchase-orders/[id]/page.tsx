@@ -552,7 +552,7 @@ export default function PurchaseOrderEditor() {
                   }}
                   className="print:!transform-none print:!w-full print:!max-w-none print:!min-w-0 print:!m-0 print:!p-0 print:!mb-0"
                 >
-                  <div className="print-area text-black shadow-xl text-[14px] leading-tight print:shadow-none print:!w-full print:!max-w-none print:!min-w-0 print:!m-0 print:!p-0 print:!min-h-0 [&_td]:!font-['Times_New_Roman',_Times,_serif] [&_td]:!text-[14px] [&_th]:!font-['Times_New_Roman',_Times,_serif] [&_th]:!text-[14px] [&_th]:!text-black [&_th]:!normal-case [&_th]:!tracking-normal [&_th]:!font-bold w-[794px] min-h-[1123px] bg-white p-10" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+                  <div className="print-area text-black shadow-xl text-[14px] leading-tight print:shadow-none print:!w-full print:!max-w-none print:!min-w-0 print:!m-0 print:!p-0 print:!min-h-0 [&_td]:!font-['Times_New_Roman',_Times,_serif] [&_td]:!text-[14px] [&_th]:!font-['Times_New_Roman',_Times,_serif] [&_th]:!text-[14px] [&_th]:!text-black [&_th]:!normal-case [&_th]:!tracking-normal [&_th]:!font-bold w-[830px] min-h-[1123px] bg-white p-10" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
 
                     <div className="border-[3px] border-black">
                       <div className="text-right italic pt-2 pr-2 text-sm">Appendix 49</div>
@@ -690,7 +690,7 @@ export default function PurchaseOrderEditor() {
                           <col style={{ width: "16%" }} />
                           <col style={{ width: "16%" }} />
                         </colgroup>
-                        <thead>
+                        <thead className="print:!table-row-group">
                           <tr className="border-b-[2px] border-black text-[14px]">
                             <th className="border-r border-black p-1 w-[10%]">Stock/<br />Property No.</th>
                             <th className="border-r border-black p-1 w-[8%]">Unit</th>
@@ -726,7 +726,7 @@ export default function PurchaseOrderEditor() {
 
                             return (
                               <tr key={idx}>
-                                <td className="border-r border-black p-[2px] text-center">
+                                <td className="border-r border-black p-0 text-center">
                                   <EditablePreviewInput
                                     value={item.propertyNo || displayNo}
                                     onChange={(val) => handleItemFieldChange(idx, "propertyNo", val)}
@@ -736,7 +736,7 @@ export default function PurchaseOrderEditor() {
                                     className="w-full text-center"
                                   />
                                 </td>
-                                <td className="border-r border-black p-[2px] text-center">
+                                <td className="border-r border-black p-0 text-center">
                                   {isSpec ? "" : (
                                     <EditablePreviewInput
                                       value={item.unit || ""}
@@ -748,7 +748,7 @@ export default function PurchaseOrderEditor() {
                                     />
                                   )}
                                 </td>
-                                <td className="border-r border-black p-[2px] px-1.5 align-top">
+                                <td className="border-r border-black p-0 px-1.5 align-top">
                                   <EditablePreviewCell
                                     value={item.description}
                                     originalPrValue={poData.pr?.lineItems?.[idx]?.description || poData.abstract?.rfq?.pr?.lineItems?.[idx]?.description}
@@ -760,7 +760,7 @@ export default function PurchaseOrderEditor() {
                                     onReset={() => handleResetItemDescription(idx)}
                                   />
                                 </td>
-                                <td className="border-r border-black p-[2px] text-center">
+                                <td className="border-r border-black p-0 text-center">
                                   {isSpec ? "" : (
                                     <EditablePreviewInput
                                       value={item.quantity !== undefined && item.quantity !== null ? String(item.quantity) : ""}
@@ -772,7 +772,7 @@ export default function PurchaseOrderEditor() {
                                     />
                                   )}
                                 </td>
-                                <td className="border-r border-black p-[2px] px-2 text-right">
+                                <td className="border-r border-black p-0 px-2 text-right">
                                   {isSpec ? "" : (
                                     <EditablePreviewInput
                                       value={unitCost > 0 ? String(unitCost) : ""}
@@ -784,7 +784,7 @@ export default function PurchaseOrderEditor() {
                                     />
                                   )}
                                 </td>
-                                <td className="p-[2px] px-2 text-right">
+                                <td className="p-0 px-2 text-right">
                                   {isSpec ? "" : (itemAmount > 0 ? formatCurrency(itemAmount).replace('₱', '') : "")}
                                 </td>
                               </tr>

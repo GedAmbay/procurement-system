@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { requireRole } from "@/lib/auth-utils";
+import { getPhilippineHolidaysForRange } from "@/lib/philippine-holidays";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -101,6 +102,42 @@ export async function GET(req: NextRequest) {
         }
       }
     }
+
+    // Handle Philippine National Holidays
+    const isHolidayCategory = !category || category === "ALL" || category === "Holiday" || category === "National Holiday";
+    if (isHolidayCategory) {
+      let holidayRangeStart: Date | null = null;
+      let holidayRangeEnd: Date | null = null;
+
+      if (start && end) {
+        holidayRangeStart = new Date(start);
+        holidayRangeEnd = new Date(end);
+      } else if (upcoming) {
+        holidayRangeStart = new Date();
+        holidayRangeStart.setHours(0, 0, 0, 0);
+        holidayRangeEnd = new Date(holidayRangeStart);
+        holidayRangeEnd.setDate(holidayRangeStart.getDate() + 30);
+      }
+
+      if (holidayRangeStart && holidayRangeEnd) {
+        const holidays = getPhilippineHolidaysForRange(holidayRangeStart, holidayRangeEnd);
+        for (const holiday of holidays) {
+          // Avoid duplicate if already declared in DB with similar name on the same date
+          const alreadyExists = events.some(
+            (e) =>
+              new Date(e.eventDate).toDateString() === new Date(holiday.eventDate).toDateString() &&
+              (e.title.toLowerCase().includes(holiday.title.toLowerCase()) ||
+                holiday.title.toLowerCase().includes(e.title.toLowerCase()))
+          );
+          if (!alreadyExists) {
+            events.push(holiday as any);
+          }
+        }
+      }
+    }
+
+    // Sort all events chronologically
+    events.sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime());
 
     return NextResponse.json(events);
   } catch (error) {

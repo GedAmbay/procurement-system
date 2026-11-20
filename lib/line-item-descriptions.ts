@@ -101,8 +101,6 @@ export async function applyRfqDescriptionEdits(
       where: { id: item.id },
       data: {
         description: finalDesc,
-        descriptionEdited: isEdited,
-        sourceDescription: isEdited ? prDesc ?? null : null,
       },
     });
   }
@@ -145,7 +143,7 @@ export async function applyPoDescriptionEdits(
 
     await db.poLineItem.update({
       where: { id: item.id },
-      data: { description: finalDesc, descriptionEdited: isEdited },
+      data: { description: finalDesc },
     });
   }
 }

@@ -217,11 +217,21 @@ export default function PurchaseRequestEditor() {
   useEffect(() => {
     async function loadData() {
       try {
+        const fetchSafe = async (url: string) => {
+          try {
+            const res = await fetch(url);
+            if (!res.ok) return [];
+            return await res.json();
+          } catch {
+            return [];
+          }
+        };
+
         const [officesRes, fundsRes, itemsRes, signatoriesRes] = await Promise.all([
-          fetch("/api/offices").then(r => r.json()),
-          fetch("/api/fund-sources").then(r => r.json()),
-          fetch("/api/items").then(r => r.json()),
-          fetch("/api/signatories").then(r => r.json())
+          fetchSafe("/api/offices"),
+          fetchSafe("/api/fund-sources"),
+          fetchSafe("/api/items"),
+          fetchSafe("/api/signatories")
         ]);
 
         setOffices(Array.isArray(officesRes) ? officesRes : []);
@@ -705,7 +715,7 @@ export default function PurchaseRequestEditor() {
 
                       {/* Table Block */}
                       <table className="w-full table-fixed border-collapse text-sm border-b-4 border-double border-black">
-                        <thead>
+                        <thead className="print:!table-row-group">
                           <tr className="bg-white">
                             <th className="border border-black border-t-0 border-l-0 p-1 font-bold text-center w-[7%]">Item<br />No.</th>
                             <th className="border border-black border-t-0 p-1 font-bold text-center w-[11%]">Quantity</th>
@@ -1000,7 +1010,7 @@ export default function PurchaseRequestEditor() {
                     className="text-xs font-semibold text-slate-700 cursor-pointer select-none"
                     onClick={() => setShowPrNo(!showPrNo)}
                   >
-                    Print {isJob ? "JR Number" : "PR Number"} on document
+                    Show {isJob ? "JR Number" : "PR Number"}
                   </label>
                   <button
                     type="button"

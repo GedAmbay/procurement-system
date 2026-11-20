@@ -17,13 +17,14 @@ export async function GET(
   const { id } = await context.params;
 
   try {
-    // Synchronize RFQ line items with PR if items changed
-    await syncRfqItemsWithPr(id);
+    try {
+      // Synchronize RFQ status with supplier quotations progress
+      await syncRfqStatus(id);
+    } catch (statusErr) {
+      console.warn("syncRfqStatus warning:", statusErr);
+    }
 
-    // Synchronize RFQ status with supplier quotations progress
-    await syncRfqStatus(id);
-
-    const rfq = await prisma.rfq.findUnique({
+    let rfq = await prisma.rfq.findUnique({
       where: { id },
       include: {
         pr: {
@@ -50,6 +51,41 @@ export async function GET(
 
     if (!rfq) return NextResponse.json({ error: "RFQ not found" }, { status: 404 });
 
+    // If RFQ has no line items yet, populate once from PR
+    if (!rfq.lineItems || rfq.lineItems.length === 0) {
+      try {
+        await syncRfqItemsWithPr(id);
+        rfq = await prisma.rfq.findUnique({
+          where: { id },
+          include: {
+            pr: {
+              include: {
+                office: true,
+                requestedBy: true,
+                lineItems: { orderBy: { sortOrder: "asc" } },
+              }
+            },
+            createdBy: true,
+            signatory: true,
+            abstract: {
+              select: { id: true, abstractNumber: true, status: true }
+            },
+            lineItems: { orderBy: { sortOrder: "asc" } },
+            quotations: {
+              include: {
+                supplier: true,
+                lineItems: true,
+              }
+            },
+          },
+        });
+      } catch (syncErr) {
+        console.warn("syncRfqItemsWithPr error:", syncErr);
+      }
+    }
+
+    if (!rfq) return NextResponse.json({ error: "RFQ not found" }, { status: 404 });
+
     const lastLog = await prisma.documentAuditLog.findFirst({
       where: {
         documentId: id,
@@ -62,6 +98,7 @@ export async function GET(
 
     return NextResponse.json({ ...rfq, lastSavedBy });
   } catch (error) {
+    console.error("RFQ GET error:", error);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
@@ -140,6 +177,21 @@ export async function PATCH(
       dataToUpdate.remarks = body.remarks ? body.remarks : null;
     }
 
+    // Handle deleted line items
+    if (body.deletedLineItemIds && Array.isArray(body.deletedLineItemIds)) {
+      for (const delId of body.deletedLineItemIds) {
+        if (typeof delId === "string") {
+          // Delete related quotation line items first to avoid foreign key errors
+          await prisma.quotationLineItem.deleteMany({
+            where: { rfqLineItemId: delId }
+          }).catch(() => {});
+          await prisma.rfqLineItem.delete({
+            where: { id: delId }
+          }).catch(() => {});
+        }
+      }
+    }
+
     // Handle updates to lineItems (description, quantity, unit edits)
     if (body.lineItems && Array.isArray(body.lineItems)) {
       for (const item of body.lineItems) {
@@ -149,7 +201,6 @@ export async function PATCH(
             where: { id: item.id },
             data: {
               ...(item.description !== undefined ? { description: item.description } : {}),
-              ...(item.descriptionEdited !== undefined ? { descriptionEdited: item.descriptionEdited } : {}),
               ...(qty !== undefined && !isNaN(qty) ? { quantity: qty } : {}),
               ...(item.unit !== undefined ? { unit: item.unit } : {}),
             }
@@ -158,7 +209,9 @@ export async function PATCH(
       }
     }
 
-    if (Object.keys(dataToUpdate).length > 0 || (body.lineItems && body.lineItems.length > 0)) {
+    const hasLineItemChanges = (body.lineItems && body.lineItems.length > 0) || (body.deletedLineItemIds && body.deletedLineItemIds.length > 0);
+
+    if (Object.keys(dataToUpdate).length > 0 || hasLineItemChanges) {
       const updatedRfq = Object.keys(dataToUpdate).length > 0
         ? await prisma.rfq.update({
             where: { id },

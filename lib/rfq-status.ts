@@ -186,7 +186,6 @@ export async function syncRfqItemsWithPr(
           unitCost: pi.unitCost,
           totalCost: pi.totalCost,
           sortOrder: idx,
-          descriptionEdited: false,
         }
       });
 
