@@ -2,6 +2,7 @@
 import LoaderWave from "@/components/ui/loader-wave";
 import CustomSelect from "@/components/ui/custom-select";
 import ConfirmModal from "@/components/ui/confirm-modal";
+import { ExcelTableGrid } from "@/components/documents/excel-table-grid";
 
 import React, { useState, useEffect, useRef, useMemo, Fragment } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
@@ -313,23 +314,41 @@ export default function PurchaseRequestEditor() {
     const item = items.find(i => i.id === itemId);
     if (item) {
       setDraftItem({
-        ...draftItem,
+        ...(draftItem || {}),
         itemId,
         description: item.description,
         unit: item.unit,
         unitCost: item.standardCost,
-        quantity: draftItem.quantity === "" ? 1 : draftItem.quantity
+        quantity: (!draftItem || draftItem.quantity === "") ? 1 : draftItem.quantity
       });
     } else {
-      setDraftItem({ ...draftItem, itemId: "" });
+      setDraftItem({ ...(draftItem || {}), itemId: "" });
     }
   };
 
   const handleRowClick = (index: number) => {
     if (isReadOnly) return;
     setInsertAtIndex(null);
-    setActiveItemIndex(index);
-    setDraftItem(watchLineItems[index]);
+    const item = watchLineItems && watchLineItems[index];
+    if (item) {
+      setActiveItemIndex(index);
+      setDraftItem({
+        itemId: item.itemId || "",
+        description: item.description || "",
+        unit: item.unit || "",
+        quantity: item.quantity ?? "",
+        unitCost: item.unitCost ?? "",
+      });
+    } else {
+      setActiveItemIndex(null);
+      setDraftItem({
+        itemId: "",
+        description: "",
+        unit: "",
+        quantity: "",
+        unitCost: "",
+      });
+    }
   };
 
   const handleStartInsert = (index: number) => {
@@ -399,7 +418,16 @@ export default function PurchaseRequestEditor() {
       toast.error("Purpose is required");
       return;
     }
-    if (!data.lineItems || data.lineItems.length === 0) {
+    // Clean up empty lines before validating/saving
+    const cleanedLineItems = (data.lineItems || [])
+      .map(item => ({
+        ...item,
+        quantity: item.quantity === "" ? 0 : Number(item.quantity) || 0,
+        unitCost: item.unitCost === "" ? 0 : Number(item.unitCost) || 0,
+      }))
+      .filter(item => (item.description && item.description.trim() !== "") || item.quantity > 0 || item.unitCost > 0);
+
+    if (cleanedLineItems.length === 0) {
       toast.error("Please add at least one item");
       return;
     }
@@ -408,6 +436,7 @@ export default function PurchaseRequestEditor() {
     const normalizedPrNumber = rawPrNumber ? normalizePrNumber(rawPrNumber) : null;
     const payload = {
       ...data,
+      lineItems: cleanedLineItems,
       prNumber: normalizedPrNumber,
       fiscalYear: Number(data.fiscalYear) || (normalizedPrNumber ? fiscalYearFromPrNumber(normalizedPrNumber) : null) || new Date().getFullYear(),
       officeId: data.officeId,
@@ -713,102 +742,24 @@ export default function PurchaseRequestEditor() {
                         </div>
                       </div>
 
-                      {/* Table Block */}
-                      <table className="w-full table-fixed border-collapse text-sm border-b-4 border-double border-black">
-                        <thead className="print:!table-row-group">
-                          <tr className="bg-white">
-                            <th className="border border-black border-t-0 border-l-0 p-1 font-bold text-center w-[7%]">Item<br />No.</th>
-                            <th className="border border-black border-t-0 p-1 font-bold text-center w-[11%]">Quantity</th>
-                            <th className="border border-black border-t-0 p-1 font-bold text-center w-[12%]">Unit Of<br />Issue</th>
-                            <th className="border border-black border-t-0 p-1 font-bold text-center w-[40%]">Item Description</th>
-                            <th className="border border-black border-t-0 p-1 font-bold text-center w-[15%]">Estimated<br />Unit Cost</th>
-                            <th className="border border-black border-t-0 border-r-0 p-1 font-bold text-center w-[15%]">Estimated<br />Cost</th>
-                          </tr>
-                        </thead>
-
-                        <tbody>
-                          {watchLineItems.length > 0 ? watchLineItems.map((item, idx) => {
-                            const isSpec = !item.quantity || item.quantity === 0;
-                            let displayNo = "";
-                            if (!isSpec) {
-                              let count = 0;
-                              for (let i = 0; i <= idx; i++) {
-                                if (Number(watchLineItems[i].quantity) > 0) count++;
-                              }
-                              displayNo = count.toString();
-                            }
-
-                            const hasSpecs = !isSpec && idx + 1 < watchLineItems.length && (!watchLineItems[idx + 1].quantity || watchLineItems[idx + 1].quantity === 0);
-
-                            return (
-                              <React.Fragment key={idx}>
-                                {insertAtIndex === idx && !isReadOnly && (
-                                  <tr className="no-print">
-                                    <td colSpan={6} className="p-0 border-x-0 border-y-2 border-blue-500 bg-blue-50/50">
-                                      <div className="flex items-center justify-center py-0.5 text-[10px] font-bold text-blue-700">
-                                        <span className="bg-blue-600 text-white px-2 py-0.2 rounded-full text-[9px] uppercase tracking-wider">
-                                          Insert Row {idx + 1} Here
-                                        </span>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                )}
-                                <tr key={idx} onClick={() => handleRowClick(idx)} className={`group/row h-6 ${!isReadOnly ? `cursor-pointer transition-colors ${activeItemIndex === idx ? "bg-blue-100 hover:bg-blue-200" : (insertAtIndex === idx ? "bg-amber-50/60" : "hover:bg-blue-50")}` : ""}`}>
-                                  <td className="border border-black border-l-0 p-0 leading-tight text-center align-top relative">
-                                    {!isReadOnly && (
-                                      <div className="absolute top-1/2 left-[-26px] -translate-y-1/2 opacity-0 group-hover/row:opacity-100 transition-opacity no-print z-30 flex items-center">
-                                        <button
-                                          type="button"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleStartInsert(idx + 1);
-                                          }}
-                                          className="w-5 h-5 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-md transition-transform hover:scale-110"
-                                          title={`Insert row below ${isSpec ? "specification" : `Item #${displayNo || idx + 1}`}`}
-                                        >
-                                          <Plus size={12} className="stroke-[3]" />
-                                        </button>
-                                      </div>
-                                    )}
-                                    {displayNo}
-                                  </td>
-                                  <td className="border border-black p-0 leading-tight text-center align-top">{isSpec ? "" : item.quantity}</td>
-                                  <td className="border border-black p-0 leading-tight text-center align-top">{isSpec ? "" : item.unit}</td>
-                                  <td className={`border border-black p-0 px-1 leading-tight whitespace-normal break-words align-top ${isSpec ? "pl-4 text-sm" : (hasSpecs ? "font-bold" : "")}`}>{item.description}</td>
-                                  <td className="border border-black p-0 leading-tight text-right align-top pr-1">{isSpec ? "" : (item.unitCost ? formatCurrency(item.unitCost).replace('₱', '') : '0.00')}</td>
-                                  <td className="border border-black border-r-0 p-0 leading-tight text-right align-top pr-1">{isSpec ? "" : ((item.quantity && item.unitCost) ? formatCurrency(item.quantity * item.unitCost).replace('₱', '') : '0.00')}</td>
-                                </tr>
-                                {insertAtIndex === watchLineItems.length && idx === watchLineItems.length - 1 && !isReadOnly && (
-                                  <tr className="no-print">
-                                    <td colSpan={6} className="p-0 border-x-0 border-y-2 border-blue-500 bg-blue-50/50">
-                                      <div className="flex items-center justify-center py-0.5 text-[10px] font-bold text-blue-700">
-                                        <span className="bg-blue-600 text-white px-2 py-0.2 rounded-full text-[9px] uppercase tracking-wider">
-                                          Insert Row {watchLineItems.length + 1} Here (At End)
-                                        </span>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                )}
-                              </React.Fragment>
-                            );
-                          }) : null}
-                          {/* Empty rows filler */}
-                          {Array.from({ length: Math.max(0, targetRows - watchLineItems.length) }).map((_, i) => (
-                            <tr key={`empty-${i}`} className="h-6">
-                              <td className="border border-black border-l-0 p-0"></td>
-                              <td className="border border-black p-0"></td>
-                              <td className="border border-black p-0"></td>
-                              <td className="border border-black p-0"></td>
-                              <td className="border border-black p-0"></td>
-                              <td className="border border-black border-r-0 p-0"></td>
-                            </tr>
-                          ))}
-                          <tr className="h-6">
-                            <td colSpan={5} className="border border-black border-l-0 border-b-0 p-0 font-bold text-right pr-2">TOTAL</td>
-                            <td className="border border-black border-r-0 border-b-0 p-0 text-right pr-1 font-bold">{totalAmount > 0 ? formatCurrency(totalAmount).replace('₱', '') : '-'}</td>
-                          </tr>
-                        </tbody>
-                      </table>
+                      {/* Excel-style Live Table Grid */}
+                      <ExcelTableGrid
+                        items={watchLineItems}
+                        targetRows={targetRows}
+                        isReadOnly={isReadOnly}
+                        onChange={(newItems) => {
+                          setValue("lineItems", newItems, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+                        }}
+                        onRowSelect={(idx) => {
+                          handleRowClick(idx);
+                        }}
+                        onStartInsert={(idx) => {
+                          handleStartInsert(idx);
+                        }}
+                        insertAtIndex={insertAtIndex}
+                        activeItemIndex={activeItemIndex}
+                        totalAmount={totalAmount}
+                      />
 
                       {/* Purpose Block - Multi-line responsive and inline-editable */}
                       <div className="p-3 text-sm flex gap-2 border-b-4 border-double border-black">
@@ -1221,7 +1172,7 @@ export default function PurchaseRequestEditor() {
                         <div>
                           <label className="form-label">Catalog Item <span style={{ fontWeight: "400", color: "#94a3b8" }}>(optional)</span></label>
                           <CustomSelect
-                            value={draftItem.itemId || ""}
+                            value={draftItem?.itemId || ""}
                             onChange={(val) => handleItemSelect(val)}
                             options={[
                               { value: "", label: "-- Custom Item --" },
@@ -1238,8 +1189,8 @@ export default function PurchaseRequestEditor() {
                         <div>
                           <label className="form-label">Description</label>
                           <input
-                            value={draftItem.description}
-                            onChange={(e) => setDraftItem({ ...draftItem, description: e.target.value })}
+                            value={draftItem?.description || ""}
+                            onChange={(e) => setDraftItem({ ...(draftItem || {}), description: e.target.value })}
                             className="form-input"
                             placeholder="Enter description..."
                           />
@@ -1249,8 +1200,8 @@ export default function PurchaseRequestEditor() {
                           <div>
                             <label className="form-label">Unit of Issue</label>
                             <input
-                              value={draftItem.unit}
-                              onChange={(e) => setDraftItem({ ...draftItem, unit: e.target.value })}
+                              value={draftItem?.unit || ""}
+                              onChange={(e) => setDraftItem({ ...(draftItem || {}), unit: e.target.value })}
                               className="form-input"
                             />
                           </div>
@@ -1261,8 +1212,8 @@ export default function PurchaseRequestEditor() {
                               type="number"
                               step="1"
                               min="0"
-                              value={draftItem.quantity}
-                              onChange={(e) => setDraftItem({ ...draftItem, quantity: e.target.value === "" ? "" : Number(e.target.value) })}
+                              value={draftItem?.quantity ?? ""}
+                              onChange={(e) => setDraftItem({ ...(draftItem || {}), quantity: e.target.value === "" ? "" : Number(e.target.value) })}
                               className="form-input"
                               style={{ textAlign: "right" }}
                               placeholder="0"
@@ -1275,8 +1226,8 @@ export default function PurchaseRequestEditor() {
                               type="number"
                               step="0.25"
                               min="0"
-                              value={draftItem.unitCost}
-                              onChange={(e) => setDraftItem({ ...draftItem, unitCost: e.target.value === "" ? "" : Number(e.target.value) })}
+                              value={draftItem?.unitCost ?? ""}
+                              onChange={(e) => setDraftItem({ ...(draftItem || {}), unitCost: e.target.value === "" ? "" : Number(e.target.value) })}
                               className="form-input"
                               style={{ textAlign: "right" }}
                               placeholder="0.00"
@@ -1287,7 +1238,7 @@ export default function PurchaseRequestEditor() {
 
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid #e2e8f0", paddingTop: "0.75rem" }}>
                         <div style={{ fontSize: "0.875rem", fontWeight: "700", color: "#059669" }}>
-                          Est: {formatCurrency(Number(draftItem.quantity) * Number(draftItem.unitCost))}
+                          Est: {formatCurrency(Number(draftItem?.quantity || 0) * Number(draftItem?.unitCost || 0))}
                         </div>
                         <div style={{ display: "flex", gap: "0.5rem" }}>
                           {activeItemIndex !== null ? (
