@@ -143,21 +143,43 @@ export async function PATCH(
       }
     }
 
-    // Handle updates to lineItems (description, brand, quantity, unit, price edits)
+    // Handle updates to lineItems (description, brand, quantity, unit, price edits, deletes, and adds)
+    if (body.deletedLineItemIds && Array.isArray(body.deletedLineItemIds) && body.deletedLineItemIds.length > 0) {
+      await prisma.poLineItem.deleteMany({
+        where: { id: { in: body.deletedLineItemIds }, poId: id },
+      });
+    }
+
     if (body.lineItems && Array.isArray(body.lineItems)) {
-      for (const item of body.lineItems) {
+      for (let i = 0; i < body.lineItems.length; i++) {
+        const item = body.lineItems[i];
+        const qty = item.quantity !== undefined && item.quantity !== "" ? parseFloat(item.quantity) : 0;
+        const price = item.unitPrice !== undefined && item.unitPrice !== "" ? parseFloat(item.unitPrice) : 0;
+        const totalPrice = !isNaN(qty) && !isNaN(price) ? qty * price : 0;
         if (item.id) {
-          const qty = item.quantity !== undefined ? parseFloat(item.quantity) : undefined;
-          const price = item.unitPrice !== undefined ? parseFloat(item.unitPrice) : undefined;
-          const totalPrice = qty !== undefined && price !== undefined ? qty * price : undefined;
           await prisma.poLineItem.update({
             where: { id: item.id },
             data: {
               ...(item.description !== undefined ? { description: item.description } : {}),
-              ...(qty !== undefined && !isNaN(qty) ? { quantity: qty } : {}),
+              quantity: isNaN(qty) ? 0 : qty,
               ...(item.unit !== undefined ? { unit: item.unit } : {}),
-              ...(price !== undefined && !isNaN(price) ? { unitPrice: price } : {}),
-              ...(totalPrice !== undefined && !isNaN(totalPrice) ? { totalPrice } : {}),
+              unitPrice: isNaN(price) ? 0 : price,
+              totalPrice,
+              sortOrder: i,
+              ...(item.descriptionEdited !== undefined ? { descriptionEdited: !!item.descriptionEdited } : {}),
+            }
+          });
+        } else if (item.description?.trim() || qty > 0) {
+          await prisma.poLineItem.create({
+            data: {
+              poId: id,
+              description: item.description || "",
+              unit: item.unit || "Unit",
+              quantity: isNaN(qty) ? 0 : qty,
+              unitPrice: isNaN(price) ? 0 : price,
+              totalPrice,
+              sortOrder: i,
+              descriptionEdited: !!item.descriptionEdited,
             }
           });
         }

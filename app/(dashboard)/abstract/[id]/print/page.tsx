@@ -1,14 +1,41 @@
 "use client";
-import LoaderWave from "@/components/ui/loader-wave";
 
-import React, { useState, useEffect } from "react";
+import LoaderWave from "@/components/ui/loader-wave";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { ArrowLeft, Printer, Loader2, ZoomIn, ZoomOut, Users, Edit3, Minus, Plus, Save, CheckCircle2, Lock, Unlock, LayoutGrid, CalendarX, AlertCircle, FileText, User, Calendar, Check, RefreshCw } from "lucide-react";
+import {
+  ArrowLeft,
+  Printer,
+  Loader2,
+  ZoomIn,
+  ZoomOut,
+  Users,
+  Edit3,
+  Minus,
+  Plus,
+  Save,
+  CheckCircle2,
+  Lock,
+  Unlock,
+  LayoutGrid,
+  CalendarX,
+  FileText,
+  User,
+  Calendar,
+  Check,
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import Link from "next/link";
 import { formatCurrency, LGU_INFO } from "@/lib/utils";
 import { toast } from "sonner";
 import ConfirmModal from "@/components/ui/confirm-modal";
+import {
+  AbstractExcelTableGrid,
+  AbstractQuotationData,
+} from "@/components/documents/abstract-excel-table-grid";
 
 export default function AbstractLivePreviewPage() {
   const params = useParams();
@@ -23,22 +50,17 @@ export default function AbstractLivePreviewPage() {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [lastSavedBy, setLastSavedBy] = useState<string | null>(null);
 
-  const handleUnlockConfirm = async (password?: string) => {
-    if (!password) {
-      toast.error("Password is required");
-      return;
-    }
-    setIsUnlocked(true);
-    setUnlockModalOpen(false);
-    toast.success("Document unlocked securely");
-  };
-
-  const handleSaveConfirm = () => {
-    setSaveModalOpen(false);
-    saveChanges();
-  };
   const [zoom, setZoom] = useState(0.65);
   const [targetRows, setTargetRows] = useState(15);
+
+  // 3-Panel Right Sidebar state
+  const [panelView, setPanelView] = useState<"details" | "item" | "spec">("details");
+  const [activeItemIndex, setActiveItemIndex] = useState<number | null>(null);
+  const [activeSpecIndex, setActiveSpecIndex] = useState<number | null>(null);
+
+  // Local quotation state to allow live in-grid editing
+  const [localQuotations, setLocalQuotations] = useState<any[]>([]);
+  const [dirtyQuotationIds, setDirtyQuotationIds] = useState<Set<string>>(new Set());
 
   // Editable form state
   const [showPrNo, setShowPrNo] = useState(true);
@@ -48,7 +70,9 @@ export default function AbstractLivePreviewPage() {
   const [dateAwarded, setDateAwarded] = useState("");
 
   // Signatories overrides: record of id -> { name, position, label, annotation }
-  const [sigOverrides, setSigOverrides] = useState<Record<string, { name: string; position: string; label: string; annotation?: string }>>({});
+  const [sigOverrides, setSigOverrides] = useState<
+    Record<string, { name: string; position: string; label: string; annotation?: string }>
+  >({});
   const [selectedSigIds, setSelectedSigIds] = useState<string[]>([]);
   const [editingSigId, setEditingSigId] = useState<string | null>(null);
   const [showAllSigs, setShowAllSigs] = useState(false);
@@ -57,8 +81,71 @@ export default function AbstractLivePreviewPage() {
   const [pageBreaks, setPageBreaks] = useState<(number | string)[]>([]);
   const [activeLeavesOnDate, setActiveLeavesOnDate] = useState<any[]>([]);
 
+  const rightPanelRef = useRef<HTMLDivElement>(null);
+  const gridWrapperRef = useRef<HTMLDivElement>(null);
+
+  // Global Escape key and click-outside listeners to unselect cell & signatory
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        const activeEl = document.activeElement as HTMLElement | null;
+        const isInput =
+          activeEl?.tagName === "INPUT" ||
+          activeEl?.tagName === "TEXTAREA" ||
+          activeEl?.isContentEditable;
+
+        // If actively typing inside the right panel form, don't close panel
+        if (isInput && rightPanelRef.current?.contains(activeEl)) {
+          return;
+        }
+
+        setActiveItemIndex(null);
+        setActiveSpecIndex(null);
+        setPanelView("details");
+        setEditingSigId(null);
+      }
+    };
+
+    const handleGlobalMouseDown = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+
+      // Do not clear if clicking inside the right panel or a modal
+      if (
+        rightPanelRef.current?.contains(target) ||
+        target.closest?.(".confirm-modal") ||
+        target.closest?.("[role='dialog']")
+      ) {
+        return;
+      }
+
+      // Check if click was inside table grid
+      const isInsideGrid = gridWrapperRef.current?.contains(target);
+      if (!isInsideGrid) {
+        setActiveItemIndex(null);
+        setActiveSpecIndex(null);
+        setPanelView("details");
+      }
+
+      // Check if click was on a signatory
+      const isSignatory = target.closest?.(".signatory-interactive");
+      if (!isSignatory) {
+        setEditingSigId(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    document.addEventListener("mousedown", handleGlobalMouseDown);
+    return () => {
+      window.removeEventListener("keydown", handleGlobalKeyDown);
+      document.removeEventListener("mousedown", handleGlobalMouseDown);
+    };
+  }, []);
+
   const togglePageBreak = (idx: number | string) => {
-    setPageBreaks(prev => prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]);
+    setPageBreaks((prev) =>
+      prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx]
+    );
   };
 
   const syncVerifiedLeaves = () => {
@@ -67,14 +154,14 @@ export default function AbstractLivePreviewPage() {
       return;
     }
     let updatedCount = 0;
-    setSigOverrides(prev => {
+    setSigOverrides((prev) => {
       const next = { ...prev };
-      activeLeavesOnDate.forEach(l => {
+      activeLeavesOnDate.forEach((l) => {
         const sigId = l.signatoryId;
         if (next[sigId]) {
           next[sigId] = {
             ...next[sigId],
-            annotation: "ON LEAVE",
+            annotation: "(ON LEAVE)",
           };
           updatedCount++;
         }
@@ -85,7 +172,6 @@ export default function AbstractLivePreviewPage() {
   };
 
   useEffect(() => {
-    // Only check and display on leave annotations when the award date is set
     if (!dateAwarded) {
       setActiveLeavesOnDate([]);
       return;
@@ -116,16 +202,21 @@ export default function AbstractLivePreviewPage() {
           const d = await abstractRes.json();
           abstractResData = d;
           setData(d);
+          if (d.rfq?.quotations) {
+            setLocalQuotations(d.rfq.quotations);
+          }
           if (d.updatedAt) setLastSaved(new Date(d.updatedAt));
           if (d.lastSavedBy) setLastSavedBy(d.lastSavedBy);
           if (d.rfq?.pr) {
             setReqOfficerName(d.reqOfficerName || d.rfq.pr.requestedBy || "");
             setReqOfficerOffice(d.reqOfficerOffice || d.rfq.pr.office?.name || "");
           }
-          if (d.docDate) setDocDate(new Date(d.docDate).toISOString().split('T')[0]);
+          if (d.docDate) setDocDate(new Date(d.docDate).toISOString().split("T")[0]);
           if (d.bacResNo) setBacResNo(d.bacResNo);
-          if (d.dateReceived) setDateReceived(new Date(d.dateReceived).toISOString().split('T')[0]);
-          if (d.dateAwarded) setDateAwarded(new Date(d.dateAwarded).toISOString().split('T')[0]);
+          if (d.dateReceived)
+            setDateReceived(new Date(d.dateReceived).toISOString().split("T")[0]);
+          if (d.dateAwarded)
+            setDateAwarded(new Date(d.dateAwarded).toISOString().split("T")[0]);
         }
         if (sigRes.ok) {
           const sigs = await sigRes.json();
@@ -136,12 +227,19 @@ export default function AbstractLivePreviewPage() {
             setSelectedSigIds(savedSigs.selectedSigIds || []);
             setSigOverrides(savedSigs.sigOverrides || {});
           } else {
-            // Pre-select only relevant roles (preventing accidental additions like viewers or end users)
-            const defaultRoles = ["HOPE", "BAC_CHAIRMAN", "BAC_VICE_CHAIRMAN", "BAC_MEMBER", "APPROVING_OFFICIAL"];
-            const activeAndRelevant = sigs.filter((s: any) => s.isActive && defaultRoles.includes(s.role));
+            const defaultRoles = [
+              "HOPE",
+              "BAC_CHAIRMAN",
+              "BAC_VICE_CHAIRMAN",
+              "BAC_MEMBER",
+              "APPROVING_OFFICIAL",
+            ];
+            const activeAndRelevant = sigs.filter(
+              (s: any) => s.isActive && defaultRoles.includes(s.role)
+            );
             setSelectedSigIds(activeAndRelevant.map((s: any) => s.id));
-            // Init overrides
-            const overrides: Record<string, { name: string; position: string; label: string }> = {};
+            const overrides: Record<string, { name: string; position: string; label: string }> =
+              {};
             sigs.forEach((s: any) => {
               overrides[s.id] = {
                 name: s.name,
@@ -160,6 +258,181 @@ export default function AbstractLivePreviewPage() {
     }
     load();
   }, [params.id]);
+
+  const rfq = data?.rfq;
+  const pr = rfq?.pr;
+  const quotations: any[] =
+    localQuotations.length > 0 ? localQuotations : rfq?.quotations || [];
+  const lineItems: any[] = rfq?.lineItems || [];
+
+  // Group line items into Main items and nested specification lines
+  const mainItems = useMemo(() => {
+    const list: {
+      rawIndex: number;
+      mainIndex: number;
+      displayNo: number;
+      item: any;
+      specs: { rawIndex: number; item: any }[];
+    }[] = [];
+    let currentMain: any = null;
+    let counter = 0;
+
+    (lineItems || []).forEach((it: any, idx: number) => {
+      const isBlank =
+        !it.description?.trim() && (!it.quantity || Number(it.quantity) === 0);
+      if (isBlank) return;
+
+      const isMain = it.quantity && Number(it.quantity) > 0;
+      if (isMain) {
+        counter++;
+        currentMain = {
+          rawIndex: idx,
+          mainIndex: list.length,
+          displayNo: counter,
+          item: it,
+          specs: [],
+        };
+        list.push(currentMain);
+      } else if (currentMain) {
+        currentMain.specs.push({
+          rawIndex: idx,
+          item: it,
+        });
+      } else {
+        counter++;
+        currentMain = {
+          rawIndex: idx,
+          mainIndex: list.length,
+          displayNo: counter,
+          item: it,
+          specs: [],
+        };
+        list.push(currentMain);
+      }
+    });
+
+    return list;
+  }, [lineItems]);
+
+  const activeMain = useMemo(() => {
+    if (activeItemIndex === null) return null;
+    return (
+      mainItems.find(
+        (m) =>
+          m.rawIndex === activeItemIndex ||
+          m.specs.some((s) => s.rawIndex === activeItemIndex)
+      ) || null
+    );
+  }, [mainItems, activeItemIndex]);
+
+  const activeSpec = useMemo(() => {
+    if (activeSpecIndex === null || !activeMain) return null;
+    return activeMain.specs.find((s) => s.rawIndex === activeSpecIndex) || null;
+  }, [activeMain, activeSpecIndex]);
+
+  useEffect(() => {
+    if (panelView === "item" && !activeMain) {
+      setPanelView("details");
+    } else if (panelView === "spec" && (!activeMain || activeSpecIndex === null)) {
+      setPanelView(activeMain ? "item" : "details");
+    }
+  }, [panelView, activeMain, activeSpecIndex]);
+
+  const sortedQuotations = useMemo(() => {
+    return [...quotations].sort((a, b) => {
+      if (a.totalAmount === 0 && b.totalAmount > 0) return 1;
+      if (b.totalAmount === 0 && a.totalAmount > 0) return -1;
+      return (a.totalAmount || 0) - (b.totalAmount || 0);
+    });
+  }, [quotations]);
+
+  const displayQuotes = useMemo(() => {
+    const list = [...sortedQuotations];
+    const MAX_SUPPLIERS = 3;
+    while (list.length < MAX_SUPPLIERS) list.push(null);
+    return list;
+  }, [sortedQuotations]);
+
+  const validQuotes = quotations.filter((q) => q.totalAmount > 0);
+  const lowestAmount =
+    validQuotes.length > 0
+      ? Math.min(...validQuotes.map((q: any) => q.totalAmount))
+      : null;
+  const recommendedQuote = validQuotes.find((q) => q.totalAmount === lowestAmount);
+
+  const handlePriceChange = (
+    quotationId: string,
+    rfqLineItemId: string,
+    newUnitPrice: number
+  ) => {
+    setLocalQuotations((prevQuotes) => {
+      return prevQuotes.map((q) => {
+        if (!q || q.id !== quotationId) return q;
+        const existingLines = [...(q.lineItems || [])];
+        const targetIdx = existingLines.findIndex(
+          (l) => l.rfqLineItemId === rfqLineItemId
+        );
+        const rfqItem = (lineItems || []).find((it: any) => it.id === rfqLineItemId);
+        const qty = Number(rfqItem?.quantity) || 0;
+        const totalPrice = qty * newUnitPrice;
+
+        if (targetIdx >= 0) {
+          existingLines[targetIdx] = {
+            ...existingLines[targetIdx],
+            unitPrice: newUnitPrice,
+            totalPrice,
+          };
+        } else {
+          existingLines.push({
+            rfqLineItemId,
+            unitPrice: newUnitPrice,
+            totalPrice,
+          });
+        }
+
+        const totalAmount = existingLines.reduce(
+          (sum, it) => sum + (it.totalPrice || 0),
+          0
+        );
+        return { ...q, lineItems: existingLines, totalAmount };
+      });
+    });
+    setDirtyQuotationIds((prev) => new Set(prev).add(quotationId));
+  };
+
+  const handleRowSelect = (index: number) => {
+    if (isReadOnly) return;
+    const item = lineItems[index];
+    if (!item) {
+      setActiveItemIndex(null);
+      setActiveSpecIndex(null);
+      setPanelView("details");
+      return;
+    }
+    const isSpec = !item.quantity || Number(item.quantity) === 0;
+    if (isSpec) {
+      let parentRawIdx = -1;
+      for (let i = index - 1; i >= 0; i--) {
+        if (lineItems[i]?.quantity && Number(lineItems[i].quantity) > 0) {
+          parentRawIdx = i;
+          break;
+        }
+      }
+      if (parentRawIdx >= 0) {
+        setActiveItemIndex(parentRawIdx);
+        setActiveSpecIndex(index);
+        setPanelView("spec");
+      } else {
+        setActiveItemIndex(index);
+        setActiveSpecIndex(null);
+        setPanelView("item");
+      }
+    } else {
+      setActiveItemIndex(index);
+      setActiveSpecIndex(null);
+      setPanelView("item");
+    }
+  };
 
   const saveChanges = async (newStatus?: string) => {
     try {
@@ -183,6 +456,25 @@ export default function AbstractLivePreviewPage() {
 
       if (!res.ok) throw new Error("Failed to save");
 
+      // Save any updated quotation bids
+      if (dirtyQuotationIds.size > 0) {
+        const savePromises = Array.from(dirtyQuotationIds).map((qId) => {
+          const q = localQuotations.find((lq) => lq?.id === qId);
+          if (!q) return Promise.resolve();
+          return fetch(`/api/quotations/${qId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              status: "RETURNED",
+              submittedAt: dateReceived,
+              lineItems: q.lineItems,
+            }),
+          });
+        });
+        await Promise.all(savePromises);
+        setDirtyQuotationIds(new Set());
+      }
+
       const updated = await res.json();
       setData((prev: any) => ({ ...prev, ...updated }));
       setLastSaved(new Date());
@@ -191,7 +483,9 @@ export default function AbstractLivePreviewPage() {
       } else if (session?.user?.name) {
         setLastSavedBy(session.user.name);
       }
-      toast.success(newStatus ? `Abstract ${newStatus.toLowerCase()} successfully!` : "Changes saved");
+      toast.success(
+        newStatus ? `Abstract ${newStatus.toLowerCase()} successfully!` : "Changes saved"
+      );
       if (newStatus) setIsUnlocked(false);
     } catch (error) {
       toast.error("An error occurred while saving.");
@@ -200,71 +494,75 @@ export default function AbstractLivePreviewPage() {
     }
   };
 
-  if (loading) return <LoaderWave variant="page" label="Preparing document..." />;
-  if (!data) return <div style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>Abstract not found</div>;
-
-  const rfq = data.rfq;
-  const pr = rfq.pr;
-  const quotations: any[] = rfq.quotations || [];
-  const lineItems: any[] = rfq.lineItems || [];
-
-  const validQuotes = quotations.filter(q => q.totalAmount > 0);
-  const lowestAmount = validQuotes.length > 0 ? Math.min(...validQuotes.map((q: any) => q.totalAmount)) : null;
-  const recommendedQuote = validQuotes.find(q => q.totalAmount === lowestAmount);
-
-  const getItemPrice = (quotation: any, rfqLineItemId: string) => {
-    const li = quotation.lineItems?.find((l: any) => l.rfqLineItemId === rfqLineItemId);
-    return li ? { unitPrice: li.unitPrice || 0, totalPrice: li.totalPrice || 0 } : { unitPrice: 0, totalPrice: 0 };
+  const handleUnlockConfirm = async (password?: string) => {
+    if (!password) {
+      toast.error("Password is required");
+      return;
+    }
+    setIsUnlocked(true);
+    setUnlockModalOpen(false);
+    toast.success("Document unlocked securely");
   };
 
-  const sortedQuotations = [...quotations].sort((a, b) => {
-    if (a.totalAmount === 0 && b.totalAmount > 0) return 1;
-    if (b.totalAmount === 0 && a.totalAmount > 0) return -1;
-    return (a.totalAmount || 0) - (b.totalAmount || 0);
-  });
+  const handleSaveConfirm = () => {
+    setSaveModalOpen(false);
+    saveChanges();
+  };
 
-  const displayQuotes = [...sortedQuotations];
-  const MAX_SUPPLIERS = 3;
-  while (displayQuotes.length < MAX_SUPPLIERS) displayQuotes.push(null);
+  if (loading) return <LoaderWave variant="page" label="Preparing document..." />;
+  if (!data)
+    return (
+      <div style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>
+        Abstract not found
+      </div>
+    );
 
-  const fmt2 = (n: number) => n > 0 ? n.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "";
-  const fmtDate = (iso: string) => iso ? new Date(iso).toLocaleDateString("en-PH", { month: "long", day: "numeric", year: "numeric" }) : "___________________";
+  const isReadOnly = data.status !== "DRAFT" && !isUnlocked;
+
+  const fmt2 = (n: number) =>
+    n > 0
+      ? n.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      : "";
+  const fmtDate = (iso: string) =>
+    iso
+      ? new Date(iso).toLocaleDateString("en-PH", {
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        })
+      : "___________________";
 
   const selectedSigs = selectedSigIds
-    .map(id => allSignatories.find(s => s.id === id))
+    .map((id) => allSignatories.find((s) => s.id === id))
     .filter(Boolean)
-    .map(s => ({ ...s, ...sigOverrides[s.id] }));
+    .map((s) => ({ ...s, ...sigOverrides[s.id] }));
 
-  const hope = selectedSigs.find(s => s.role === "HOPE" || s.role === "APPROVING_OFFICIAL");
-  const bacChairman = selectedSigs.find(s => s.role === "BAC_CHAIRMAN");
-  const bacMembers = selectedSigs.filter(s => s.id !== hope?.id && s.id !== bacChairman?.id);
+  const hope = selectedSigs.find(
+    (s) => s.role === "HOPE" || s.role === "APPROVING_OFFICIAL"
+  );
+  const bacChairman = selectedSigs.find((s) => s.role === "BAC_CHAIRMAN");
+  const bacMembers = selectedSigs.filter(
+    (s) => s.id !== hope?.id && s.id !== bacChairman?.id
+  );
 
   const getSignatoryAnnotation = (sig: any) => {
     if (!dateAwarded || !sig) return null;
-    // Explicit manual override in sigOverrides takes precedence:
-    if (sig.annotation !== undefined && sig.annotation !== null && sig.annotation !== "") {
+    if (
+      sig.annotation !== undefined &&
+      sig.annotation !== null &&
+      sig.annotation !== ""
+    ) {
       return sig.annotation;
     }
-    // Explicit empty string indicates user explicitly selected "None"
     if (sig.annotation === "") {
       return null;
     }
-    // Automatically check if this signatory is in activeLeavesOnDate:
     const onLeave = activeLeavesOnDate.some((l: any) => l.signatoryId === sig.id);
     if (onLeave) {
       return "(ON LEAVE)";
     }
     return null;
   };
-
-  const cell: React.CSSProperties = { border: "1px solid #000", padding: "2px 2px", fontSize: "13px", verticalAlign: "middle" };
-  const headerCell: React.CSSProperties = { ...cell, fontWeight: "700", textAlign: "center", background: "#fff", padding: 0 };
-  const cellLeft: React.CSSProperties = { ...cell, borderLeft: "none" };
-  const cellRight: React.CSSProperties = { ...cell, borderRight: "none" };
-  const headerCellLeft: React.CSSProperties = { ...headerCell, borderLeft: "none" };
-  const headerCellRight: React.CSSProperties = { ...headerCell, borderRight: "none" };
-
-  const isReadOnly = data.status !== "DRAFT" && !isUnlocked;
 
   const getSavedTimeText = () => {
     if (!lastSaved) return null;
@@ -277,11 +575,17 @@ export default function AbstractLivePreviewPage() {
     const diffHours = Math.floor(diffMin / 60);
     if (diffHours === 1) return "Saved 1 hr ago";
     if (diffHours < 24) return `Saved ${diffHours} hr ago`;
-    return `Saved on ${lastSaved.toLocaleDateString("en-PH", { month: "short", day: "numeric" })}`;
+    return `Saved on ${lastSaved.toLocaleDateString("en-PH", {
+      month: "short",
+      day: "numeric",
+    })}`;
   };
 
   return (
-    <div className="flex flex-col gap-3.5 p-3 sm:p-4 bg-[#e9edf4] w-full max-w-full min-w-0 overflow-hidden flex-1 print:!block print:!h-auto print:!overflow-visible print:!m-0 print:!p-0 print:!bg-white print:!w-full print:!max-w-none" style={{ height: 'calc(var(--full-vh) - 88px)' }}>
+    <div
+      className="flex flex-col gap-3.5 p-3 sm:p-4 bg-[#e9edf4] w-full max-w-full min-w-0 overflow-hidden flex-1 print:!block print:!h-auto print:!overflow-visible print:!m-0 print:!p-0 print:!bg-white print:!w-full print:!max-w-none"
+      style={{ height: "calc(var(--full-vh) - 88px)" }}
+    >
       {/* Header Card */}
       <div className="no-print bg-white rounded-2xl shadow-sm border border-slate-200/60 px-5 py-3 flex items-center justify-between z-10 shrink-0">
         <div className="flex items-center gap-3">
@@ -304,20 +608,27 @@ export default function AbstractLivePreviewPage() {
             <h2 className="text-lg font-bold text-slate-800">
               {data.abstractNumber?.trim()
                 ? data.abstractNumber.trim()
-                : (data.bacResNo?.trim() ? `Res. ${data.bacResNo.trim()}` : "Abstract of Canvass")}
+                : data.bacResNo?.trim()
+                ? `Res. ${data.bacResNo.trim()}`
+                : "Abstract of Canvass"}
             </h2>
             {isReadOnly ? (
               <div className="flex items-center gap-2">
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${data.status === "COMPLETED" || data.status === "SIGNED"
-                  ? "bg-emerald-100 text-emerald-800"
-                  : "bg-blue-100 text-blue-800"
-                  }`}>
+                <span
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${
+                    data.status === "COMPLETED" || data.status === "SIGNED"
+                      ? "bg-emerald-100 text-emerald-800"
+                      : "bg-blue-100 text-blue-800"
+                  }`}
+                >
                   {data.status === "COMPLETED" || data.status === "SIGNED" ? (
                     <CheckCircle2 size={12} className="text-emerald-700" />
                   ) : (
                     <Lock size={12} className="text-blue-700" />
                   )}
-                  {data.status === "SIGNED" || data.status === "COMPLETED" ? "COMPLETED" : (data.status || "FINAL")}
+                  {data.status === "SIGNED" || data.status === "COMPLETED"
+                    ? "COMPLETED"
+                    : data.status || "FINAL"}
                 </span>
                 {getSavedTimeText() && (
                   <span className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
@@ -325,7 +636,9 @@ export default function AbstractLivePreviewPage() {
                     {lastSavedBy && (
                       <>
                         <span className="text-slate-300">•</span>
-                        <span className="text-slate-600 font-medium">by <strong className="font-semibold text-slate-700">{lastSavedBy}</strong></span>
+                        <span className="text-slate-600 font-medium">
+                          by <strong className="font-semibold text-slate-700">{lastSavedBy}</strong>
+                        </span>
                       </>
                     )}
                   </span>
@@ -343,7 +656,9 @@ export default function AbstractLivePreviewPage() {
                     {lastSavedBy && (
                       <>
                         <span className="text-slate-300">•</span>
-                        <span className="text-slate-600 font-medium">by <strong className="font-semibold text-slate-700">{lastSavedBy}</strong></span>
+                        <span className="text-slate-600 font-medium">
+                          by <strong className="font-semibold text-slate-700">{lastSavedBy}</strong>
+                        </span>
                       </>
                     )}
                   </span>
@@ -374,7 +689,12 @@ export default function AbstractLivePreviewPage() {
                   disabled={submitting}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-xl text-sm flex items-center gap-2 shadow-sm transition-all"
                 >
-                  {submitting ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />} Mark as Completed
+                  {submitting ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <CheckCircle2 size={16} />
+                  )}{" "}
+                  Mark as Completed
                 </button>
               )}
               <button
@@ -417,7 +737,8 @@ export default function AbstractLivePreviewPage() {
                 disabled={submitting}
                 className="border border-blue-600 hover:bg-blue-50 text-blue-600 font-semibold px-4 py-2 rounded-xl text-sm flex items-center gap-2 shadow-sm transition-all"
               >
-                {submitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Save
+                {submitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}{" "}
+                Save
               </button>
               {data.status === "DRAFT" && (
                 <button
@@ -426,7 +747,12 @@ export default function AbstractLivePreviewPage() {
                   disabled={submitting}
                   className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-xl text-sm flex items-center gap-2 shadow-sm transition-all"
                 >
-                  {submitting ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />} Finalize
+                  {submitting ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <CheckCircle2 size={16} />
+                  )}{" "}
+                  Finalize
                 </button>
               )}
               {data.status === "ISSUED" && (
@@ -436,7 +762,12 @@ export default function AbstractLivePreviewPage() {
                   disabled={submitting}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-5 py-2 rounded-xl text-sm flex items-center gap-2 shadow-sm transition-all"
                 >
-                  {submitting ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />} Mark as Completed
+                  {submitting ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <CheckCircle2 size={16} />
+                  )}{" "}
+                  Mark as Completed
                 </button>
               )}
             </>
@@ -461,17 +792,58 @@ export default function AbstractLivePreviewPage() {
       )}
 
       <div className="flex flex-1 min-w-0 max-w-full w-full gap-4 overflow-hidden relative print:!block print:!h-auto print:!overflow-visible print:!m-0 print:!p-0 print:!w-full">
-        {/* ─── Left: Live Preview ─── */}
+        {/* Left Side: Live Print Preview */}
         <div className="flex-1 w-0 min-w-0 max-w-full rounded-2xl bg-[#d8e1eb] overflow-hidden relative flex flex-col shadow-inner print:rounded-none print:!bg-white print:!overflow-visible print:!shadow-none print:!block print:!w-full print:!m-0 print:!p-0">
-          {/* Zoom Controls (Bottom Left) */}
+          {/* Zoom Controls */}
           <div className="no-print absolute bottom-6 left-6 flex items-center gap-1 bg-white p-1 rounded-full shadow-md border border-slate-200 z-10 text-slate-600">
-            <button type="button" onClick={() => setZoom(z => Math.max(z - 0.1, 0.4))} className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Zoom Out"><ZoomOut size={18} /></button>
-            <button type="button" onClick={() => setZoom(1)} className="px-3 hover:bg-slate-100 rounded-full font-bold text-xs h-full transition-colors" title="Reset Zoom">{Math.round(zoom * 100)}%</button>
-            <button type="button" onClick={() => setZoom(z => Math.min(z + 0.1, 2))} className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Zoom In"><ZoomIn size={18} /></button>
+            <button
+              type="button"
+              onClick={() => setZoom((z) => Math.max(z - 0.1, 0.4))}
+              className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+              title="Zoom Out"
+            >
+              <ZoomOut size={18} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setZoom(1)}
+              className="px-3 hover:bg-slate-100 rounded-full font-bold text-xs h-full transition-colors"
+              title="Reset Zoom"
+            >
+              {Math.round(zoom * 100)}%
+            </button>
+            <button
+              type="button"
+              onClick={() => setZoom((z) => Math.min(z + 0.1, 2))}
+              className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+              title="Zoom In"
+            >
+              <ZoomIn size={18} />
+            </button>
             <div className="w-[1px] h-6 bg-slate-300 mx-1"></div>
-            <button type="button" onClick={() => setTargetRows(r => Math.max(r - 1, 0))} className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Remove Row"><Minus size={18} /></button>
-            <div className="px-2 font-bold text-xs flex flex-col items-center justify-center h-full" title="Target Table Rows"><span className="leading-none">{targetRows}</span><span className="text-[9px] leading-none text-slate-400">Rows</span></div>
-            <button type="button" onClick={() => setTargetRows(r => r + 1)} className="p-2 hover:bg-slate-100 rounded-full transition-colors" title="Add Row"><Plus size={18} /></button>
+            <button
+              type="button"
+              onClick={() => setTargetRows((r) => Math.max(r - 1, 0))}
+              className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+              title="Remove Row"
+            >
+              <Minus size={18} />
+            </button>
+            <div
+              className="px-2 font-bold text-xs flex flex-col items-center justify-center h-full"
+              title="Target Table Rows"
+            >
+              <span className="leading-none">{targetRows}</span>
+              <span className="text-[9px] leading-none text-slate-400">Rows</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setTargetRows((r) => r + 1)}
+              className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+              title="Add Row"
+            >
+              <Plus size={18} />
+            </button>
           </div>
 
           <div className="flex-1 w-full min-w-0 max-w-full overflow-auto p-4 sm:p-6 md:p-8 print:!p-0 print:!m-0 print:!bg-white print:!block print:!overflow-visible print:!h-auto print:!w-full">
@@ -511,7 +883,6 @@ export default function AbstractLivePreviewPage() {
                     className="abstract-print-sheet print-area w-[1500px] shadow-xl min-h-[816px] p-[40px] print:!p-0 block print:shadow-none print:!w-full print:!max-w-none print:!m-0 print:!min-h-0"
                   >
                     <div style={{ border: "1px solid #000", padding: "10px 0" }}>
-
                       {/* Doc Header */}
                       <div style={{ textAlign: "center", marginBottom: "6px" }}>
                         <div>Republic of the Philippines</div>
@@ -519,192 +890,140 @@ export default function AbstractLivePreviewPage() {
                         <div>Municipality of Pandan</div>
                       </div>
                       <div style={{ textAlign: "center", marginBottom: "8px" }}>
-                        <div style={{ fontSize: "20px", fontWeight: "700", letterSpacing: "0.05em" }}>ABSTRACT OF CANVASS</div>
+                        <div
+                          style={{
+                            fontSize: "20px",
+                            fontWeight: "700",
+                            letterSpacing: "0.05em",
+                          }}
+                        >
+                          ABSTRACT OF CANVASS
+                        </div>
                       </div>
 
                       {/* PR No & Date */}
-                      <div style={{ display: "flex", justifyContent: "center", gap: "48px", marginBottom: "8px", fontSize: "13px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "center",
+                          gap: "48px",
+                          marginBottom: "8px",
+                          fontSize: "13px",
+                        }}
+                      >
                         <div>
                           Purchase Request No.:&nbsp;
-                          <span style={{ borderBottom: "1px solid #000", display: "inline-block", minWidth: "80px", paddingBottom: "1px" }}>
+                          <span
+                            style={{
+                              borderBottom: "1px solid #000",
+                              display: "inline-block",
+                              minWidth: "80px",
+                              paddingBottom: "1px",
+                            }}
+                          >
                             &nbsp;{showPrNo ? pr?.prNumber : ""}&nbsp;
                           </span>
                         </div>
                         <div>
                           Dated:&nbsp;
-                          <span style={{ borderBottom: "1px solid #000", display: "inline-block", minWidth: "80px", paddingBottom: "1px" }}>
+                          <span
+                            style={{
+                              borderBottom: "1px solid #000",
+                              display: "inline-block",
+                              minWidth: "80px",
+                              paddingBottom: "1px",
+                            }}
+                          >
                             &nbsp;{docDate ? fmtDate(docDate) : ""}&nbsp;
                           </span>
                         </div>
                       </div>
 
-                      {/* Main Table */}
-                      <table style={{ width: "100%", borderCollapse: "collapse", borderLeft: "none", borderRight: "none", marginBottom: "15px" }}>
-                        <tbody>
-                          <tr>
-                            <th style={{ ...headerCellLeft, width: "26px" }} rowSpan={3}>NO.</th>
-                            <th style={{ ...headerCell, width: "35%" }} rowSpan={3}>DESCRIPTION</th>
-                            <th style={{ ...headerCell, width: "38px" }} rowSpan={3}>QTY</th>
-                            <th style={{ ...headerCell, width: "34px" }} rowSpan={3}>UNIT</th>
-                            <th style={{ ...headerCellRight }} colSpan={displayQuotes.length * 2}>SUPPLIER&apos;S NAME</th>
-                          </tr>
-                          <tr>
-                            {displayQuotes.map((q: any, i: number) => (
-                              <th key={i} style={{ ...(i === displayQuotes.length - 1 ? headerCellRight : headerCell), fontSize: "13px" }} colSpan={2}>
-                                {q ? q.supplier?.name?.toUpperCase() : `SUPPLIER ${i + 1}`}
-                              </th>
-                            ))}
-                          </tr>
-                          <tr>
-                            {displayQuotes.map((_: any, i: number) => (
-                              <React.Fragment key={i}>
-                                <th key={`up-${i}`} style={{ ...headerCell, width: "8%", fontSize: "13px" }}>UNIT PRICE</th>
-                                <th key={`tp-${i}`} style={{ ...(i === displayQuotes.length - 1 ? headerCellRight : headerCell), width: "8%", fontSize: "13px" }}>TOTAL PRICE</th>
-                              </React.Fragment>
-                            ))}
-                          </tr>
-                        </tbody>
-                        <tbody>
-                          {lineItems.map((item: any, idx: number) => {
-                            const isRec = recommendedQuote !== undefined;
-                            const hasBreak = pageBreaks.includes(idx);
-
-                            const isSpec = !item.quantity || item.quantity === 0;
-                            let displayNo = "";
-                            if (!isSpec) {
-                              let count = 0;
-                              for (let i = 0; i <= idx; i++) {
-                                if (Number(lineItems[i].quantity) > 0) count++;
-                              }
-                              displayNo = count.toString();
-                            }
-
-                            const hasSpecs = !isSpec && idx + 1 < lineItems.length && (!lineItems[idx + 1].quantity || lineItems[idx + 1].quantity === 0);
-
-                            return (
-                              <tr key={item.id} className={`group ${hasBreak ? 'break-before-page' : ''}`} style={hasBreak ? { pageBreakBefore: 'always', breakBefore: 'page' } : {}}>
-                                <td style={{ ...cellLeft, textAlign: "center", fontWeight: "700", verticalAlign: "top", position: "relative" }}>
-                                  <div className="absolute top-0 left-[-24px] h-[24px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer no-print z-50 -translate-y-1/2" onClick={() => togglePageBreak(idx)}>
-                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white shadow-sm ${hasBreak ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'}`} title={hasBreak ? "Remove Page Break" : "Insert Page Break Above"}>
-                                      {hasBreak ? <Minus size={12} /> : <Plus size={12} />}
-                                    </div>
-                                  </div>
-                                  {hasBreak && (
-                                    <div className="absolute top-0 left-0 w-[1168px] h-0 border-t-[3px] border-dashed border-red-400 z-40 no-print" style={{ pointerEvents: 'none' }}></div>
-                                  )}
-                                  {displayNo}
-                                </td>
-                                <td style={{ ...cell, fontWeight: isSpec ? "normal" : (hasSpecs ? "bold" : "normal"), paddingLeft: isSpec ? "1.5rem" : "0.5rem" }}>{item.description}</td>
-                                <td style={{ ...cell, textAlign: "center" }}>{isSpec ? "" : item.quantity}</td>
-                                <td style={{ ...cell, textAlign: "center" }}>{isSpec ? "" : item.unit}</td>
-                                {displayQuotes.map((q: any, qi: number) => {
-                                  const prices = q ? getItemPrice(q, item.id) : { unitPrice: 0, totalPrice: 0 };
-                                  return (
-                                    <React.Fragment key={qi}>
-                                      <td key={`up-${qi}`} style={{ ...cell, textAlign: "right" }}>
-                                        {isSpec ? "" : fmt2(prices.unitPrice)}
-                                      </td>
-                                      <td key={`tp-${qi}`} style={{ ...(qi === displayQuotes.length - 1 ? cellRight : cell), textAlign: "right" }}>
-                                        {isSpec ? "" : fmt2(prices.totalPrice)}
-                                      </td>
-                                    </React.Fragment>
-                                  );
-                                })}
-                              </tr>
-                            );
-                          })}
-
-                          {Array.from({ length: Math.max(0, targetRows - lineItems.length) }).map((_, i) => {
-                            const idx = `fill-${i}`;
-                            const hasBreak = pageBreaks.includes(idx);
-                            return (
-                              <tr key={idx} className={`group ${hasBreak ? 'break-before-page' : ''}`} style={hasBreak ? { pageBreakBefore: 'always', breakBefore: 'page', height: "24px" } : { height: "24px" }}>
-                                <td style={{ ...cellLeft, position: "relative" }}>
-                                  <div className="absolute top-0 left-[-24px] h-[24px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer no-print z-50 -translate-y-1/2" onClick={() => togglePageBreak(idx)}>
-                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white shadow-sm ${hasBreak ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'}`} title={hasBreak ? "Remove Page Break" : "Insert Page Break Above"}>
-                                      {hasBreak ? <Minus size={12} /> : <Plus size={12} />}
-                                    </div>
-                                  </div>
-                                  {hasBreak && (
-                                    <div className="absolute top-0 left-0 w-[1168px] h-0 border-t-[3px] border-dashed border-red-400 z-40 no-print" style={{ pointerEvents: 'none' }}></div>
-                                  )}
-                                </td>
-                                <td style={cell}></td><td style={cell}></td><td style={cell}></td>
-                                {displayQuotes.map((_: any, qi: number) => (
-                                  <React.Fragment key={qi}>
-                                    <td key={`fu-${qi}`} style={cell}></td>
-                                    <td key={`ft-${qi}`} style={qi === displayQuotes.length - 1 ? cellRight : cell}></td>
-                                  </React.Fragment>
-                                ))}
-                              </tr>
-                            );
-                          })}
-
-                          {/* TOTAL row */}
-                          <tr className={`group ${pageBreaks.includes('total') ? 'break-before-page' : ''}`} style={pageBreaks.includes('total') ? { pageBreakBefore: 'always', breakBefore: 'page' } : {}}>
-                            <td style={{ ...headerCellLeft, borderTop: "2px solid #000", textAlign: "center", position: "relative" }} colSpan={4}>
-                              <div className="absolute top-0 left-[-24px] h-[24px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer no-print z-50 -translate-y-1/2" onClick={() => togglePageBreak('total')}>
-                                <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white shadow-sm ${pageBreaks.includes('total') ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'}`} title={pageBreaks.includes('total') ? "Remove Page Break" : "Insert Page Break Above"}>
-                                  {pageBreaks.includes('total') ? <Minus size={12} /> : <Plus size={12} />}
-                                </div>
-                              </div>
-                              {pageBreaks.includes('total') && (
-                                <div className="absolute top-0 left-0 w-[1168px] h-0 border-t-[3px] border-dashed border-red-400 z-40 no-print" style={{ pointerEvents: 'none' }}></div>
-                              )}
-                              TOTAL AMOUNT
-                            </td>
-                            {displayQuotes.map((q: any, qi: number) => {
-                              const isWinner = q && recommendedQuote && q.id === recommendedQuote.id;
-                              return (
-                                <td key={`tot-${qi}`} colSpan={2} style={{ ...(qi === displayQuotes.length - 1 ? cellRight : cell), borderTop: "2px solid #000", textAlign: "right", fontWeight: isWinner ? "700" : "normal", fontSize: isWinner ? "14px" : "13px" }}>
-                                  {q && q.totalAmount > 0 ? fmt2(q.totalAmount) : ""}
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        </tbody>
-                      </table>
-
-                      {/* BAC Res No */}
-                      <div className={`print:break-inside-avoid group ${pageBreaks.includes('signatures') ? 'break-before-page' : ''}`} style={pageBreaks.includes('signatures') ? { pageBreakBefore: 'always', breakBefore: 'page', position: 'relative' } : { position: 'relative' }}>
-                        <div className="absolute top-0 left-[-24px] h-[24px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer no-print z-50 -translate-y-1/2" onClick={() => togglePageBreak('signatures')}>
-                          <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white shadow-sm ${pageBreaks.includes('signatures') ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'}`} title={pageBreaks.includes('signatures') ? "Remove Page Break" : "Insert Page Break Above"}>
-                            {pageBreaks.includes('signatures') ? <Minus size={12} /> : <Plus size={12} />}
-                          </div>
-                        </div>
-                        {pageBreaks.includes('signatures') && (
-                          <div className="absolute top-0 left-0 w-[1168px] h-0 border-t-[3px] border-dashed border-red-400 z-40 no-print" style={{ pointerEvents: 'none' }}></div>
-                        )}
-                        <div style={{ fontSize: "13px", marginBottom: "8px", padding: "0 24px" }}>
-                          BAC Resolution No.:&nbsp;
-                          <span style={{ borderBottom: "1px solid #000", display: "inline-block", minWidth: "100px" }}>
-                            &nbsp;{bacResNo}&nbsp;
-                          </span>
-                        </div>
+                      {/* Excel-style Main Table Grid */}
+                      <div ref={gridWrapperRef}>
+                        <AbstractExcelTableGrid
+                          items={lineItems}
+                          quotations={displayQuotes}
+                          targetRows={targetRows}
+                          isReadOnly={isReadOnly}
+                          pageBreaks={pageBreaks}
+                          onTogglePageBreak={togglePageBreak}
+                          activeItemIndex={
+                            activeSpecIndex !== null ? activeSpecIndex : activeItemIndex
+                          }
+                          onRowSelect={handleRowSelect}
+                          onPriceChange={handlePriceChange}
+                          onDeselect={() => {
+                            setActiveItemIndex(null);
+                            setActiveSpecIndex(null);
+                            setPanelView("details");
+                          }}
+                        />
                       </div>
 
                       {/* Certification Paragraph */}
-                      <div className="print:break-inside-avoid" style={{ fontSize: "14px", lineHeight: "1.6", marginBottom: "60px", textAlign: "justify", padding: "0 24px" }}>
-                        &nbsp;&nbsp;&nbsp;&nbsp;We, the undersigned the BAC Chairman, Members and Requisitioning Officer, do hereby certify that the foregoing is the true and correct ABSTRACT OF CANVASS of the Request for Quotation received on <strong>{fmtDate(dateReceived)}</strong> by BAC Secretariat and was opened by Bids and Awards Committee of Pandan, Antique on <strong>{fmtDate(dateAwarded)}</strong> for&nbsp;
-                        <span style={{ borderBottom: "1px solid #000" }}><strong>&nbsp;{pr?.purpose}&nbsp;</strong></span>
-                        &nbsp;needed for use in the Office of the <strong>{reqOfficerOffice || "___________________"}</strong>, Pandan, Antique.
-                        The offer <strong><span>{recommendedQuote ? recommendedQuote.supplier?.name?.toUpperCase() : "___________________"}</span></strong> for items herein and respectively checked and articles/materials are hereby ACCEPTED AND AWARDED OF PRICE RECOMMENDATION. Recommending approval of the award in favor of the dealer quoted most advantageous offers indicating in the column above.
+                      <div
+                        className="print:break-inside-avoid"
+                        style={{
+                          margin: "0 24px 10px 24px",
+                          fontSize: "13px",
+                          lineHeight: "1.5",
+                          textAlign: "justify",
+                        }}
+                      >
+                        WE HEREBY CERTIFY that the above are true and correct results of bids
+                        received in the return envelope sealed with our BAC sealing tape on or
+                        before{" "}
+                        <span style={{ fontWeight: "700" }}>{fmtDate(dateReceived)}</span> and
+                        subsequently opened by the Committee on Bids and Awards on{" "}
+                        <span style={{ fontWeight: "700" }}>{fmtDate(dateAwarded)}</span>, at
+                        which time, date and place where{" "}
+                        <span style={{ fontWeight: "700", textDecoration: "underline" }}>
+                          {recommendedQuote
+                            ? recommendedQuote.supplier?.name?.toUpperCase()
+                            : "_________________________________"}
+                        </span>{" "}
+                        was recommended for award of the contract as being the lowest quotation
+                        complying with the requirements and specifications.
                       </div>
 
+                      {/* BAC Signatures Section */}
                       {(() => {
-                        const reqAnnotation = sigOverrides["req"]?.annotation || "";
-                        const hasAnySigAnnotation = Boolean(
-                          (bacChairman && getSignatoryAnnotation(bacChairman)) ||
-                          bacMembers.some((m: any) => getSignatoryAnnotation(m)) ||
-                          reqAnnotation
-                        );
+                        const hasAnySigAnnotation =
+                          selectedSigs.some((s) => getSignatoryAnnotation(s) !== null) ||
+                          (dateAwarded && activeLeavesOnDate.length > 0);
+                        const reqAnnotation = dateAwarded ? null : null;
 
                         return (
-                          <div className="print:break-inside-avoid" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px", flexWrap: "nowrap", rowGap: "32px" }}>
+                          <div
+                            className="print:break-inside-avoid"
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "flex-start",
+                              marginTop: "10px",
+                              padding: "0 24px",
+                              gap: "8px",
+                            }}
+                          >
                             {bacChairman && (
                               <div
-                                onClick={() => { setEditingSigId(bacChairman.id); setShowAllSigs(false); }}
-                                style={{ flex: "1 1 auto", textAlign: "center", padding: "4px", cursor: "pointer", borderRadius: "6px", backgroundColor: editingSigId === bacChairman.id ? "rgba(37,99,235,0.08)" : "transparent" }}
+                                className="signatory-interactive"
+                                onClick={() => {
+                                  setEditingSigId(bacChairman.id);
+                                  setShowAllSigs(false);
+                                }}
+                                style={{
+                                  flex: "1 1 auto",
+                                  textAlign: "center",
+                                  padding: "4px",
+                                  cursor: "pointer",
+                                  borderRadius: "6px",
+                                  backgroundColor:
+                                    editingSigId === bacChairman.id
+                                      ? "rgba(37,99,235,0.08)"
+                                      : "transparent",
+                                }}
                                 title="Click to edit"
                               >
                                 {hasAnySigAnnotation && (
@@ -718,22 +1037,49 @@ export default function AbstractLivePreviewPage() {
                                       marginBottom: "3px",
                                       minHeight: "15px",
                                       lineHeight: "15px",
-                                      visibility: getSignatoryAnnotation(bacChairman) ? "visible" : "hidden",
+                                      visibility: getSignatoryAnnotation(bacChairman)
+                                        ? "visible"
+                                        : "hidden",
                                     }}
                                   >
                                     {getSignatoryAnnotation(bacChairman) || "\u00A0"}
                                   </div>
                                 )}
-                                <div style={{ fontWeight: "700", fontSize: "12px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{bacChairman.name}</div>
+                                <div
+                                  style={{
+                                    fontWeight: "700",
+                                    fontSize: "12px",
+                                    textTransform: "uppercase",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  {bacChairman.name}
+                                </div>
                                 <div style={{ fontSize: "12px" }}>{bacChairman.position}</div>
-                                <div style={{ fontSize: "12px" }}>BAC Chairman</div>
+                                <div style={{ fontSize: "12px" }}>
+                                  {bacChairman.label || "BAC Chairman"}
+                                </div>
                               </div>
                             )}
                             {bacMembers.map((m: any) => (
                               <div
                                 key={m.id}
-                                onClick={() => { setEditingSigId(m.id); setShowAllSigs(false); }}
-                                style={{ flex: "1 1 auto", textAlign: "center", padding: "4px", cursor: "pointer", borderRadius: "6px", backgroundColor: editingSigId === m.id ? "rgba(37,99,235,0.08)" : "transparent" }}
+                                className="signatory-interactive"
+                                onClick={() => {
+                                  setEditingSigId(m.id);
+                                  setShowAllSigs(false);
+                                }}
+                                style={{
+                                  flex: "1 1 auto",
+                                  textAlign: "center",
+                                  padding: "4px",
+                                  cursor: "pointer",
+                                  borderRadius: "6px",
+                                  backgroundColor:
+                                    editingSigId === m.id
+                                      ? "rgba(37,99,235,0.08)"
+                                      : "transparent",
+                                }}
                                 title="Click to edit"
                               >
                                 {hasAnySigAnnotation && (
@@ -747,20 +1093,47 @@ export default function AbstractLivePreviewPage() {
                                       marginBottom: "3px",
                                       minHeight: "15px",
                                       lineHeight: "15px",
-                                      visibility: getSignatoryAnnotation(m) ? "visible" : "hidden",
+                                      visibility: getSignatoryAnnotation(m)
+                                        ? "visible"
+                                        : "hidden",
                                     }}
                                   >
                                     {getSignatoryAnnotation(m) || "\u00A0"}
                                   </div>
                                 )}
-                                <div style={{ fontWeight: "700", fontSize: "12px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{m.name}</div>
+                                <div
+                                  style={{
+                                    fontWeight: "700",
+                                    fontSize: "12px",
+                                    textTransform: "uppercase",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  {m.name}
+                                </div>
                                 <div style={{ fontSize: "12px" }}>{m.position}</div>
-                                <div style={{ fontSize: "12px" }}>{m.label || "BAC Member"}</div>
+                                <div style={{ fontSize: "12px" }}>
+                                  {m.label || "BAC Member"}
+                                </div>
                               </div>
                             ))}
                             <div
-                              onClick={() => { setEditingSigId("req"); setShowAllSigs(false); }}
-                              style={{ flex: "1 1 auto", textAlign: "center", padding: "4px", cursor: "pointer", borderRadius: "6px", backgroundColor: editingSigId === "req" ? "rgba(37,99,235,0.08)" : "transparent" }}
+                              className="signatory-interactive"
+                              onClick={() => {
+                                setEditingSigId("req");
+                                setShowAllSigs(false);
+                              }}
+                              style={{
+                                flex: "1 1 auto",
+                                textAlign: "center",
+                                padding: "4px",
+                                cursor: "pointer",
+                                borderRadius: "6px",
+                                backgroundColor:
+                                  editingSigId === "req"
+                                    ? "rgba(37,99,235,0.08)"
+                                    : "transparent",
+                              }}
                               title="Click to edit"
                             >
                               {hasAnySigAnnotation && (
@@ -780,7 +1153,16 @@ export default function AbstractLivePreviewPage() {
                                   {reqAnnotation || "\u00A0"}
                                 </div>
                               )}
-                              <div style={{ fontWeight: "700", fontSize: "12px", textTransform: "uppercase", whiteSpace: "nowrap" }}>{reqOfficerName || "___________________"}</div>
+                              <div
+                                style={{
+                                  fontWeight: "700",
+                                  fontSize: "12px",
+                                  textTransform: "uppercase",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {reqOfficerName || "___________________"}
+                              </div>
                               <div style={{ fontSize: "12px" }}>Requisitioning Officer</div>
                             </div>
                           </div>
@@ -788,23 +1170,53 @@ export default function AbstractLivePreviewPage() {
                       })()}
 
                       {/* Approved by */}
-                      <div className="print:break-inside-avoid" style={{ display: "flex", justifyContent: "flex-end", marginTop: "6px", padding: "0 24px", marginBottom: "10px" }}>
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
-                          <div style={{ fontSize: "13px", marginBottom: "30px" }}>Approved:</div>
+                      <div
+                        className="print:break-inside-avoid"
+                        style={{
+                          display: "flex",
+                          justifyContent: "flex-end",
+                          marginTop: "6px",
+                          padding: "0 24px",
+                          marginBottom: "10px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "flex-start",
+                          }}
+                        >
+                          <div style={{ fontSize: "13px", marginBottom: "30px" }}>
+                            Approved:
+                          </div>
                           {hope ? (
                             <div style={{ textAlign: "center", minWidth: "180px" }}>
-                              <div style={{ fontWeight: "700", fontSize: "12px", textTransform: "uppercase" }}>{hope.name}</div>
+                              <div
+                                style={{
+                                  fontWeight: "700",
+                                  fontSize: "12px",
+                                  textTransform: "uppercase",
+                                }}
+                              >
+                                {hope.name}
+                              </div>
                               <div style={{ fontSize: "12px" }}>{hope.position}</div>
                             </div>
                           ) : (
                             <div style={{ textAlign: "center", minWidth: "180px" }}>
-                              <div style={{ borderBottom: "1px solid #000", width: "180px", marginBottom: "2px" }}></div>
+                              <div
+                                style={{
+                                  borderBottom: "1px solid #000",
+                                  width: "180px",
+                                  marginBottom: "2px",
+                                }}
+                              ></div>
                               <div style={{ fontSize: "13px" }}>Municipal Mayor</div>
                             </div>
                           )}
                         </div>
                       </div>
-
                     </div>
                   </div>
                 </div>
@@ -820,390 +1232,639 @@ export default function AbstractLivePreviewPage() {
           </div>
         </div>
 
-        {/* Right Side: Form Panel */}
-        <div className="no-print w-[360px] lg:w-[400px] xl:w-[440px] shrink-0 bg-white rounded-2xl shadow-sm border border-slate-200/60 p-5 flex flex-col overflow-y-auto">
-          <div className="mb-4">
+        {/* Right Side: 3-Panel Architecture Sidebar */}
+        <div ref={rightPanelRef} className="no-print w-[360px] lg:w-[400px] xl:w-[420px] shrink-0 bg-white rounded-2xl shadow-sm border border-slate-200/60 flex flex-col overflow-hidden">
+          {/* Header */}
+          <div className="p-5 pb-3 shrink-0">
             <h2 className="text-base font-bold text-slate-900">Abstract Details</h2>
             <p className="text-xs text-slate-500 mt-1">
               {isReadOnly
                 ? "Read-only while the document is finalized."
+                : !data.bacResNo
+                ? "Edit the details for the Abstract."
                 : "Update the details and signatories for the Abstract."}
             </p>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", pointerEvents: isReadOnly ? "none" : "auto", opacity: isReadOnly ? 0.7 : 1 }}>
+          <div className="flex-1 overflow-y-auto p-5 pt-0">
+            {/* VIEW 1: DOCUMENT DETAILS */}
+            {panelView === "details" && (
+              <div className="flex flex-col gap-3.5">
+                {/* Hint banner */}
+                <div className="p-3 bg-blue-50/70 border border-blue-100/90 rounded-xl text-center text-xs text-blue-900 font-medium">
+                  Click a row in the document to view or edit supplier bids, or type directly in
+                  the cells.
+                </div>
 
-            {/* ── Document Details ── */}
-            <section>
+                {/* Card 1: DOCUMENT DETAILS */}
+                <div className="p-3.5 bg-white border border-slate-200 rounded-xl space-y-3">
+                  <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    DOCUMENT DETAILS
+                  </div>
 
-              {/* Document Numbering */}
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-3 mb-4">
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-bold text-slate-800">
+                  <div>
+                    <label className="form-label text-xs font-semibold text-slate-800">
                       BAC Resolution No.
                     </label>
-                  </div>
-                  <input
-                    type="text"
-                    value={bacResNo}
-                    onChange={e => setBacResNo(e.target.value)}
-                    placeholder="e.g. 2026-09-001"
-                    className="form-input font-mono font-bold text-sm bg-white"
-                  />
-                  <p className="text-[10px] text-slate-500 mt-1">
-                    Leave blank if not yet assigned by custodian. Can be updated at any time.
-                  </p>
-                </div>
-
-                {/* Show/Hide PR Number on Document Toggle */}
-                <div className="flex items-center justify-between pt-2 border-t border-slate-200">
-                  <label
-                    className="text-xs font-semibold text-slate-700 cursor-pointer select-none"
-                    onClick={() => setShowPrNo(!showPrNo)}
-                  >
-                    Show PR Number
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setShowPrNo(!showPrNo)}
-                    style={{
-                      width: "44px",
-                      height: "24px",
-                      borderRadius: "12px",
-                      background: showPrNo ? "#10b981" : "#cbd5e1",
-                      position: "relative",
-                      border: "none",
-                      cursor: "pointer",
-                      transition: "background 0.3s",
-                      boxShadow: "inset 0 1px 3px rgba(0,0,0,0.1)",
-                    }}
-                    title={showPrNo ? "Hide from document" : "Show on document"}
-                  >
-                    <div
-                      style={{
-                        width: "20px",
-                        height: "20px",
-                        borderRadius: "50%",
-                        background: "#fff",
-                        position: "absolute",
-                        top: "2px",
-                        left: showPrNo ? "22px" : "2px",
-                        transition: "left 0.3s",
-                        boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
-                      }}
+                    <input
+                      type="text"
+                      value={bacResNo}
+                      onChange={(e) => setBacResNo(e.target.value)}
+                      disabled={isReadOnly}
+                      placeholder="e.g. 2026-09-001"
+                      className="form-input font-mono font-bold text-sm bg-white"
                     />
-                  </button>
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      Leave blank if not yet assigned by custodian.
+                    </p>
+                  </div>
+
+                  {/* Show/Hide PR Number on Document Toggle */}
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+                    <label
+                      className="text-xs font-semibold text-slate-700 cursor-pointer select-none"
+                      onClick={() => !isReadOnly && setShowPrNo(!showPrNo)}
+                    >
+                      Show PR Number on document
+                    </label>
+                    <button
+                      type="button"
+                      disabled={isReadOnly}
+                      onClick={() => setShowPrNo(!showPrNo)}
+                      style={{
+                        width: "44px",
+                        height: "24px",
+                        borderRadius: "12px",
+                        background: showPrNo ? "#10b981" : "#cbd5e1",
+                        position: "relative",
+                        border: "none",
+                        cursor: isReadOnly ? "not-allowed" : "pointer",
+                        transition: "background 0.3s",
+                        boxShadow: "inset 0 1px 3px rgba(0,0,0,0.1)",
+                      }}
+                      title={showPrNo ? "Hide from document" : "Show on document"}
+                    >
+                      <div
+                        style={{
+                          width: "20px",
+                          height: "20px",
+                          borderRadius: "50%",
+                          background: "#fff",
+                          position: "absolute",
+                          top: "2px",
+                          left: showPrNo ? "22px" : "2px",
+                          transition: "left 0.3s",
+                          boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+                        }}
+                      />
+                    </button>
+                  </div>
+
+                  <div>
+                    <label className="form-label text-xs font-semibold text-slate-700">
+                      Document Date
+                    </label>
+                    <input
+                      type="date"
+                      value={docDate}
+                      onChange={(e) => setDocDate(e.target.value)}
+                      disabled={isReadOnly}
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+
+                {/* Card 2: CERTIFICATION PARAGRAPH */}
+                <div className="p-3.5 bg-white border border-slate-200 rounded-xl space-y-3">
+                  <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                    <FileText size={13} className="text-slate-500" />
+                    CERTIFICATION PARAGRAPH
+                  </div>
+
+                  <div>
+                    <label className="form-label text-xs font-semibold text-slate-700">
+                      Date Received
+                    </label>
+                    <input
+                      type="date"
+                      value={dateReceived}
+                      onChange={(e) => setDateReceived(e.target.value)}
+                      disabled={isReadOnly}
+                      className="form-input"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="form-label text-xs font-semibold text-slate-700">
+                      Date Opened / Awarded
+                    </label>
+                    <input
+                      type="date"
+                      value={dateAwarded}
+                      onChange={(e) => setDateAwarded(e.target.value)}
+                      disabled={isReadOnly}
+                      className="form-input"
+                    />
+                  </div>
+
+                  {/* BAC Verified Leave Card */}
+                  {dateAwarded && activeLeavesOnDate.length > 0 && (
+                    <div className="pt-2 border-t border-slate-100">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-semibold text-slate-700 flex items-center gap-1">
+                          <Calendar size={13} className="text-slate-500" />
+                          <span>Attendance: {activeLeavesOnDate.length} on leave</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={syncVerifiedLeaves}
+                          className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                        >
+                          <RefreshCw size={11} /> Re-sync
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Card 3: REQUISITIONING OFFICER */}
+                <div className="p-3.5 bg-white border border-slate-200 rounded-xl space-y-3">
+                  <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                    <User size={13} className="text-slate-500" />
+                    REQUISITIONING OFFICER
+                  </div>
+
+                  <div>
+                    <label className="form-label text-xs font-semibold text-slate-700">
+                      Officer Name
+                    </label>
+                    <input
+                      type="text"
+                      value={reqOfficerName}
+                      onChange={(e) => setReqOfficerName(e.target.value)}
+                      disabled={isReadOnly}
+                      className="form-input uppercase"
+                      placeholder="e.g. Juan Dela Cruz"
+                    />
+                  </div>
+                </div>
+
+                {/* Card 4: SIGNATORIES */}
+                <div className="p-3.5 bg-white border border-slate-200 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                      <Users size={13} className="text-slate-500" />
+                      SIGNATORIES
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAllSigs(!showAllSigs);
+                        setEditingSigId(null);
+                      }}
+                      className="text-xs font-semibold text-blue-600 hover:text-blue-700"
+                    >
+                      {showAllSigs ? "Hide list" : "Manage list"}
+                    </button>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    {allSignatories
+                      .filter((s: any) => {
+                        if (editingSigId) return s.id === editingSigId;
+                        if (showAllSigs) return s.isActive;
+                        return selectedSigIds.includes(s.id);
+                      })
+                      .map((sig: any) => {
+                        const isSelected = selectedSigIds.includes(sig.id);
+                        const isEditing = editingSigId === sig.id;
+                        const override = sigOverrides[sig.id] || {
+                          name: sig.name,
+                          position: sig.position,
+                          label: getRoleLabel(sig.role),
+                          annotation: undefined,
+                        };
+                        const effectiveAnnotation = getSignatoryAnnotation({
+                          ...sig,
+                          ...override,
+                        });
+
+                        return (
+                          <div
+                            key={sig.id}
+                            className={`p-2.5 rounded-xl border transition-colors ${
+                              isSelected
+                                ? "bg-slate-50/80 border-slate-200"
+                                : "bg-white border-dashed border-slate-200 opacity-60"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              {showAllSigs && (
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  disabled={isReadOnly}
+                                  onChange={(e) => {
+                                    setSelectedSigIds((ids) =>
+                                      e.target.checked
+                                        ? [...ids, sig.id]
+                                        : ids.filter((id) => id !== sig.id)
+                                    );
+                                  }}
+                                  className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+                                />
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <div className="text-xs font-bold text-slate-800 truncate">
+                                  {override.name}
+                                  {effectiveAnnotation && (
+                                    <span className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                      {effectiveAnnotation}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-[11px] text-slate-500 truncate">
+                                  {override.position} · {override.label}
+                                </div>
+                              </div>
+                              {isSelected && !isReadOnly && (
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingSigId(isEditing ? null : sig.id)}
+                                  className="text-slate-400 hover:text-slate-600 p-1 rounded"
+                                  title="Edit details"
+                                >
+                                  <Edit3 size={13} />
+                                </button>
+                              )}
+                            </div>
+
+                            {isSelected && isEditing && (
+                              <div className="mt-2.5 pt-2 border-t border-slate-200/80 space-y-2">
+                                <div>
+                                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                                    Name
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={override.name}
+                                    onChange={(e) =>
+                                      setSigOverrides((prev) => ({
+                                        ...prev,
+                                        [sig.id]: {
+                                          ...prev[sig.id],
+                                          name: e.target.value,
+                                        },
+                                      }))
+                                    }
+                                    className="form-input text-xs"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                                    Position
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={override.position}
+                                    onChange={(e) =>
+                                      setSigOverrides((prev) => ({
+                                        ...prev,
+                                        [sig.id]: {
+                                          ...prev[sig.id],
+                                          position: e.target.value,
+                                        },
+                                      }))
+                                    }
+                                    className="form-input text-xs"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                                    Annotation
+                                  </label>
+                                  <select
+                                    value={
+                                      override.annotation !== undefined
+                                        ? override.annotation
+                                        : ""
+                                    }
+                                    onChange={(e) =>
+                                      setSigOverrides((prev) => ({
+                                        ...prev,
+                                        [sig.id]: {
+                                          ...prev[sig.id],
+                                          annotation: e.target.value,
+                                        },
+                                      }))
+                                    }
+                                    className="form-input text-xs"
+                                  >
+                                    <option value="">None (Physical Signature)</option>
+                                    <option value="(ON LEAVE)">(ON LEAVE)</option>
+                                    <option value="(EXCUSED)">(EXCUSED)</option>
+                                    <option value="(OFFICIAL BUSINESS)">(OFFICIAL BUSINESS)</option>
+                                  </select>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                  </div>
                 </div>
               </div>
-
-              {/* Document Date */}
-              <div style={{ marginBottom: "1rem" }}>
-                <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: "600", color: "#475569", marginBottom: "0.375rem" }}>Date</label>
-                <input type="date" value={docDate} onChange={e => setDocDate(e.target.value)} className="form-input" style={{ width: "100%" }} />
-              </div>
-            </section>
-
-            {/* ── Certification ── */}
-            <section>
-              <div style={{ fontSize: "0.75rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.875rem", display: "flex", alignItems: "center", gap: "0.375rem" }}>
-                <FileText size={14} className="text-slate-500" />
-                Certification Paragraph
-              </div>
-
-              <div style={{ marginBottom: "1rem" }}>
-                <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: "600", color: "#475569", marginBottom: "0.375rem" }}>Date Received</label>
-                <input type="date" value={dateReceived} onChange={e => setDateReceived(e.target.value)} className="form-input" style={{ width: "100%" }} />
-              </div>
-
-              <div>
-                <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: "600", color: "#475569", marginBottom: "0.375rem" }}>Date Opened / Awarded</label>
-                <input type="date" value={dateAwarded} onChange={e => setDateAwarded(e.target.value)} className="form-input" style={{ width: "100%" }} />
-              </div>
-            </section>
-
-            {/* ── Requisitioning Officer ── */}
-            {(!editingSigId || editingSigId === "req") && (
-              <section>
-                <div style={{ fontSize: "0.75rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.875rem", display: "flex", alignItems: "center", gap: "0.375rem" }}>
-                  <User size={14} className="text-slate-500" />
-                  Requisitioning Officer
-                </div>
-
-                <div style={{ marginBottom: "0.75rem" }}>
-                  <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: "600", color: "#475569", marginBottom: "0.375rem" }}>Officer Name</label>
-                  <input type="text" value={reqOfficerName} onChange={e => setReqOfficerName(e.target.value)} className="form-input uppercase" style={{ width: "100%" }} placeholder="e.g. Juan Dela Cruz" />
-                </div>
-              </section>
             )}
 
-            {/* ── Signatories ── */}
-            <section>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.875rem" }}>
-                <div style={{ fontSize: "0.75rem", fontWeight: "700", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: "0.375rem" }}>
-                  <Users size={14} className="text-slate-500" />
-                  Signatories
-                </div>
-                <button
-                  type="button"
-                  onClick={() => { setShowAllSigs(!showAllSigs); setEditingSigId(null); }}
-                  style={{ fontSize: "0.6875rem", color: "#2563eb", background: "none", border: "none", cursor: "pointer", fontWeight: "700" }}
-                >
-                  {showAllSigs ? "Hide List" : "Add / Remove"}
-                </button>
-              </div>
-
-              {/* Verified Leave Sync Card - Seamless & Professional */}
-              {(() => {
-                if (!dateAwarded || activeLeavesOnDate.length === 0) return null;
-
-                const allLeavesApplied = activeLeavesOnDate.every((l: any) => {
-                  const sig = allSignatories.find((s: any) => s.id === l.signatoryId);
-                  if (!sig) return true;
-                  const override = sigOverrides[sig.id];
-                  return getSignatoryAnnotation({ ...sig, ...override }) === "(ON LEAVE)";
-                });
-
-                return (
-                  <div
-                    style={{
-                      marginBottom: "1rem",
-                      padding: "0.875rem",
-                      borderRadius: "0.75rem",
-                      background: "rgba(248, 250, 252, 0.85)",
-                      border: "1px solid rgba(226, 232, 240, 0.9)",
-                      boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+            {/* VIEW 2: ITEM EDITOR */}
+            {panelView === "item" && activeMain && (
+              <div className="flex flex-col gap-3.5">
+                {/* Top subheader bar */}
+                <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPanelView("details");
+                      setActiveItemIndex(null);
+                      setActiveSpecIndex(null);
                     }}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2 py-1 rounded-lg transition-colors"
                   >
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.75rem", fontWeight: "700", color: "#334155" }}>
-                        <Calendar size={14} className="text-slate-500" />
-                        <span>BAC Attendance</span>
-                      </div>
-                      <span
-                        style={{
-                          fontSize: "0.6875rem",
-                          fontWeight: "600",
-                          padding: "2px 8px",
-                          borderRadius: "9999px",
-                          backgroundColor: allLeavesApplied ? "#f1f5f9" : "#fef3c7",
-                          color: allLeavesApplied ? "#475569" : "#92400e",
-                          border: `1px solid ${allLeavesApplied ? "#e2e8f0" : "#fde68a"}`,
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "4px",
-                        }}
-                      >
-                        {allLeavesApplied ? (
-                          <>
-                            <Check size={11} className="text-emerald-600" />
-                            <span>Annotations Active</span>
-                          </>
-                        ) : (
-                          <span>{activeLeavesOnDate.length} on leave</span>
-                        )}
-                      </span>
-                    </div>
-
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "0.375rem", marginBottom: "0.625rem" }}>
-                      {activeLeavesOnDate.map((l: any) => (
-                        <div
-                          key={l.id || l.signatoryId}
-                          style={{
-                            fontSize: "0.6875rem",
-                            fontWeight: "500",
-                            color: "#475569",
-                            background: "#ffffff",
-                            border: "1px solid #e2e8f0",
-                            borderRadius: "6px",
-                            padding: "2px 8px",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "5px",
-                          }}
-                        >
-                          <span style={{ width: "5px", height: "5px", borderRadius: "50%", backgroundColor: "#94a3b8" }} />
-                          {l.signatory?.name}
-                        </div>
-                      ))}
-                    </div>
-
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: "0.5rem", borderTop: "1px solid #f1f5f9", fontSize: "0.6875rem", color: "#64748b" }}>
-                      <span>Award date: {fmtDate(dateAwarded)}</span>
+                    <ArrowLeft size={14} /> Details
+                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-semibold text-slate-600">
+                      Item {activeMain.mainIndex + 1} of {mainItems.length}
+                    </span>
+                    <div className="flex items-center gap-1">
                       <button
                         type="button"
-                        onClick={syncVerifiedLeaves}
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          color: "#2563eb",
-                          fontWeight: "600",
-                          fontSize: "0.6875rem",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "3px",
-                          padding: 0,
+                        disabled={activeMain.mainIndex <= 0}
+                        onClick={() => {
+                          const prev = mainItems[activeMain.mainIndex - 1];
+                          if (prev) {
+                            setActiveItemIndex(prev.rawIndex);
+                            setActiveSpecIndex(null);
+                          }
                         }}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:pointer-events-none transition-colors"
                       >
-                        <RefreshCw size={11} />
-                        {allLeavesApplied ? "Re-sync" : "Apply to document"}
+                        <ChevronLeft size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={activeMain.mainIndex >= mainItems.length - 1}
+                        onClick={() => {
+                          const next = mainItems[activeMain.mainIndex + 1];
+                          if (next) {
+                            setActiveItemIndex(next.rawIndex);
+                            setActiveSpecIndex(null);
+                          }
+                        }}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                      >
+                        <ChevronRight size={14} />
                       </button>
                     </div>
                   </div>
-                );
-              })()}
-
-              {!editingSigId && !showAllSigs ? (
-                <div style={{ padding: "2rem 1rem", textAlign: "center", background: "var(--color-page-bg)", borderRadius: "0.75rem", boxShadow: "inset 3px 3px 6px rgba(163,177,198,0.4), inset -3px -3px 6px rgba(255,255,255,0.8)", color: "#94a3b8", fontSize: "0.8125rem", fontStyle: "italic" }}>
-                  Click a signatory on the document to edit their details, or click "Add / Remove" to manage signatories.
                 </div>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                  {allSignatories
-                    .filter((s: any) => {
-                      if (editingSigId) return s.id === editingSigId;
-                      if (showAllSigs) return s.isActive;
-                      return false;
-                    })
-                    .map((sig: any) => {
-                      const isSelected = selectedSigIds.includes(sig.id);
-                      const isEditing = editingSigId === sig.id;
-                      const override = sigOverrides[sig.id] || { name: sig.name, position: sig.position, label: getRoleLabel(sig.role), annotation: undefined };
-                      const activeLeave = activeLeavesOnDate.find((l: any) => l.signatoryId === sig.id);
-                      const effectiveAnnotation = getSignatoryAnnotation({ ...sig, ...override });
 
-                      return (
-                        <div key={sig.id} style={{
-                          borderRadius: "0.75rem", padding: "0.75rem",
-                          background: "var(--color-page-bg)",
-                          boxShadow: isSelected ? "var(--shadow-neu-drop)" : "inset 3px 3px 6px rgba(163,177,198,0.4), inset -3px -3px 6px rgba(255,255,255,0.8)",
-                          opacity: isSelected ? 1 : 0.5, transition: "all 0.2s",
-                        }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={e => {
-                                setSelectedSigIds(ids => e.target.checked ? [...ids, sig.id] : ids.filter(id => id !== sig.id));
-                              }}
-                              style={{ accentColor: "#2563eb", width: "15px", height: "15px" }}
-                            />
-                            <div style={{ flex: 1, fontSize: "0.8125rem", fontWeight: "700", color: "#334155" }}>
-                              {override.name}
-                              {effectiveAnnotation && (
-                                <span className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
-                                  {effectiveAnnotation}
+                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  ITEM {activeMain.displayNo}
+                </div>
+
+                {/* Description and Quantity */}
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                  <p className="text-sm font-bold text-slate-900 leading-snug">
+                    {activeMain.item.description}
+                  </p>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Quantity: {activeMain.item.quantity} {activeMain.item.unit}
+                  </p>
+                </div>
+
+                {/* Supplier Bids Card */}
+                <div className="p-3.5 bg-white border border-slate-200 rounded-xl space-y-3">
+                  <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    SUPPLIER BIDS
+                  </div>
+
+                  <div className="space-y-2.5">
+                    {displayQuotes
+                      .filter((q) => q !== null)
+                      .map((q: any, i: number) => {
+                        const li = q?.lineItems?.find(
+                          (l: any) => l.rfqLineItemId === activeMain.item.id
+                        );
+                        const unitPrice = li?.unitPrice || 0;
+                        const qty = Number(activeMain.item.quantity) || 0;
+                        const lineTotal = qty * unitPrice;
+
+                        return (
+                          <div
+                            key={q.id || i}
+                            className="p-3 rounded-xl bg-slate-50/80 border border-slate-200/90 space-y-2"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-slate-800">
+                                {q.supplier?.name?.toUpperCase() || `Supplier ${i + 1}`}
+                              </span>
+                              <span className="text-xs font-bold text-slate-900">
+                                ₱{fmt2(lineTotal)}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <label className="text-[11px] text-slate-500 font-medium whitespace-nowrap">
+                                Unit Price:
+                              </label>
+                              <div className="relative flex-1">
+                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 font-semibold text-xs">
+                                  ₱
                                 </span>
-                              )}
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  value={unitPrice || ""}
+                                  disabled={isReadOnly}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    const num =
+                                      val === "" || isNaN(Number(val)) ? 0 : Number(val);
+                                    handlePriceChange(q.id, activeMain.item.id, num);
+                                  }}
+                                  placeholder="0.00"
+                                  className="form-input text-xs pl-6 text-right w-full"
+                                />
+                              </div>
                             </div>
-                            <span style={{ fontSize: "0.7rem", color: "#94a3b8", background: "#f1f5f9", padding: "1px 6px", borderRadius: "9999px" }}>
-                              {getRoleLabel(sig.role)}
-                            </span>
-                            {isSelected && (
-                              <button
-                                type="button"
-                                onClick={() => setEditingSigId(isEditing ? null : sig.id)}
-                                style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b", padding: "4px" }}
-                                title="Edit details"
-                              >
-                                <Edit3 size={14} />
-                              </button>
-                            )}
                           </div>
-
-                          {dateAwarded && activeLeave && (
-                            <div className="mt-1 text-[11px] font-semibold text-rose-600 flex items-center gap-1 pl-6">
-                              <CalendarX size={11} />
-                              <span>Verified on approved leave on award date</span>
-                            </div>
-                          )}
-
-                          {isSelected && isEditing && (
-                            <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem", paddingLeft: "1.5rem", marginTop: "0.625rem" }}>
-                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                                Name
-                              </label>
-                              <input
-                                type="text"
-                                value={override.name}
-                                onChange={e => setSigOverrides(prev => ({ ...prev, [sig.id]: { ...prev[sig.id], name: e.target.value } }))}
-                                placeholder="Full Name"
-                                style={{
-                                  width: "100%", padding: "0.3rem 0.5rem", border: "none", borderRadius: "0.5rem",
-                                  background: "var(--color-page-bg)",
-                                  boxShadow: "inset 2px 2px 4px rgba(163,177,198,0.5), inset -2px -2px 4px rgba(255,255,255,0.9)",
-                                  fontSize: "0.8125rem", color: "#334155", outline: "none", fontFamily: "inherit",
-                                }}
-                              />
-
-                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">
-                                Position / Title
-                              </label>
-                              <input
-                                type="text"
-                                value={override.position}
-                                onChange={e => setSigOverrides(prev => ({ ...prev, [sig.id]: { ...prev[sig.id], position: e.target.value } }))}
-                                placeholder="Position / Designation"
-                                style={{
-                                  width: "100%", padding: "0.3rem 0.5rem", border: "none", borderRadius: "0.5rem",
-                                  background: "var(--color-page-bg)",
-                                  boxShadow: "inset 2px 2px 4px rgba(163,177,198,0.5), inset -2px -2px 4px rgba(255,255,255,0.9)",
-                                  fontSize: "0.8125rem", color: "#334155", outline: "none", fontFamily: "inherit",
-                                }}
-                              />
-
-                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">
-                                Role Label
-                              </label>
-                              <input
-                                type="text"
-                                value={override.label}
-                                onChange={e => setSigOverrides(prev => ({ ...prev, [sig.id]: { ...prev[sig.id], label: e.target.value } }))}
-                                placeholder="Label (e.g. BAC Member)"
-                                style={{
-                                  width: "100%", padding: "0.3rem 0.5rem", border: "none", borderRadius: "0.5rem",
-                                  background: "var(--color-page-bg)",
-                                  boxShadow: "inset 2px 2px 4px rgba(163,177,198,0.5), inset -2px -2px 4px rgba(255,255,255,0.9)",
-                                  fontSize: "0.8125rem", color: "#334155", outline: "none", fontFamily: "inherit",
-                                }}
-                              />
-
-                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">
-                                Signature Line Annotation
-                              </label>
-                              <select
-                                value={override.annotation !== undefined ? override.annotation : (activeLeave ? "(ON LEAVE)" : "")}
-                                onChange={e => setSigOverrides(prev => ({
-                                  ...prev,
-                                  [sig.id]: { ...prev[sig.id], annotation: e.target.value }
-                                }))}
-                                style={{
-                                  width: "100%", padding: "0.3rem 0.5rem", border: "none", borderRadius: "0.5rem",
-                                  background: "var(--color-page-bg)",
-                                  boxShadow: "inset 2px 2px 4px rgba(163,177,198,0.5), inset -2px -2px 4px rgba(255,255,255,0.9)",
-                                  fontSize: "0.8125rem", color: "#334155", outline: "none", fontFamily: "inherit",
-                                }}
-                              >
-                                <option value="">None (Physical Signature Required)</option>
-                                <option value="(ON LEAVE)">(ON LEAVE)</option>
-                                <option value="(EXCUSED)">(EXCUSED)</option>
-                                <option value="(OFFICIAL BUSINESS)">(OFFICIAL BUSINESS)</option>
-                              </select>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                  </div>
                 </div>
-              )}
-            </section>
 
-            <div className="pt-2 text-[11px] text-slate-400 flex items-center gap-1.5">
-              <CheckCircle2 size={13} className="text-emerald-500" />
-              <span>Details save automatically with the document.</span>
-            </div>
+                {/* Specification Lines */}
+                <div className="space-y-2 pt-1">
+                  <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    SPECIFICATION LINES · {activeMain.specs.length}
+                  </div>
+
+                  {activeMain.specs.length > 0 ? (
+                    <div className="space-y-1.5">
+                      {activeMain.specs.map((spec) => (
+                        <div
+                          key={spec.rawIndex}
+                          className="flex items-center justify-between p-2.5 bg-slate-50/80 border border-slate-200/80 rounded-xl text-xs"
+                        >
+                          <span className="text-slate-800 font-medium truncate pr-2">
+                            {spec.item.description || "(Empty specification)"}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveSpecIndex(spec.rawIndex);
+                              setPanelView("spec");
+                            }}
+                            className="text-xs font-semibold text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-2 py-0.5 rounded transition-colors shrink-0"
+                          >
+                            View
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-400 italic">
+                      No specification lines under this item.
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* VIEW 3: SPEC LINE EDITOR */}
+            {panelView === "spec" && activeMain && activeSpec && (
+              <div className="flex flex-col gap-3.5">
+                {/* Top subheader bar */}
+                <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setPanelView("item")}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2 py-1 rounded-lg transition-colors"
+                  >
+                    <ArrowLeft size={14} /> Item {activeMain.displayNo}
+                  </button>
+                  <div className="flex items-center gap-1.5">
+                    {(() => {
+                      const specIdx = activeMain.specs.findIndex(
+                        (s) => s.rawIndex === activeSpec.rawIndex
+                      );
+                      return (
+                        <>
+                          <span className="text-xs font-semibold text-slate-600">
+                            Spec {specIdx + 1} of {activeMain.specs.length}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              disabled={specIdx <= 0}
+                              onClick={() => {
+                                const prev = activeMain.specs[specIdx - 1];
+                                if (prev) setActiveSpecIndex(prev.rawIndex);
+                              }}
+                              className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                            >
+                              <ChevronLeft size={14} />
+                            </button>
+                            <button
+                              type="button"
+                              disabled={specIdx >= activeMain.specs.length - 1}
+                              onClick={() => {
+                                const next = activeMain.specs[specIdx + 1];
+                                if (next) setActiveSpecIndex(next.rawIndex);
+                              }}
+                              className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                            >
+                              <ChevronRight size={14} />
+                            </button>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    SPEC LINE
+                  </div>
+                  <p className="text-xs font-bold text-slate-800 mt-1 truncate">
+                    Item {activeMain.displayNo} · {activeMain.item.description || "Item"}
+                  </p>
+                </div>
+
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                  <p className="text-sm text-slate-900 leading-snug">
+                    {activeSpec.item.description}
+                  </p>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Prints under the item. Specification lines have no quotation price.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
+
+          {/* Dedicated Pinned Footer */}
+          {panelView === "details" && (
+            <div className="shrink-0 p-4 px-5 border-t border-slate-200/80 bg-slate-50/90 rounded-b-2xl flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-[11px] text-slate-500 font-medium">
+                  {mainItems.length} {mainItems.length === 1 ? "item" : "items"}
+                </span>
+                <span className="text-sm font-extrabold text-blue-700">
+                  {recommendedQuote ? `Lowest: ₱${fmt2(recommendedQuote.totalAmount)}` : "No bids"}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSaveModalOpen(true)}
+                disabled={submitting}
+                className="btn btn-primary px-6 py-2 rounded-xl text-sm font-semibold shadow-xs"
+              >
+                {submitting ? "Saving..." : "Save"}
+              </button>
+            </div>
+          )}
+
+          {panelView === "item" && activeMain && (
+            <div className="shrink-0 p-4 px-5 border-t border-slate-200/80 bg-slate-50/90 rounded-b-2xl flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setPanelView("details");
+                  setActiveItemIndex(null);
+                  setActiveSpecIndex(null);
+                }}
+                className="btn btn-primary px-6 py-2 rounded-xl text-sm font-semibold shadow-xs"
+              >
+                Done
+              </button>
+            </div>
+          )}
+
+          {panelView === "spec" && (
+            <div className="shrink-0 p-4 px-5 border-t border-slate-200/80 bg-slate-50/90 rounded-b-2xl flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => setPanelView("item")}
+                className="btn btn-primary px-6 py-2 rounded-xl text-sm font-semibold shadow-xs"
+              >
+                Done
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

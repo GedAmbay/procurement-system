@@ -208,6 +208,60 @@ export default function PurchaseRequestEditor() {
   const [activeSpecIndex, setActiveSpecIndex] = useState<number | null>(null);
   const [insertAtIndex, setInsertAtIndex] = useState<number | null>(null);
 
+  const rightPanelRef = useRef<HTMLDivElement>(null);
+  const gridWrapperRef = useRef<HTMLDivElement>(null);
+
+  // Global Escape key and click-outside listeners to unselect cell
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        const activeEl = document.activeElement as HTMLElement | null;
+        const isInput =
+          activeEl?.tagName === "INPUT" ||
+          activeEl?.tagName === "TEXTAREA" ||
+          activeEl?.isContentEditable;
+
+        // If actively typing inside the right panel form, don't close panel
+        if (isInput && rightPanelRef.current?.contains(activeEl)) {
+          return;
+        }
+
+        setActiveItemIndex(null);
+        setActiveSpecIndex(null);
+        setPanelView("details");
+      }
+    };
+
+    const handleGlobalMouseDown = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+
+      // Do not clear if clicking inside the right panel or a modal
+      if (
+        rightPanelRef.current?.contains(target) ||
+        target.closest?.(".confirm-modal") ||
+        target.closest?.("[role='dialog']")
+      ) {
+        return;
+      }
+
+      // Check if click was inside table grid
+      const isInsideGrid = gridWrapperRef.current?.contains(target);
+      if (!isInsideGrid) {
+        setActiveItemIndex(null);
+        setActiveSpecIndex(null);
+        setPanelView("details");
+      }
+    };
+
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    document.addEventListener("mousedown", handleGlobalMouseDown);
+    return () => {
+      window.removeEventListener("keydown", handleGlobalKeyDown);
+      document.removeEventListener("mousedown", handleGlobalMouseDown);
+    };
+  }, []);
+
   const totalAmount = watchLineItems.reduce((sum, item) => sum + (Number(item.quantity) * Number(item.unitCost) || 0), 0);
 
   useEffect(() => {
@@ -932,23 +986,30 @@ export default function PurchaseRequestEditor() {
                       </div>
 
                       {/* Excel-style Live Table Grid */}
-                      <ExcelTableGrid
-                        items={watchLineItems}
-                        targetRows={targetRows}
-                        isReadOnly={isReadOnly}
-                        onChange={(newItems) => {
-                          setValue("lineItems", newItems, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
-                        }}
-                        onRowSelect={(idx) => {
-                          handleRowClick(idx);
-                        }}
-                        onStartInsert={(idx) => {
-                          handleStartInsert(idx);
-                        }}
-                        insertAtIndex={insertAtIndex}
-                        activeItemIndex={activeSpecIndex !== null ? activeSpecIndex : activeItemIndex}
-                        totalAmount={totalAmount}
-                      />
+                      <div ref={gridWrapperRef}>
+                        <ExcelTableGrid
+                          items={watchLineItems}
+                          targetRows={targetRows}
+                          isReadOnly={isReadOnly}
+                          onChange={(newItems) => {
+                            setValue("lineItems", newItems, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+                          }}
+                          onRowSelect={(idx) => {
+                            handleRowClick(idx);
+                          }}
+                          onStartInsert={(idx) => {
+                            handleStartInsert(idx);
+                          }}
+                          insertAtIndex={insertAtIndex}
+                          activeItemIndex={activeSpecIndex !== null ? activeSpecIndex : activeItemIndex}
+                          totalAmount={totalAmount}
+                          onDeselect={() => {
+                            setActiveItemIndex(null);
+                            setActiveSpecIndex(null);
+                            setPanelView("details");
+                          }}
+                        />
+                      </div>
 
                       {/* Purpose Block - Multi-line responsive and inline-editable */}
                       <div className="p-3 text-sm flex gap-2 border-b-4 border-double border-black">
@@ -1070,7 +1131,7 @@ export default function PurchaseRequestEditor() {
         </div>
 
         {/* Right Side: Data Entry Form */}
-        <div className="no-print w-[360px] lg:w-[400px] xl:w-[420px] shrink-0 bg-white rounded-2xl shadow-sm border border-slate-200/60 flex flex-col overflow-hidden">
+        <div ref={rightPanelRef} className="no-print w-[360px] lg:w-[400px] xl:w-[420px] shrink-0 bg-white rounded-2xl shadow-sm border border-slate-200/60 flex flex-col overflow-hidden">
           {/* Header */}
           <div className="p-5 pb-3 shrink-0">
             <h2 className="text-base font-bold text-slate-900">
@@ -1278,7 +1339,11 @@ export default function PurchaseRequestEditor() {
                 <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
                   <button
                     type="button"
-                    onClick={() => setPanelView("details")}
+                    onClick={() => {
+                      setPanelView("details");
+                      setActiveItemIndex(null);
+                      setActiveSpecIndex(null);
+                    }}
                     className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2 py-1 rounded-lg transition-colors"
                   >
                     <ArrowLeft size={14} /> Details
@@ -1646,7 +1711,11 @@ export default function PurchaseRequestEditor() {
               </button>
               <button
                 type="button"
-                onClick={() => setPanelView("details")}
+                onClick={() => {
+                  setPanelView("details");
+                  setActiveItemIndex(null);
+                  setActiveSpecIndex(null);
+                }}
                 className="btn btn-primary px-6 py-2 rounded-xl text-sm font-semibold shadow-xs"
               >
                 Done

@@ -22,6 +22,7 @@ interface ExcelTableGridProps {
   insertAtIndex?: number | null;
   activeItemIndex?: number | null;
   totalAmount: number;
+  onDeselect?: () => void;
 }
 
 // Columns: 0 = Quantity, 1 = Unit, 2 = Description, 3 = Unit Cost
@@ -37,6 +38,7 @@ export function ExcelTableGrid({
   insertAtIndex = null,
   activeItemIndex = null,
   totalAmount,
+  onDeselect,
 }: ExcelTableGridProps) {
   const [selectedCell, setSelectedCell] = useState<{ row: number; col: EditableCol } | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
@@ -270,6 +272,12 @@ export function ExcelTableGrid({
       case "Backspace":
         e.preventDefault();
         commitCellValue(row, col, "");
+        break;
+      case "Escape":
+        e.preventDefault();
+        setSelectedCell(null);
+        setIsEditing(false);
+        if (onDeselect) onDeselect();
         break;
       default:
         // When typing any character key (without immediate overwrite!):
