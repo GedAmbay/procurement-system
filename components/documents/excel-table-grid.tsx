@@ -46,12 +46,17 @@ export function ExcelTableGrid({
   const activeInputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
   const initialValueOnEditRef = useRef<string>("");
 
-  // Ensure items is always an array
+  // Ensure items is always an array and keep a synchronous ref
   const safeItems = items || [];
+  const itemsRef = useRef<PrLineItem[]>(safeItems);
+  useEffect(() => {
+    itemsRef.current = items || [];
+  }, [items]);
 
   // Get raw string value of a cell
   const getCellValue = useCallback((row: number, col: EditableCol): string => {
-    const item = safeItems[row];
+    const list = itemsRef.current || [];
+    const item = list[row];
     if (!item) return "";
     switch (col) {
       case 0: // Quantity
@@ -69,21 +74,34 @@ export function ExcelTableGrid({
       default:
         return "";
     }
-  }, [safeItems]);
+  }, []);
 
   // Commit value change for a cell
   const commitCellValue = useCallback((row: number, col: EditableCol, rawVal: string) => {
     if (isReadOnly) return;
-    const newItems = [...safeItems];
-    // If committing to an appended row that doesn't exist yet, create it
+    const trimmed = rawVal.trim();
+    const currentList = itemsRef.current || [];
+
+    // If committing an empty value on a row past existing items, don't create phantom empty rows
+    if (trimmed === "" && row >= currentList.length) {
+      return;
+    }
+
+    const newItems = [...currentList];
+    // If committing to an appended row that doesn't exist yet, create items as main items
     while (newItems.length <= row) {
-      newItems.push({ itemId: null, description: "", unit: "", quantity: "", unitCost: "" });
+      newItems.push({
+        itemId: null,
+        description: "",
+        unit: "Unit",
+        quantity: 1,
+        unitCost: "",
+      });
     }
 
     const current = { ...newItems[row] };
     switch (col) {
       case 0: { // Quantity
-        const trimmed = rawVal.trim();
         current.quantity = trimmed === "" ? "" : isNaN(Number(trimmed)) ? 0 : Number(trimmed);
         break;
       }
@@ -94,22 +112,23 @@ export function ExcelTableGrid({
         current.description = rawVal;
         break;
       case 3: { // Unit Cost
-        const trimmed = rawVal.trim();
         current.unitCost = trimmed === "" ? "" : isNaN(Number(trimmed)) ? 0 : Number(trimmed);
         break;
       }
     }
 
     newItems[row] = current;
+    itemsRef.current = newItems; // Synchronously update ref so subsequent operations in same tick read fresh data
     onChange(newItems);
-  }, [isReadOnly, safeItems, onChange]);
+  }, [isReadOnly, onChange]);
 
-  // Enter edit mode without overwriting existing content
-  const startEditing = useCallback((row: number, col: EditableCol) => {
+  // Enter edit mode without overwriting existing content (optionally appending initial typed char)
+  const startEditing = useCallback((row: number, col: EditableCol, initialChar?: string) => {
     if (isReadOnly) return;
     const val = getCellValue(row, col);
     initialValueOnEditRef.current = val;
-    setEditValue(val);
+    const nextVal = initialChar !== undefined ? val + initialChar : val;
+    setEditValue(nextVal);
     setIsEditing(true);
   }, [isReadOnly, getCellValue]);
 
@@ -131,6 +150,21 @@ export function ExcelTableGrid({
     }
   }, [selectedCell, isEditing]);
 
+  // Synchronize cell highlight when active row changes from parent (e.g. Next/Prev buttons in side panel)
+  useEffect(() => {
+    if (activeItemIndex !== null && activeItemIndex !== undefined) {
+      setSelectedCell((prev) => {
+        // If already highlighting this row, keep the current column; otherwise default to col 2 (Description)
+        const col = prev?.row === activeItemIndex ? prev.col : (prev?.col ?? 2);
+        return { row: activeItemIndex, col };
+      });
+      setIsEditing(false);
+    } else {
+      setSelectedCell(null);
+      setIsEditing(false);
+    }
+  }, [activeItemIndex]);
+
   // Handle cell selection click
   const handleCellClick = (row: number, col: EditableCol) => {
     if (isReadOnly) return;
@@ -138,14 +172,6 @@ export function ExcelTableGrid({
     if (isEditing && selectedCell) {
       commitCellValue(selectedCell.row, selectedCell.col, editValue);
       setIsEditing(false);
-    }
-
-    if (row >= safeItems.length) {
-      const newItems = [...safeItems];
-      while (newItems.length <= row) {
-        newItems.push({ itemId: null, description: "", unit: "", quantity: "", unitCost: "" });
-      }
-      onChange(newItems);
     }
 
     setSelectedCell({ row, col });
@@ -159,13 +185,6 @@ export function ExcelTableGrid({
   // Handle double click -> enter edit mode
   const handleCellDoubleClick = (row: number, col: EditableCol) => {
     if (isReadOnly) return;
-    if (row >= safeItems.length) {
-      const newItems = [...safeItems];
-      while (newItems.length <= row) {
-        newItems.push({ itemId: null, description: "", unit: "", quantity: "", unitCost: "" });
-      }
-      onChange(newItems);
-    }
     setSelectedCell({ row, col });
     startEditing(row, col);
   };
@@ -189,11 +208,10 @@ export function ExcelTableGrid({
       nextRow = 0;
     }
 
-    // If navigating beyond current items, append a new blank row
-    if (nextRow >= safeItems.length) {
-      const newItems = [...safeItems];
-      newItems.push({ itemId: null, description: "", unit: "", quantity: "", unitCost: "" });
-      onChange(newItems);
+    // Clamp row upper bound
+    const maxRows = Math.max(targetRows, itemsRef.current?.length || 0);
+    if (nextRow >= maxRows) {
+      nextRow = maxRows - 1;
     }
 
     setSelectedCell({ row: nextRow, col: nextCol });
@@ -206,7 +224,7 @@ export function ExcelTableGrid({
     } else {
       setIsEditing(false);
     }
-  }, [safeItems, onChange, onRowSelect, startEditing]);
+  }, [targetRows, onRowSelect, startEditing]);
 
   // Keyboard navigation when in SELECTION MODE (container has focus)
   const handleContainerKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -250,16 +268,15 @@ export function ExcelTableGrid({
         break;
       case "Delete":
       case "Backspace":
-        // In Excel without immediate overwrite, backspace enters edit mode or clears
         e.preventDefault();
         commitCellValue(row, col, "");
         break;
       default:
         // When typing any character key (without immediate overwrite!):
-        // Enter edit mode while PRESERVING the existing content
+        // Enter edit mode while PRESERVING the existing content and appending the typed key
         if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
           e.preventDefault();
-          startEditing(row, col);
+          startEditing(row, col, e.key);
         }
         break;
     }
@@ -344,11 +361,15 @@ export function ExcelTableGrid({
 
         <tbody>
           {safeItems.map((item, idx) => {
-            const isSpec = !item.quantity || Number(item.quantity) === 0;
+            const isEmptyRow =
+              !item.description?.trim() &&
+              (!item.quantity || Number(item.quantity) === 0) &&
+              (!item.unitCost || Number(item.unitCost) === 0);
+            const isSpec = !isEmptyRow && (!item.quantity || Number(item.quantity) === 0);
 
             // Calculate item number dynamically
             let displayNo = "";
-            if (!isSpec) {
+            if (!isSpec && !isEmptyRow) {
               let count = 0;
               for (let i = 0; i <= idx; i++) {
                 if (Number(safeItems[i].quantity) > 0) count++;
@@ -359,6 +380,7 @@ export function ExcelTableGrid({
             const hasSpecs =
               !isSpec &&
               idx + 1 < safeItems.length &&
+              safeItems[idx + 1].description?.trim() &&
               (!safeItems[idx + 1].quantity || Number(safeItems[idx + 1].quantity) === 0);
 
             const rowAmount =
@@ -415,7 +437,7 @@ export function ExcelTableGrid({
                       !isReadOnly ? "cursor-cell" : ""
                     } ${
                       selectedCell?.row === idx && selectedCell?.col === 0
-                        ? "outline outline-2 outline-[#107c41] -outline-offset-2 bg-[#107c41]/5 z-20"
+                        ? "outline outline-2 outline-[#1d4ed8] -outline-offset-2 bg-[#1d4ed8]/10 z-20"
                         : ""
                     }`}
                   >
@@ -436,7 +458,7 @@ export function ExcelTableGrid({
                     {/* Excel Fill Handle */}
                     {selectedCell?.row === idx && selectedCell?.col === 0 && !isEditing && (
                       <div
-                        className="absolute -bottom-[2px] -right-[2px] w-[5px] h-[5px] bg-[#107c41] pointer-events-none no-print z-30"
+                        className="absolute -bottom-[2px] -right-[2px] w-[5px] h-[5px] bg-[#1d4ed8] pointer-events-none no-print z-30"
                         style={{ border: "1px solid #ffffff" }}
                       />
                     )}
@@ -450,7 +472,7 @@ export function ExcelTableGrid({
                       !isReadOnly ? "cursor-cell" : ""
                     } ${
                       selectedCell?.row === idx && selectedCell?.col === 1
-                        ? "outline outline-2 outline-[#107c41] -outline-offset-2 bg-[#107c41]/5 z-20"
+                        ? "outline outline-2 outline-[#1d4ed8] -outline-offset-2 bg-[#1d4ed8]/10 z-20"
                         : ""
                     }`}
                   >
@@ -471,7 +493,7 @@ export function ExcelTableGrid({
                     {/* Excel Fill Handle */}
                     {selectedCell?.row === idx && selectedCell?.col === 1 && !isEditing && (
                       <div
-                        className="absolute -bottom-[2px] -right-[2px] w-[5px] h-[5px] bg-[#107c41] pointer-events-none no-print z-30"
+                        className="absolute -bottom-[2px] -right-[2px] w-[5px] h-[5px] bg-[#1d4ed8] pointer-events-none no-print z-30"
                         style={{ border: "1px solid #ffffff" }}
                       />
                     )}
@@ -485,7 +507,7 @@ export function ExcelTableGrid({
                       !isReadOnly ? "cursor-cell" : ""
                     } ${isSpec ? "pl-4 text-sm" : hasSpecs ? "font-bold" : ""} ${
                       selectedCell?.row === idx && selectedCell?.col === 2
-                        ? "outline outline-2 outline-[#107c41] -outline-offset-2 bg-[#107c41]/5 z-20"
+                        ? "outline outline-2 outline-[#1d4ed8] -outline-offset-2 bg-[#1d4ed8]/10 z-20"
                         : ""
                     }`}
                   >
@@ -511,7 +533,7 @@ export function ExcelTableGrid({
                     {/* Excel Fill Handle */}
                     {selectedCell?.row === idx && selectedCell?.col === 2 && !isEditing && (
                       <div
-                        className="absolute -bottom-[2px] -right-[2px] w-[5px] h-[5px] bg-[#107c41] pointer-events-none no-print z-30"
+                        className="absolute -bottom-[2px] -right-[2px] w-[5px] h-[5px] bg-[#1d4ed8] pointer-events-none no-print z-30"
                         style={{ border: "1px solid #ffffff" }}
                       />
                     )}
@@ -525,7 +547,7 @@ export function ExcelTableGrid({
                       !isReadOnly ? "cursor-cell" : ""
                     } ${
                       selectedCell?.row === idx && selectedCell?.col === 3
-                        ? "outline outline-2 outline-[#107c41] -outline-offset-2 bg-[#107c41]/5 z-20"
+                        ? "outline outline-2 outline-[#1d4ed8] -outline-offset-2 bg-[#1d4ed8]/10 z-20"
                         : ""
                     }`}
                   >
@@ -552,7 +574,7 @@ export function ExcelTableGrid({
                     {/* Excel Fill Handle */}
                     {selectedCell?.row === idx && selectedCell?.col === 3 && !isEditing && (
                       <div
-                        className="absolute -bottom-[2px] -right-[2px] w-[5px] h-[5px] bg-[#107c41] pointer-events-none no-print z-30"
+                        className="absolute -bottom-[2px] -right-[2px] w-[5px] h-[5px] bg-[#1d4ed8] pointer-events-none no-print z-30"
                         style={{ border: "1px solid #ffffff" }}
                       />
                     )}
@@ -577,26 +599,56 @@ export function ExcelTableGrid({
             return (
               <tr key={`empty-${i}`} className="h-6">
                 <td className="border border-black border-l-0 p-0"></td>
-                <td
-                  onClick={() => handleCellClick(emptyRowIdx, 0)}
-                  onDoubleClick={() => handleCellDoubleClick(emptyRowIdx, 0)}
-                  className={`border border-black p-0 ${!isReadOnly ? "cursor-cell" : ""}`}
-                ></td>
-                <td
-                  onClick={() => handleCellClick(emptyRowIdx, 1)}
-                  onDoubleClick={() => handleCellDoubleClick(emptyRowIdx, 1)}
-                  className={`border border-black p-0 ${!isReadOnly ? "cursor-cell" : ""}`}
-                ></td>
-                <td
-                  onClick={() => handleCellClick(emptyRowIdx, 2)}
-                  onDoubleClick={() => handleCellDoubleClick(emptyRowIdx, 2)}
-                  className={`border border-black p-0 ${!isReadOnly ? "cursor-cell" : ""}`}
-                ></td>
-                <td
-                  onClick={() => handleCellClick(emptyRowIdx, 3)}
-                  onDoubleClick={() => handleCellDoubleClick(emptyRowIdx, 3)}
-                  className={`border border-black p-0 ${!isReadOnly ? "cursor-cell" : ""}`}
-                ></td>
+                {[0, 1, 2, 3].map((col) => {
+                  const isSelected = selectedCell?.row === emptyRowIdx && selectedCell?.col === col;
+                  const isEditingThis = isEditing && isSelected;
+                  return (
+                    <td
+                      key={col}
+                      onClick={() => handleCellClick(emptyRowIdx, col as EditableCol)}
+                      onDoubleClick={() => handleCellDoubleClick(emptyRowIdx, col as EditableCol)}
+                      className={`border border-black p-0 leading-tight ${
+                        col === 2 ? "text-left px-1" : col === 3 ? "text-right pr-1" : "text-center"
+                      } align-top relative ${!isReadOnly ? "cursor-cell" : ""} ${
+                        isSelected ? "outline outline-2 outline-[#1d4ed8] -outline-offset-2 bg-[#1d4ed8]/10 z-20" : ""
+                      }`}
+                    >
+                      {isEditingThis ? (
+                        col === 2 ? (
+                          <textarea
+                            ref={(el) => { activeInputRef.current = el; }}
+                            rows={1}
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            onKeyDown={handleInputKeyDown}
+                            onBlur={handleInputBlur}
+                            className="w-full resize-none overflow-hidden bg-white border-0 outline-none p-0 m-0 leading-tight text-left block"
+                            style={{ minHeight: "1.25rem" }}
+                          />
+                        ) : (
+                          <input
+                            ref={(el) => { activeInputRef.current = el; }}
+                            type="text"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            onKeyDown={handleInputKeyDown}
+                            onBlur={handleInputBlur}
+                            className={`w-full h-full ${
+                              col === 3 ? "text-right pr-1" : "text-center"
+                            } bg-white border-0 outline-none p-0 m-0 leading-tight`}
+                          />
+                        )
+                      ) : null}
+
+                      {isSelected && !isEditing && (
+                        <div
+                          className="absolute -bottom-[2px] -right-[2px] w-[5px] h-[5px] bg-[#1d4ed8] pointer-events-none no-print z-30"
+                          style={{ border: "1px solid #ffffff" }}
+                        />
+                      )}
+                    </td>
+                  );
+                })}
                 <td className="border border-black border-r-0 p-0"></td>
               </tr>
             );

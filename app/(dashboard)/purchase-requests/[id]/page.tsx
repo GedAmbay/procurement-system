@@ -8,7 +8,7 @@ import React, { useState, useEffect, useRef, useMemo, Fragment } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
 import { formatCurrency, normalizePrNumber, fiscalYearFromPrNumber } from "@/lib/utils";
-import { Printer, Save, CheckCircle2, Plus, Minus, Trash2, ArrowLeft, Loader2, ZoomIn, ZoomOut, Lock, Unlock, FolderOpen, Calendar, MoveUp, MoveDown, CornerDownRight } from "lucide-react";
+import { Printer, Save, CheckCircle2, Plus, Minus, Trash2, ArrowLeft, Loader2, ZoomIn, ZoomOut, Lock, Unlock, FolderOpen, Calendar, MoveUp, MoveDown, CornerDownRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -203,15 +203,10 @@ export default function PurchaseRequestEditor() {
     name: "lineItems",
   });
 
+  const [panelView, setPanelView] = useState<"details" | "item" | "spec">("details");
   const [activeItemIndex, setActiveItemIndex] = useState<number | null>(null);
+  const [activeSpecIndex, setActiveSpecIndex] = useState<number | null>(null);
   const [insertAtIndex, setInsertAtIndex] = useState<number | null>(null);
-  const [draftItem, setDraftItem] = useState<PrLineItem>({
-    itemId: "",
-    description: "",
-    unit: "",
-    quantity: "",
-    unitCost: "",
-  });
 
   const totalAmount = watchLineItems.reduce((sum, item) => sum + (Number(item.quantity) * Number(item.unitCost) || 0), 0);
 
@@ -310,52 +305,289 @@ export default function PurchaseRequestEditor() {
     if (session) loadData();
   }, [isNew, params.id, reset, router, session]);
 
-  const handleItemSelect = (itemId: string) => {
-    const item = items.find(i => i.id === itemId);
-    if (item) {
-      setDraftItem({
-        ...(draftItem || {}),
-        itemId,
-        description: item.description,
-        unit: item.unit,
-        unitCost: item.standardCost,
-        quantity: (!draftItem || draftItem.quantity === "") ? 1 : draftItem.quantity
-      });
-    } else {
-      setDraftItem({ ...(draftItem || {}), itemId: "" });
+  interface SpecItemRef {
+    rawIndex: number;
+    item: PrLineItem;
+  }
+
+  interface MainItemRef {
+    mainIndex: number;
+    rawIndex: number;
+    displayNo: number;
+    item: PrLineItem;
+    specs: SpecItemRef[];
+  }
+
+  const mainItems = useMemo<MainItemRef[]>(() => {
+    const list: MainItemRef[] = [];
+    let currentMain: MainItemRef | null = null;
+    let counter = 0;
+
+    (watchLineItems || []).forEach((it, idx) => {
+      const isEmpty =
+        !it.description?.trim() &&
+        (!it.quantity || Number(it.quantity) === 0) &&
+        (!it.unitCost || Number(it.unitCost) === 0);
+
+      if (isEmpty) {
+        // Completely empty rows are NOT specification lines and NOT items!
+        return;
+      }
+
+      const isSpec = !it.quantity || Number(it.quantity) === 0;
+      if (!isSpec || !currentMain) {
+        counter++;
+        currentMain = {
+          mainIndex: list.length,
+          rawIndex: idx,
+          displayNo: counter,
+          item: it,
+          specs: [],
+        };
+        list.push(currentMain);
+      } else {
+        currentMain.specs.push({
+          rawIndex: idx,
+          item: it,
+        });
+      }
+    });
+
+    return list;
+  }, [watchLineItems]);
+
+  const activeMain = useMemo(() => {
+    if (activeItemIndex === null) return null;
+    return (
+      mainItems.find(
+        (m) =>
+          m.rawIndex === activeItemIndex ||
+          m.specs.some((s) => s.rawIndex === activeItemIndex)
+      ) || null
+    );
+  }, [mainItems, activeItemIndex]);
+
+  const activeSpec = useMemo(() => {
+    if (activeSpecIndex === null || !activeMain) return null;
+    return activeMain.specs.find((s) => s.rawIndex === activeSpecIndex) || null;
+  }, [activeMain, activeSpecIndex]);
+
+  useEffect(() => {
+    if (panelView === "item" && !activeMain) {
+      setPanelView("details");
+    } else if (panelView === "spec" && (!activeMain || activeSpecIndex === null)) {
+      setPanelView(activeMain ? "item" : "details");
     }
+  }, [panelView, activeMain, activeSpecIndex]);
+
+  const updateItemAt = (index: number, updates: Partial<PrLineItem>) => {
+    const current = [...(watchLineItems || [])];
+    if (!current[index]) return;
+    current[index] = { ...current[index], ...updates };
+    setValue("lineItems", current, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
   };
 
   const handleRowClick = (index: number) => {
     if (isReadOnly) return;
     setInsertAtIndex(null);
     const item = watchLineItems && watchLineItems[index];
-    if (item) {
-      setActiveItemIndex(index);
-      setDraftItem({
-        itemId: item.itemId || "",
-        description: item.description || "",
-        unit: item.unit || "",
-        quantity: item.quantity ?? "",
-        unitCost: item.unitCost ?? "",
-      });
-    } else {
+    const isEmpty =
+      !item ||
+      (!item.description?.trim() &&
+        (!item.quantity || Number(item.quantity) === 0) &&
+        (!item.unitCost || Number(item.unitCost) === 0));
+
+    if (isEmpty) {
       setActiveItemIndex(null);
-      setDraftItem({
-        itemId: "",
-        description: "",
-        unit: "",
-        quantity: "",
-        unitCost: "",
-      });
+      setActiveSpecIndex(null);
+      setPanelView("details");
+      return;
     }
+
+    const isSpec = !item.quantity || Number(item.quantity) === 0;
+    if (isSpec) {
+      let parentRawIdx = -1;
+      for (let i = index - 1; i >= 0; i--) {
+        if (watchLineItems[i]?.quantity && Number(watchLineItems[i].quantity) > 0) {
+          parentRawIdx = i;
+          break;
+        }
+      }
+      if (parentRawIdx >= 0) {
+        setActiveItemIndex(parentRawIdx);
+        setActiveSpecIndex(index);
+        setPanelView("spec");
+      } else {
+        setActiveItemIndex(index);
+        setActiveSpecIndex(null);
+        setPanelView("item");
+      }
+    } else {
+      setActiveItemIndex(index);
+      setActiveSpecIndex(null);
+      setPanelView("item");
+    }
+  };
+
+  const handleAddNewMainItem = () => {
+    if (isReadOnly) return;
+    const current = [...(watchLineItems || [])];
+    const newItem: PrLineItem = {
+      itemId: null,
+      description: "",
+      unit: "Unit",
+      quantity: 1,
+      unitCost: "",
+    };
+    current.push(newItem);
+    setValue("lineItems", current, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+    setActiveItemIndex(current.length - 1);
+    setActiveSpecIndex(null);
+    setPanelView("item");
+  };
+
+  const handleAddSpecLine = (main: MainItemRef) => {
+    if (isReadOnly) return;
+    const current = [...(watchLineItems || [])];
+    const lastSpecRawIdx = main.specs.length > 0 ? main.specs[main.specs.length - 1].rawIndex : main.rawIndex;
+    const insertAt = lastSpecRawIdx + 1;
+    const newSpec: PrLineItem = {
+      itemId: null,
+      description: "",
+      unit: "",
+      quantity: "",
+      unitCost: "",
+    };
+    current.splice(insertAt, 0, newSpec);
+    setValue("lineItems", current, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+    setActiveItemIndex(main.rawIndex);
+    setActiveSpecIndex(insertAt);
+    setPanelView("spec");
+    toast.success("Specification line added");
+  };
+
+  const handleDeleteMainItem = (main: MainItemRef) => {
+    if (isReadOnly) return;
+    const current = [...(watchLineItems || [])];
+    const countToRemove = 1 + main.specs.length;
+    current.splice(main.rawIndex, countToRemove);
+    setValue("lineItems", current, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+    setActiveItemIndex(null);
+    setActiveSpecIndex(null);
+    setPanelView("details");
+    toast.success("Item deleted");
+  };
+
+  const handleDeleteSpecLine = (specRawIndex: number | null) => {
+    if (isReadOnly || specRawIndex === null) return;
+    const current = [...(watchLineItems || [])];
+    current.splice(specRawIndex, 1);
+    setValue("lineItems", current, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+    setActiveSpecIndex(null);
+    setPanelView("item");
+    toast.success("Specification line deleted");
+  };
+
+  const handleInsertAboveMain = (main: MainItemRef) => {
+    if (isReadOnly) return;
+    const current = [...(watchLineItems || [])];
+    const newItem: PrLineItem = {
+      itemId: null,
+      description: "",
+      unit: "Unit",
+      quantity: 1,
+      unitCost: "",
+    };
+    current.splice(main.rawIndex, 0, newItem);
+    setValue("lineItems", current, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+    setActiveItemIndex(main.rawIndex);
+    setActiveSpecIndex(null);
+    toast.success("Item inserted above");
+  };
+
+  const handleInsertBelowMain = (main: MainItemRef) => {
+    if (isReadOnly) return;
+    const current = [...(watchLineItems || [])];
+    const insertPos = main.rawIndex + main.specs.length + 1;
+    const newItem: PrLineItem = {
+      itemId: null,
+      description: "",
+      unit: "Unit",
+      quantity: 1,
+      unitCost: "",
+    };
+    current.splice(insertPos, 0, newItem);
+    setValue("lineItems", current, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+    setActiveItemIndex(insertPos);
+    setActiveSpecIndex(null);
+    toast.success("Item inserted below");
+  };
+
+  const handleMoveMainUp = (main: MainItemRef) => {
+    if (isReadOnly || main.mainIndex <= 0) return;
+    const prevMain = mainItems[main.mainIndex - 1];
+    if (!prevMain) return;
+    const current = [...(watchLineItems || [])];
+    const blockLength = 1 + main.specs.length;
+    const extracted = current.splice(main.rawIndex, blockLength);
+    current.splice(prevMain.rawIndex, 0, ...extracted);
+    setValue("lineItems", current, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+    setActiveItemIndex(prevMain.rawIndex);
+    setActiveSpecIndex(null);
+    toast.success("Moved up");
+  };
+
+  const handleMoveMainDown = (main: MainItemRef) => {
+    if (isReadOnly || main.mainIndex >= mainItems.length - 1) return;
+    const nextMain = mainItems[main.mainIndex + 1];
+    if (!nextMain) return;
+    const current = [...(watchLineItems || [])];
+    const blockLength = 1 + main.specs.length;
+    const nextBlockLength = 1 + nextMain.specs.length;
+    const extracted = current.splice(main.rawIndex, blockLength);
+    current.splice(main.rawIndex + nextBlockLength, 0, ...extracted);
+    setValue("lineItems", current, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+    setActiveItemIndex(main.rawIndex + nextBlockLength);
+    setActiveSpecIndex(null);
+    toast.success("Moved down");
+  };
+
+  const handleInsertSpecAbove = (specRawIndex: number | null) => {
+    if (isReadOnly || specRawIndex === null) return;
+    const current = [...(watchLineItems || [])];
+    const newSpec: PrLineItem = {
+      itemId: null,
+      description: "",
+      unit: "",
+      quantity: "",
+      unitCost: "",
+    };
+    current.splice(specRawIndex, 0, newSpec);
+    setValue("lineItems", current, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+    setActiveSpecIndex(specRawIndex);
+    toast.success("Specification line inserted");
+  };
+
+  const handleInsertSpecBelow = (specRawIndex: number | null) => {
+    if (isReadOnly || specRawIndex === null) return;
+    const current = [...(watchLineItems || [])];
+    const newSpec: PrLineItem = {
+      itemId: null,
+      description: "",
+      unit: "",
+      quantity: "",
+      unitCost: "",
+    };
+    current.splice(specRawIndex + 1, 0, newSpec);
+    setValue("lineItems", current, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+    setActiveSpecIndex(specRawIndex + 1);
+    toast.success("Specification line inserted");
   };
 
   const handleStartInsert = (index: number) => {
     if (isReadOnly) return;
     setActiveItemIndex(null);
     setInsertAtIndex(index);
-    setDraftItem({ itemId: "", description: "", unit: "", quantity: "", unitCost: "" });
   };
 
   const handleMoveItem = (fromIndex: number, toIndex: number) => {
@@ -364,49 +596,6 @@ export default function PurchaseRequestEditor() {
     move(fromIndex, toIndex);
     setActiveItemIndex(toIndex);
     toast.success(`Moved to row ${toIndex + 1}`);
-  };
-
-  const handleAddOrUpdate = () => {
-    if (!draftItem.description) {
-      toast.error("Description is required");
-      return;
-    }
-    if (Number(draftItem.quantity) < 0) {
-      toast.error("Quantity cannot be negative");
-      return;
-    }
-
-    const itemToAdd = {
-      ...draftItem,
-      quantity: Number(draftItem.quantity) || 0,
-      unitCost: Number(draftItem.unitCost) || 0,
-    };
-
-    if (activeItemIndex !== null) {
-      update(activeItemIndex, itemToAdd);
-      toast.success("Item updated");
-    } else if (insertAtIndex !== null) {
-      insert(insertAtIndex, itemToAdd);
-      toast.success(`Item inserted at row ${insertAtIndex + 1}`);
-    } else {
-      append(itemToAdd);
-      toast.success("Item added");
-    }
-    handleClearDraft();
-  };
-
-  const handleClearDraft = () => {
-    setActiveItemIndex(null);
-    setInsertAtIndex(null);
-    setDraftItem({ itemId: "", description: "", unit: "", quantity: "", unitCost: "" });
-  };
-
-  const handleDeleteItem = () => {
-    if (activeItemIndex !== null) {
-      remove(activeItemIndex);
-      handleClearDraft();
-      toast.success("Item deleted");
-    }
   };
 
   const onSubmit = async (data: PRFormValues) => {
@@ -757,7 +946,7 @@ export default function PurchaseRequestEditor() {
                           handleStartInsert(idx);
                         }}
                         insertAtIndex={insertAtIndex}
-                        activeItemIndex={activeItemIndex}
+                        activeItemIndex={activeSpecIndex !== null ? activeSpecIndex : activeItemIndex}
                         totalAmount={totalAmount}
                       />
 
@@ -882,6 +1071,7 @@ export default function PurchaseRequestEditor() {
 
         {/* Right Side: Data Entry Form */}
         <div className="no-print w-[360px] lg:w-[400px] xl:w-[420px] shrink-0 bg-white rounded-2xl shadow-sm border border-slate-200/60 flex flex-col overflow-hidden">
+          {/* Header */}
           <div className="p-5 pb-3 shrink-0">
             <h2 className="text-base font-bold text-slate-900">
               {isJob ? "Job Request Details" : "Purchase Request Details"}
@@ -889,406 +1079,599 @@ export default function PurchaseRequestEditor() {
             <p className="text-xs text-slate-500 mt-1">
               {isReadOnly
                 ? "Read-only while the document is locked."
-                : "Update the details for the purchase request."}
+                : isNew
+                ? `Edit the details for the ${isJob ? "job request" : "purchase request"}.`
+                : `Update the details for the ${isJob ? "job request" : "purchase request"}.`}
             </p>
           </div>
 
           <div className="flex-1 overflow-y-auto p-5 pt-0">
-            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3.5">
-              {/* Type Toggle: Purchase Request vs Job Request */}
-              <div>
-                <label className="form-label">Request Type</label>
-                <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-lg border border-slate-200">
+            {/* VIEW 1: DOCUMENT DETAILS */}
+            {panelView === "details" && (
+              <div className="flex flex-col gap-3.5">
+                {/* + Add item Button */}
+                {!isReadOnly && (
                   <button
                     type="button"
-                    onClick={() => !isReadOnly && setValue("requestType", "PURCHASE")}
-                    disabled={isReadOnly}
-                    className={`py-1.5 px-3 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${!isJob
-                      ? "bg-white text-blue-600 shadow-sm border border-slate-200/60"
-                      : "text-slate-500 hover:text-slate-800"
-                      }`}
+                    onClick={handleAddNewMainItem}
+                    className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-xs transition-colors flex items-center justify-center gap-1.5"
                   >
-                    <span>Purchase Request</span>
+                    <Plus size={16} className="stroke-[2.5]" /> Add item
+                  </button>
+                )}
+
+                {/* Hint banner */}
+                <div className="p-3 bg-blue-50/70 border border-blue-100/90 rounded-xl text-center text-xs text-blue-900 font-medium">
+                  Click a row in the document to edit it, or type directly in the cells.
+                </div>
+
+                {/* Card 1: REQUEST INFO */}
+                <div className="p-3.5 bg-white border border-slate-200 rounded-xl space-y-3">
+                  <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    REQUEST INFO
+                  </div>
+                  <div>
+                    <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-lg border border-slate-200">
+                      <button
+                        type="button"
+                        onClick={() => !isReadOnly && setValue("requestType", "PURCHASE")}
+                        disabled={isReadOnly}
+                        className={`py-1.5 px-3 text-xs font-semibold rounded-md transition-all flex items-center justify-center ${!isJob
+                          ? "bg-white text-blue-600 shadow-sm border border-slate-200/60"
+                          : "text-slate-500 hover:text-slate-800"
+                          }`}
+                      >
+                        <span>Purchase Request</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => !isReadOnly && setValue("requestType", "JOB")}
+                        disabled={isReadOnly}
+                        className={`py-1.5 px-3 text-xs font-semibold rounded-md transition-all flex items-center justify-center ${isJob
+                          ? "bg-indigo-600 text-white shadow-sm"
+                          : "text-slate-500 hover:text-slate-800"
+                          }`}
+                      >
+                        <span>Job Request</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="form-label text-xs">
+                      {isJob ? "JR Number" : "PR Number"}
+                    </label>
+                    <input
+                      type="text"
+                      {...register("prNumber")}
+                      disabled={isReadOnly}
+                      onBlur={(e) => {
+                        const val = e.target.value?.trim();
+                        if (val) {
+                          const normalized = normalizePrNumber(val);
+                          setValue("prNumber", normalized);
+                          const derivedYear = fiscalYearFromPrNumber(normalized);
+                          if (derivedYear) {
+                            setValue("fiscalYear", derivedYear);
+                          }
+                        }
+                      }}
+                      placeholder="e.g. 26-01-001"
+                      className="form-input font-mono font-bold text-sm bg-white"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      Leave blank if not yet assigned by custodian.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
+                    <input
+                      type="checkbox"
+                      id="showPrNoCheckbox"
+                      checked={showPrNo}
+                      onChange={(e) => setShowPrNo(e.target.checked)}
+                      className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+                    />
+                    <label htmlFor="showPrNoCheckbox" className="text-xs font-medium text-slate-700 cursor-pointer select-none">
+                      Print {isJob ? "JR" : "PR"} number on the document
+                    </label>
+                  </div>
+                </div>
+
+                {/* Card 2: OFFICE AND SIGNATORY */}
+                <div className="p-3.5 bg-white border border-slate-200 rounded-xl space-y-3">
+                  <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    OFFICE AND SIGNATORY
+                  </div>
+                  <div>
+                    <label className="form-label text-xs">Requesting office *</label>
+                    <CustomSelect
+                      value={watchAllFields.officeId || ""}
+                      onChange={(val) => setValue("officeId", val, { shouldValidate: true, shouldDirty: true })}
+                      options={offices.map((o) => ({ value: o.id, label: o.name }))}
+                      placeholder="Select Office..."
+                      disabled={isReadOnly}
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label text-xs">Requested by *</label>
+                    <CustomSelect
+                      value={watchAllFields.requestedBySignatoryId || ""}
+                      onChange={(val) => setValue("requestedBySignatoryId", val, { shouldValidate: true, shouldDirty: true })}
+                      options={signatories.map((s) => ({
+                        value: s.id,
+                        label: s.name,
+                        sublabel: s.position,
+                      }))}
+                      placeholder="Select Signatory..."
+                      disabled={isReadOnly}
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label text-xs">Purpose *</label>
+                    <textarea
+                      {...register("purpose")}
+                      className="form-input text-xs"
+                      style={{ minHeight: "70px", resize: "vertical" }}
+                      placeholder="Enter purpose of procurement..."
+                      disabled={isReadOnly}
+                    />
+                  </div>
+                </div>
+
+                {/* Card 3: PROCUREMENT METHOD */}
+                <div className="p-3.5 bg-white border border-slate-200 rounded-xl space-y-2">
+                  <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    PROCUREMENT METHOD
+                  </div>
+                  <div className="space-y-1.5">
+                    <label
+                      onClick={() => !isReadOnly && setValue("isDirectAcquisition", false)}
+                      className={`p-2.5 rounded-xl border flex items-start gap-2.5 cursor-pointer transition-colors ${
+                        !watchAllFields.isDirectAcquisition
+                          ? "border-blue-400 bg-blue-50/50"
+                          : "border-slate-200 hover:bg-slate-50"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        checked={!watchAllFields.isDirectAcquisition}
+                        onChange={() => !isReadOnly && setValue("isDirectAcquisition", false)}
+                        disabled={isReadOnly}
+                        className="w-4 h-4 text-blue-600 mt-0.5 border-slate-300 focus:ring-blue-500"
+                      />
+                      <div>
+                        <div className="text-xs font-bold text-slate-900">Standard</div>
+                        <div className="text-[11px] text-slate-500">RFQ and Abstract of Canvass.</div>
+                      </div>
+                    </label>
+
+                    <label
+                      onClick={() => !isReadOnly && setValue("isDirectAcquisition", true)}
+                      className={`p-2.5 rounded-xl border flex items-start gap-2.5 cursor-pointer transition-colors ${
+                        watchAllFields.isDirectAcquisition
+                          ? "border-blue-400 bg-blue-50/50"
+                          : "border-slate-200 hover:bg-slate-50"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        checked={!!watchAllFields.isDirectAcquisition}
+                        onChange={() => !isReadOnly && setValue("isDirectAcquisition", true)}
+                        disabled={isReadOnly}
+                        className="w-4 h-4 text-blue-600 mt-0.5 border-slate-300 focus:ring-blue-500"
+                      />
+                      <div>
+                        <div className="text-xs font-bold text-slate-900">Direct Acquisition</div>
+                        <div className="text-[11px] text-slate-500">Skips RFQ and abstract phases.</div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* VIEW 2: ITEM EDITOR */}
+            {panelView === "item" && activeMain && (
+              <div className="flex flex-col gap-3.5">
+                {/* Top subheader bar */}
+                <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setPanelView("details")}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2 py-1 rounded-lg transition-colors"
+                  >
+                    <ArrowLeft size={14} /> Details
+                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-semibold text-slate-600">
+                      Item {activeMain.mainIndex + 1} of {mainItems.length}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        disabled={activeMain.mainIndex <= 0}
+                        onClick={() => {
+                          const prev = mainItems[activeMain.mainIndex - 1];
+                          if (prev) {
+                            setActiveItemIndex(prev.rawIndex);
+                            setActiveSpecIndex(null);
+                          }
+                        }}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                      >
+                        <ChevronLeft size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={activeMain.mainIndex >= mainItems.length - 1}
+                        onClick={() => {
+                          const next = mainItems[activeMain.mainIndex + 1];
+                          if (next) {
+                            setActiveItemIndex(next.rawIndex);
+                            setActiveSpecIndex(null);
+                          }
+                        }}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                      >
+                        <ChevronRight size={14} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  EDITING ITEM {activeMain.displayNo}
+                </div>
+
+                {/* Catalog Item */}
+                <div>
+                  <label className="form-label text-xs">Catalog item <span className="font-normal text-slate-400">(optional)</span></label>
+                  <CustomSelect
+                    value={activeMain.item.itemId || ""}
+                    onChange={(val) => {
+                      const found = items.find(i => i.id === val);
+                      if (found) {
+                        updateItemAt(activeMain.rawIndex, {
+                          itemId: val,
+                          description: found.description,
+                          unit: found.unit || "Unit",
+                          unitCost: found.standardCost || 0,
+                          quantity: (!activeMain.item.quantity || activeMain.item.quantity === 0) ? 1 : activeMain.item.quantity,
+                        });
+                      } else {
+                        updateItemAt(activeMain.rawIndex, { itemId: null });
+                      }
+                    }}
+                    options={[
+                      { value: "", label: "-- Custom Item --" },
+                      ...items.map((item) => ({
+                        value: item.id,
+                        label: item.description,
+                        sublabel: item.unit ? `${item.unit} · ₱${Number(item.standardCost || 0).toLocaleString()}` : undefined,
+                      })),
+                    ]}
+                    placeholder="Search catalog..."
+                    disabled={isReadOnly}
+                  />
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="form-label text-xs">Description *</label>
+                  <textarea
+                    rows={2}
+                    value={activeMain.item.description || ""}
+                    onChange={(e) => updateItemAt(activeMain.rawIndex, { description: e.target.value })}
+                    className="form-input text-sm"
+                    placeholder="Enter item description..."
+                    disabled={isReadOnly}
+                  />
+                </div>
+
+                {/* Unit of issue */}
+                <div>
+                  <label className="form-label text-xs">Unit of issue</label>
+                  <input
+                    type="text"
+                    value={activeMain.item.unit || ""}
+                    onChange={(e) => updateItemAt(activeMain.rawIndex, { unit: e.target.value })}
+                    className="form-input text-sm"
+                    placeholder="e.g. Unit, Pc, Set..."
+                    disabled={isReadOnly}
+                  />
+                  {/* Quick pills */}
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {["Unit", "Pc", "Set", "Box", "Ream", "Lot"].map((u) => {
+                      const isSelected = (activeMain.item.unit || "").toLowerCase() === u.toLowerCase();
+                      return (
+                        <button
+                          key={u}
+                          type="button"
+                          onClick={() => !isReadOnly && updateItemAt(activeMain.rawIndex, { unit: u })}
+                          className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border transition-colors ${
+                            isSelected
+                              ? "bg-blue-600 text-white border-blue-600 shadow-2xs"
+                              : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                          }`}
+                        >
+                          {u}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Qty & Unit cost */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="form-label text-xs">Qty</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={activeMain.item.quantity ?? ""}
+                      onChange={(e) => updateItemAt(activeMain.rawIndex, { quantity: e.target.value === "" ? "" : Number(e.target.value) })}
+                      className="form-input text-sm"
+                      placeholder="0"
+                      disabled={isReadOnly}
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label text-xs">Unit cost</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-semibold text-xs">₱</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={activeMain.item.unitCost ?? ""}
+                        onChange={(e) => updateItemAt(activeMain.rawIndex, { unitCost: e.target.value === "" ? "" : Number(e.target.value) })}
+                        className="form-input text-sm pl-7 text-right"
+                        placeholder="0.00"
+                        disabled={isReadOnly}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Line total */}
+                <div className="flex items-center justify-between py-2.5 border-y border-slate-100 text-xs">
+                  <span className="text-slate-600 font-medium">Line total</span>
+                  <span className="text-slate-900 font-bold text-sm">
+                    {formatCurrency((Number(activeMain.item.quantity) || 0) * (Number(activeMain.item.unitCost) || 0))}
+                  </span>
+                </div>
+
+                {/* Specification Lines */}
+                <div className="space-y-2 pt-1">
+                  <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    SPECIFICATION LINES · {activeMain.specs.length}
+                  </div>
+
+                  {activeMain.specs.length > 0 && (
+                    <div className="space-y-1.5">
+                      {activeMain.specs.map((spec) => (
+                        <div
+                          key={spec.rawIndex}
+                          className="flex items-center justify-between p-2.5 bg-slate-50/80 border border-slate-200/80 rounded-xl text-xs"
+                        >
+                          <span className="text-slate-800 font-medium truncate pr-2">
+                            {spec.item.description || "(Empty specification)"}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveSpecIndex(spec.rawIndex);
+                              setPanelView("spec");
+                            }}
+                            className="text-xs font-semibold text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-2 py-0.5 rounded transition-colors shrink-0"
+                          >
+                            Edit
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => handleAddSpecLine(activeMain)}
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 py-1 transition-colors"
+                  >
+                    <Plus size={13} className="stroke-[2.5]" /> Add spec line
+                  </button>
+                </div>
+
+                {/* Actions 2x2 grid */}
+                <div className="grid grid-cols-2 gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => handleInsertAboveMain(activeMain)}
+                    className="py-1.5 px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs shadow-2xs transition-colors"
+                  >
+                    Insert above
                   </button>
                   <button
                     type="button"
-                    onClick={() => !isReadOnly && setValue("requestType", "JOB")}
-                    disabled={isReadOnly}
-                    className={`py-1.5 px-3 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${isJob
-                      ? "bg-indigo-600 text-white shadow-sm"
-                      : "text-slate-500 hover:text-slate-800"
-                      }`}
+                    onClick={() => handleInsertBelowMain(activeMain)}
+                    className="py-1.5 px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs shadow-2xs transition-colors"
                   >
-                    <span>Job Request</span>
+                    Insert below
+                  </button>
+                  <button
+                    type="button"
+                    disabled={activeMain.mainIndex === 0}
+                    onClick={() => handleMoveMainUp(activeMain)}
+                    className="py-1.5 px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs shadow-2xs disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                  >
+                    Move up
+                  </button>
+                  <button
+                    type="button"
+                    disabled={activeMain.mainIndex >= mainItems.length - 1}
+                    onClick={() => handleMoveMainDown(activeMain)}
+                    className="py-1.5 px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs shadow-2xs disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                  >
+                    Move down
                   </button>
                 </div>
               </div>
+            )}
 
-              {/* Document Numbering */}
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-bold text-slate-800">
-                      {isJob ? "JR Number" : "PR Number"}
-                    </label>
+            {/* VIEW 3: SPEC LINE EDITOR */}
+            {panelView === "spec" && activeMain && activeSpec && (
+              <div className="flex flex-col gap-3.5">
+                {/* Top subheader bar */}
+                <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setPanelView("item")}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2 py-1 rounded-lg transition-colors"
+                  >
+                    <ArrowLeft size={14} /> Item {activeMain.displayNo}
+                  </button>
+                  <div className="flex items-center gap-1.5">
+                    {(() => {
+                      const specIdx = activeMain.specs.findIndex((s) => s.rawIndex === activeSpec.rawIndex);
+                      return (
+                        <>
+                          <span className="text-xs font-semibold text-slate-600">
+                            Spec {specIdx + 1} of {activeMain.specs.length}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              disabled={specIdx <= 0}
+                              onClick={() => {
+                                const prev = activeMain.specs[specIdx - 1];
+                                if (prev) setActiveSpecIndex(prev.rawIndex);
+                              }}
+                              className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                            >
+                              <ChevronLeft size={14} />
+                            </button>
+                            <button
+                              type="button"
+                              disabled={specIdx >= activeMain.specs.length - 1}
+                              onClick={() => {
+                                const next = activeMain.specs[specIdx + 1];
+                                if (next) setActiveSpecIndex(next.rawIndex);
+                              }}
+                              className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                            >
+                              <ChevronRight size={14} />
+                            </button>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
-                  <input
-                    type="text"
-                    {...register("prNumber")}
-                    disabled={isReadOnly}
-                    onBlur={(e) => {
-                      const val = e.target.value?.trim();
-                      if (val) {
-                        const normalized = normalizePrNumber(val);
-                        setValue("prNumber", normalized);
-                        const derivedYear = fiscalYearFromPrNumber(normalized);
-                        if (derivedYear) {
-                          setValue("fiscalYear", derivedYear);
-                        }
-                      }
-                    }}
-                    placeholder="e.g. 26-01-001"
-                    className="form-input font-mono font-bold text-sm bg-white"
-                  />
-                  <p className="text-[10px] text-slate-500 mt-1">
-                    Leave blank if not yet assigned by custodian. Can be updated at any time.
+                </div>
+
+                <div>
+                  <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    SPEC LINE
+                  </div>
+                  <p className="text-xs font-bold text-slate-800 mt-1 truncate">
+                    Item {activeMain.displayNo} · {activeMain.item.description || "Item"}
                   </p>
                 </div>
 
-                {/* Show/Hide Document Number on Document Toggle */}
-                <div className="flex items-center justify-between pt-2 border-t border-slate-200">
-                  <label
-                    className="text-xs font-semibold text-slate-700 cursor-pointer select-none"
-                    onClick={() => setShowPrNo(!showPrNo)}
-                  >
-                    Show {isJob ? "JR Number" : "PR Number"}
-                  </label>
+                <div>
+                  <label className="form-label text-xs">Description</label>
+                  <textarea
+                    rows={2}
+                    value={activeSpec.item.description || ""}
+                    onChange={(e) => updateItemAt(activeSpec.rawIndex, { description: e.target.value })}
+                    className="form-input text-sm"
+                    placeholder="Enter specification details..."
+                    disabled={isReadOnly}
+                  />
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Prints under the item. Spec lines have no price or quantity.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-1">
                   <button
                     type="button"
-                    onClick={() => setShowPrNo(!showPrNo)}
-                    style={{
-                      width: "44px",
-                      height: "24px",
-                      borderRadius: "12px",
-                      background: showPrNo ? "#10b981" : "#cbd5e1",
-                      position: "relative",
-                      border: "none",
-                      cursor: "pointer",
-                      transition: "background 0.3s",
-                      boxShadow: "inset 0 1px 3px rgba(0,0,0,0.1)",
-                    }}
-                    title={showPrNo ? "Hide from document" : "Show on document"}
+                    onClick={() => handleInsertSpecAbove(activeSpec.rawIndex)}
+                    className="py-1.5 px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs shadow-2xs transition-colors"
                   >
-                    <div
-                      style={{
-                        width: "20px",
-                        height: "20px",
-                        borderRadius: "50%",
-                        background: "#fff",
-                        position: "absolute",
-                        top: "2px",
-                        left: showPrNo ? "22px" : "2px",
-                        transition: "left 0.3s",
-                        boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
-                      }}
-                    />
+                    Insert above
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleInsertSpecBelow(activeSpec.rawIndex)}
+                    className="py-1.5 px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs shadow-2xs transition-colors"
+                  >
+                    Insert below
                   </button>
                 </div>
               </div>
-
-              <div>
-                <label className="form-label">Requesting Office</label>
-                <CustomSelect
-                  value={watchAllFields.officeId || ""}
-                  onChange={(val) => setValue("officeId", val, { shouldValidate: true, shouldDirty: true })}
-                  options={offices.map((o) => ({ value: o.id, label: o.name }))}
-                  placeholder="Select Office..."
-                  disabled={isReadOnly}
-                />
-              </div>
-
-              <div>
-                <label className="form-label">Requested By (Signatory)</label>
-                <CustomSelect
-                  value={watchAllFields.requestedBySignatoryId || ""}
-                  onChange={(val) => setValue("requestedBySignatoryId", val, { shouldValidate: true, shouldDirty: true })}
-                  options={signatories.map((s) => ({
-                    value: s.id,
-                    label: s.name,
-                    sublabel: s.position,
-                  }))}
-                  placeholder="Select Signatory..."
-                  disabled={isReadOnly}
-                />
-              </div>
-
-              <div>
-                <label className="form-label">Purpose</label>
-                <textarea
-                  {...register("purpose")}
-                  className="form-input"
-                  style={{ minHeight: "80px", resize: "vertical" }}
-                  placeholder="Enter purpose of procurement..."
-                  disabled={isReadOnly}
-                />
-              </div>
-
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <input
-                  type="checkbox"
-                  id="isDirectAcquisition"
-                  {...register("isDirectAcquisition")}
-                  disabled={isReadOnly}
-                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <label htmlFor="isDirectAcquisition" className="text-sm font-medium text-slate-700 cursor-pointer">
-                  Direct Acquisition <span className="text-xs text-slate-500 font-normal">(Skips RFQ and abstract phases)</span>
-                </label>
-              </div>
-
-              <div style={{ paddingTop: "1rem", borderTop: "1px solid #e2e8f0" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem" }}>
-                  <h3 style={{ fontWeight: "700", color: "#334155", fontSize: "0.9375rem" }}>
-                    {activeItemIndex !== null
-                      ? `Edit Item (Row ${activeItemIndex + 1})`
-                      : insertAtIndex !== null
-                        ? `Insert Item (Row ${insertAtIndex + 1})`
-                        : "Add New Item"}
-                  </h3>
-                  {(activeItemIndex !== null || insertAtIndex !== null) && !isReadOnly && (
-                    <button
-                      type="button"
-                      onClick={handleClearDraft}
-                      className="btn btn-secondary btn-sm"
-                    >
-                      Cancel
-                    </button>
-                  )}
-                </div>
-
-                {!isReadOnly && (
-                  <>
-                    {/* Action Toolbar when editing an existing row */}
-                    {activeItemIndex !== null && (
-                      <div className="flex flex-wrap items-center gap-1.5 p-2 mb-3 bg-slate-100/80 border border-slate-200 rounded-xl text-xs">
-                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mr-1">Insert / Reorder:</span>
-                        <button
-                          type="button"
-                          onClick={() => handleStartInsert(activeItemIndex)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 shadow-2xs transition-colors"
-                          title="Insert a new row immediately above this item"
-                        >
-                          <Plus size={12} className="text-blue-600" /> Insert Above
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleStartInsert(activeItemIndex + 1)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 shadow-2xs transition-colors"
-                          title="Insert a new row immediately below this item"
-                        >
-                          <CornerDownRight size={12} className="text-blue-600" /> Insert Below
-                        </button>
-                        <div className="w-[1px] h-4 bg-slate-300 mx-0.5" />
-                        <button
-                          type="button"
-                          disabled={activeItemIndex === 0}
-                          onClick={() => handleMoveItem(activeItemIndex, activeItemIndex - 1)}
-                          className="inline-flex items-center gap-1 px-2 py-1 font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none shadow-2xs transition-colors"
-                          title="Move this item up"
-                        >
-                          <MoveUp size={12} />
-                        </button>
-                        <button
-                          type="button"
-                          disabled={activeItemIndex === watchLineItems.length - 1}
-                          onClick={() => handleMoveItem(activeItemIndex, activeItemIndex + 1)}
-                          className="inline-flex items-center gap-1 px-2 py-1 font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none shadow-2xs transition-colors"
-                          title="Move this item down"
-                        >
-                          <MoveDown size={12} />
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Highlight banner when in Insertion Mode */}
-                    {insertAtIndex !== null && (
-                      <div className="mb-3 p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-900 flex items-center justify-between shadow-2xs">
-                        <div className="flex items-center gap-2">
-                          <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-[10px] shrink-0">
-                            {insertAtIndex + 1}
-                          </div>
-                          <div>
-                            <span className="font-bold">
-                              Inserting at Row {insertAtIndex + 1}
-                            </span>
-                            <p className="text-[11px] text-blue-700">
-                              {insertAtIndex === 0
-                                ? "At the very top (before Row 1)"
-                                : `Between Row ${insertAtIndex} and Row ${insertAtIndex + 1}`}
-                            </p>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={handleClearDraft}
-                          className="text-xs font-semibold px-2 py-1 rounded bg-white border border-blue-200 text-blue-700 hover:bg-blue-100 transition-colors shadow-2xs"
-                        >
-                          Reset to End
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Position selector when adding new items */}
-                    {activeItemIndex === null && insertAtIndex === null && watchLineItems.length > 0 && (
-                      <div className="flex items-center justify-between mb-3 px-1 text-xs">
-                        <span className="text-slate-500 font-medium">Position:</span>
-                        <select
-                          value="end"
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            if (val !== "end") {
-                              handleStartInsert(Number(val));
-                            }
-                          }}
-                          className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-slate-700 font-semibold focus:outline-blue-500 cursor-pointer shadow-2xs max-w-[240px] truncate"
-                        >
-                          <option value="end">At the end (Row {watchLineItems.length + 1})</option>
-                          <option value="0">At the top (before Row 1)</option>
-                          {watchLineItems.map((it, i) => {
-                            const isSpec = !it.quantity || it.quantity === 0;
-                            const descPreview = it.description.length > 22 ? it.description.slice(0, 22) + "..." : it.description;
-                            return (
-                              <option key={i} value={i + 1}>
-                                After Row {i + 1}: {isSpec ? `(Spec) ${descPreview}` : descPreview}
-                              </option>
-                            );
-                          })}
-                        </select>
-                      </div>
-                    )}
-
-                    <div style={{ borderRadius: "1rem", background: "var(--color-page-bg)", boxShadow: "inset 4px 4px 8px rgba(163,177,198,0.5), inset -4px -4px 8px rgba(255,255,255,0.9)", padding: "1rem" }}>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "0.75rem", marginBottom: "0.75rem" }}>
-                        <div>
-                          <label className="form-label">Catalog Item <span style={{ fontWeight: "400", color: "#94a3b8" }}>(optional)</span></label>
-                          <CustomSelect
-                            value={draftItem?.itemId || ""}
-                            onChange={(val) => handleItemSelect(val)}
-                            options={[
-                              { value: "", label: "-- Custom Item --" },
-                              ...items.map((item) => ({
-                                value: item.id,
-                                label: item.description,
-                                sublabel: item.unit ? `${item.unit} · ₱${Number(item.standardCost || 0).toLocaleString()}` : undefined,
-                              })),
-                            ]}
-                            placeholder="-- Custom Item --"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="form-label">Description</label>
-                          <input
-                            value={draftItem?.description || ""}
-                            onChange={(e) => setDraftItem({ ...(draftItem || {}), description: e.target.value })}
-                            className="form-input"
-                            placeholder="Enter description..."
-                          />
-                        </div>
-
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
-                          <div>
-                            <label className="form-label">Unit of Issue</label>
-                            <input
-                              value={draftItem?.unit || ""}
-                              onChange={(e) => setDraftItem({ ...(draftItem || {}), unit: e.target.value })}
-                              className="form-input"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="form-label">Quantity</label>
-                            <input
-                              type="number"
-                              step="1"
-                              min="0"
-                              value={draftItem?.quantity ?? ""}
-                              onChange={(e) => setDraftItem({ ...(draftItem || {}), quantity: e.target.value === "" ? "" : Number(e.target.value) })}
-                              className="form-input"
-                              style={{ textAlign: "right" }}
-                              placeholder="0"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="form-label">Cost</label>
-                            <input
-                              type="number"
-                              step="0.25"
-                              min="0"
-                              value={draftItem?.unitCost ?? ""}
-                              onChange={(e) => setDraftItem({ ...(draftItem || {}), unitCost: e.target.value === "" ? "" : Number(e.target.value) })}
-                              className="form-input"
-                              style={{ textAlign: "right" }}
-                              placeholder="0.00"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid #e2e8f0", paddingTop: "0.75rem" }}>
-                        <div style={{ fontSize: "0.875rem", fontWeight: "700", color: "#059669" }}>
-                          Est: {formatCurrency(Number(draftItem?.quantity || 0) * Number(draftItem?.unitCost || 0))}
-                        </div>
-                        <div style={{ display: "flex", gap: "0.5rem" }}>
-                          {activeItemIndex !== null ? (
-                            <button
-                              type="button"
-                              onClick={handleDeleteItem}
-                              className="btn btn-danger btn-sm"
-                              style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}
-                            >
-                              <Trash2 size={13} /> Delete
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={handleClearDraft}
-                              className="btn btn-secondary btn-sm"
-                              style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}
-                            >
-                              Clear
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            onClick={handleAddOrUpdate}
-                            className="btn btn-primary btn-sm"
-                          >
-                            {activeItemIndex !== null ? "Update" : insertAtIndex !== null ? "Insert Item" : "Add Item"}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {isReadOnly && watchLineItems.length === 0 && (
-                  <div style={{ textAlign: "center", padding: "1.5rem", border: "2px dashed #e2e8f0", borderRadius: "0.75rem", color: "#94a3b8", fontSize: "0.875rem" }}>
-                    No line items added.
-                  </div>
-                )}
-              </div>
-            </form>
+            )}
           </div>
 
-          {/* Dedicated Pinned Footer: Grand Total */}
-          <div className="shrink-0 p-4 px-5 border-t border-slate-200/80 bg-slate-50/90 rounded-b-2xl">
-            <div className="flex justify-between items-center font-bold text-sm text-slate-800">
-              <span className="text-slate-600">Grand Total:</span>
-              <span className="text-emerald-600 text-lg font-extrabold">{formatCurrency(totalAmount)}</span>
+          {/* Dedicated Pinned Footer */}
+          {panelView === "details" && (
+            <div className="shrink-0 p-4 px-5 border-t border-slate-200/80 bg-slate-50/90 rounded-b-2xl flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-[11px] text-slate-500 font-medium">
+                  {mainItems.length} {mainItems.length === 1 ? "item" : "items"}
+                </span>
+                <span className="text-base font-extrabold text-emerald-600">
+                  {formatCurrency(totalAmount)}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleSubmit(onSubmit)}
+                disabled={submitting}
+                className="btn btn-primary px-6 py-2 rounded-xl text-sm font-semibold shadow-xs"
+              >
+                {submitting ? "Saving..." : "Save"}
+              </button>
             </div>
-          </div>
+          )}
+
+          {panelView === "item" && activeMain && (
+            <div className="shrink-0 p-4 px-5 border-t border-slate-200/80 bg-slate-50/90 rounded-b-2xl flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => handleDeleteMainItem(activeMain)}
+                className="text-xs font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 px-2.5 py-1.5 rounded-lg transition-colors"
+              >
+                Delete item
+              </button>
+              <button
+                type="button"
+                onClick={() => setPanelView("details")}
+                className="btn btn-primary px-6 py-2 rounded-xl text-sm font-semibold shadow-xs"
+              >
+                Done
+              </button>
+            </div>
+          )}
+
+          {panelView === "spec" && (
+            <div className="shrink-0 p-4 px-5 border-t border-slate-200/80 bg-slate-50/90 rounded-b-2xl flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => handleDeleteSpecLine(activeSpecIndex)}
+                className="text-xs font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 px-2.5 py-1.5 rounded-lg transition-colors"
+              >
+                Delete line
+              </button>
+              <button
+                type="button"
+                onClick={() => setPanelView("item")}
+                className="btn btn-primary px-6 py-2 rounded-xl text-sm font-semibold shadow-xs"
+              >
+                Done
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
