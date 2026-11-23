@@ -3,6 +3,8 @@ import LoaderWave from "@/components/ui/loader-wave";
 import CustomSelect from "@/components/ui/custom-select";
 import ConfirmModal from "@/components/ui/confirm-modal";
 import { ExcelTableGrid } from "@/components/documents/excel-table-grid";
+import { FormattedCellText } from "@/components/ui/formatted-cell-text";
+import { handleTextFormattingKeyDown } from "@/lib/format-text-helpers";
 
 import React, { useState, useEffect, useRef, useMemo, Fragment } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
@@ -1423,11 +1425,19 @@ export default function PurchaseRequestEditor() {
 
                 {/* Description */}
                 <div>
-                  <label className="form-label text-xs">Description *</label>
+                  <div className="flex items-center justify-between">
+                    <label className="form-label text-xs">Description *</label>
+                    <span className="text-[10px] text-slate-400">Ctrl+B (Bold) · Ctrl+I (Italic)</span>
+                  </div>
                   <textarea
                     rows={2}
                     value={activeMain.item.description || ""}
                     onChange={(e) => updateItemAt(activeMain.rawIndex, { description: e.target.value })}
+                    onKeyDown={(e) =>
+                      handleTextFormattingKeyDown(e, (newVal) =>
+                        updateItemAt(activeMain.rawIndex, { description: newVal })
+                      )
+                    }
                     className="form-input text-sm"
                     placeholder="Enter item description..."
                     disabled={isReadOnly}
@@ -1644,11 +1654,19 @@ export default function PurchaseRequestEditor() {
                 </div>
 
                 <div>
-                  <label className="form-label text-xs">Description</label>
+                  <div className="flex items-center justify-between">
+                    <label className="form-label text-xs">Description</label>
+                    <span className="text-[10px] text-slate-400">Ctrl+B (Bold) · Ctrl+I (Italic)</span>
+                  </div>
                   <textarea
                     rows={2}
                     value={activeSpec.item.description || ""}
                     onChange={(e) => updateItemAt(activeSpec.rawIndex, { description: e.target.value })}
+                    onKeyDown={(e) =>
+                      handleTextFormattingKeyDown(e, (newVal) =>
+                        updateItemAt(activeSpec.rawIndex, { description: newVal })
+                      )
+                    }
                     className="form-input text-sm"
                     placeholder="Enter specification details..."
                     disabled={isReadOnly}

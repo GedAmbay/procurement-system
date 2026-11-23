@@ -4,6 +4,8 @@ import CustomSelect from "@/components/ui/custom-select";
 import ConfirmModal from "@/components/ui/confirm-modal";
 import { EditablePreviewInput } from "@/components/documents/editable-preview-input";
 import { PoExcelTableGrid, PoLineItem } from "@/components/documents/po-excel-table-grid";
+import { FormattedCellText } from "@/components/ui/formatted-cell-text";
+import { handleTextFormattingKeyDown } from "@/lib/format-text-helpers";
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -1626,9 +1628,12 @@ export default function PurchaseOrderEditor() {
 
                 {/* Description */}
                 <div>
-                  <label className="form-label">
-                    Description <span className="text-red-500">*</span>
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="form-label">
+                      Description <span className="text-red-500">*</span>
+                    </label>
+                    <span className="text-[10px] text-slate-400">Ctrl+B (Bold) · Ctrl+I (Italic)</span>
+                  </div>
                   <textarea
                     rows={2}
                     value={activeMain.item.description || ""}
@@ -1637,6 +1642,14 @@ export default function PurchaseOrderEditor() {
                         description: e.target.value,
                         descriptionEdited: true,
                       })
+                    }
+                    onKeyDown={(e) =>
+                      handleTextFormattingKeyDown(e, (newVal) =>
+                        updateItemAt(activeMain.rawIndex, {
+                          description: newVal,
+                          descriptionEdited: true,
+                        })
+                      )
                     }
                     className="form-input text-xs"
                     placeholder="Item name / general description"
@@ -1890,7 +1903,10 @@ export default function PurchaseOrderEditor() {
 
                 {/* Description */}
                 <div>
-                  <label className="form-label">Description</label>
+                  <div className="flex items-center justify-between">
+                    <label className="form-label">Description</label>
+                    <span className="text-[10px] text-slate-400">Ctrl+B (Bold) · Ctrl+I (Italic)</span>
+                  </div>
                   <textarea
                     rows={3}
                     value={activeSpec.item.description || ""}
@@ -1899,6 +1915,14 @@ export default function PurchaseOrderEditor() {
                         description: e.target.value,
                         descriptionEdited: true,
                       })
+                    }
+                    onKeyDown={(e) =>
+                      handleTextFormattingKeyDown(e, (newVal) =>
+                        updateItemAt(activeSpec.rawIndex, {
+                          description: newVal,
+                          descriptionEdited: true,
+                        })
+                      )
                     }
                     className="form-input text-xs"
                     placeholder="Enter specification details..."

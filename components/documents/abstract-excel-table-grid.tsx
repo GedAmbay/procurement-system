@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Plus, Minus } from "lucide-react";
+import { FormattedCellText } from "@/components/ui/formatted-cell-text";
 
 export interface AbstractLineItemData {
   id: string;
@@ -444,7 +445,7 @@ export function AbstractExcelTableGrid({
                       : ""
                   }`}
                 >
-                  <span>{item.description || "\u00A0"}</span>
+                  <FormattedCellText text={item.description} fallback="\u00A0" />
                   {selectedCell?.row === idx && selectedCell?.col === 0 && !isEditing && (
                     <div
                       className="absolute -bottom-[2px] -right-[2px] w-[5px] h-[5px] bg-[#1d4ed8] pointer-events-none no-print z-30"

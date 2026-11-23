@@ -2,6 +2,8 @@
 
 import { useLayoutEffect, useRef } from "react";
 import { RotateCcw, AlertTriangle } from "lucide-react";
+import { FormattedCellText } from "@/components/ui/formatted-cell-text";
+import { handleTextFormattingKeyDown } from "@/lib/format-text-helpers";
 
 interface EditableDescriptionCellProps {
   value: string;
@@ -53,7 +55,7 @@ export default function EditableDescriptionCell({
   }, [value, readOnly]);
 
   if (readOnly) {
-    return <span className="whitespace-pre-wrap">{value}</span>;
+    return <FormattedCellText text={value} className="whitespace-pre-wrap" />;
   }
 
   const focusSibling = (dir: 1 | -1) => {
@@ -70,6 +72,10 @@ export default function EditableDescriptionCell({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (handleTextFormattingKeyDown(e, onChange)) {
+      return;
+    }
+
     const el = e.currentTarget;
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -98,15 +104,15 @@ export default function EditableDescriptionCell({
         onFocus={() => (valueOnFocus.current = value)}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
-        title="Click to edit · Enter = next row · Shift+Enter = new line · Esc = undo"
+        title="Click to edit · Ctrl+B = Bold · Ctrl+I = Italic · Enter = next row · Shift+Enter = new line · Esc = undo"
         className={`print:hidden block w-full resize-none overflow-hidden bg-transparent p-0 m-0 border-0 outline-none rounded-[2px] cursor-text
           [font:inherit] [line-height:inherit] [color:inherit] [text-align:inherit]
           hover:bg-blue-50/70 focus:bg-blue-50 focus:ring-1 focus:ring-blue-400 transition-colors
           ${edited ? "underline decoration-dotted decoration-blue-400 underline-offset-2" : ""}
           ${sourceChanged ? "bg-amber-50 ring-1 ring-amber-300" : ""}`}
       />
-      {/* Printed output uses plain text so the document looks exactly like the template */}
-      <span className="hidden print:inline whitespace-pre-wrap">{value}</span>
+      {/* Printed output uses formatted text */}
+      <FormattedCellText text={value} className="hidden print:inline whitespace-pre-wrap" />
 
       {(edited || sourceChanged) && (
         <div

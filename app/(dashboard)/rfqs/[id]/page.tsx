@@ -29,6 +29,8 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import ConfirmModal from "@/components/ui/confirm-modal";
 import { EditablePreviewInput } from "@/components/documents/editable-preview-input";
 import { RfqExcelTableGrid, RfqLineItem } from "@/components/documents/rfq-excel-table-grid";
+import { FormattedCellText } from "@/components/ui/formatted-cell-text";
+import { handleTextFormattingKeyDown } from "@/lib/format-text-helpers";
 
 interface MainItemRef {
   rawIndex: number;
@@ -1437,7 +1439,10 @@ export default function RfqLivePreviewPage() {
 
                 {/* Description */}
                 <div>
-                  <label className="form-label text-xs">Description *</label>
+                  <div className="flex items-center justify-between">
+                    <label className="form-label text-xs">Description *</label>
+                    <span className="text-[10px] text-slate-400">Ctrl+B (Bold) · Ctrl+I (Italic)</span>
+                  </div>
                   <textarea
                     rows={3}
                     value={activeMain.item.description || ""}
@@ -1446,6 +1451,14 @@ export default function RfqLivePreviewPage() {
                         description: e.target.value,
                         descriptionEdited: true,
                       })
+                    }
+                    onKeyDown={(e) =>
+                      handleTextFormattingKeyDown(e, (newVal) =>
+                        updateItemAt(activeMain.rawIndex, {
+                          description: newVal,
+                          descriptionEdited: true,
+                        })
+                      )
                     }
                     className="form-input text-sm"
                     placeholder="Enter item description..."
@@ -1520,7 +1533,7 @@ export default function RfqLivePreviewPage() {
                           className="flex items-center justify-between p-2.5 bg-slate-50/80 border border-slate-200/80 rounded-xl text-xs"
                         >
                           <span className="text-slate-800 font-medium truncate pr-2">
-                            {spec.item.description || "(Empty specification)"}
+                            <FormattedCellText text={spec.item.description} fallback="(Empty specification)" />
                           </span>
                           <button
                             type="button"
@@ -1644,7 +1657,10 @@ export default function RfqLivePreviewPage() {
                 </div>
 
                 <div>
-                  <label className="form-label text-xs">Description</label>
+                  <div className="flex items-center justify-between">
+                    <label className="form-label text-xs">Description</label>
+                    <span className="text-[10px] text-slate-400">Ctrl+B (Bold) · Ctrl+I (Italic)</span>
+                  </div>
                   <textarea
                     rows={3}
                     value={activeSpec.item.description || ""}
@@ -1653,6 +1669,14 @@ export default function RfqLivePreviewPage() {
                         description: e.target.value,
                         descriptionEdited: true,
                       })
+                    }
+                    onKeyDown={(e) =>
+                      handleTextFormattingKeyDown(e, (newVal) =>
+                        updateItemAt(activeSpec.rawIndex, {
+                          description: newVal,
+                          descriptionEdited: true,
+                        })
+                      )
                     }
                     className="form-input text-sm"
                     placeholder="Enter specification details..."

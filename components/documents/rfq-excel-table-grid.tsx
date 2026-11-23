@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Plus } from "lucide-react";
+import { FormattedCellText } from "@/components/ui/formatted-cell-text";
+import { toggleCellFormat, applyInlineFormat, FormatType } from "@/lib/format-text-helpers";
 
 export interface RfqLineItem {
   id?: string;
@@ -216,6 +218,18 @@ export function RfqExcelTableGrid({
 
     const { row, col } = selectedCell;
 
+    // Excel mode: Ctrl+B (bold) or Ctrl+I (italic) formatting on selected cell
+    if ((e.ctrlKey || e.metaKey) && (e.key === "b" || e.key === "B" || e.key === "i" || e.key === "I")) {
+      e.preventDefault();
+      const format: FormatType = (e.key === "b" || e.key === "B") ? "bold" : "italic";
+      const currentVal = getCellValue(row, col);
+      if (currentVal) {
+        const nextVal = toggleCellFormat(currentVal, format);
+        commitCellValue(row, col, nextVal);
+      }
+      return;
+    }
+
     switch (e.key) {
       case "ArrowUp":
         e.preventDefault();
@@ -273,6 +287,27 @@ export function RfqExcelTableGrid({
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (!selectedCell) return;
     const { row, col } = selectedCell;
+
+    // Word mode: Ctrl+B (bold) or Ctrl+I (italic) inline formatting on highlighted text
+    if ((e.ctrlKey || e.metaKey) && (e.key === "b" || e.key === "B" || e.key === "i" || e.key === "I")) {
+      e.preventDefault();
+      const format: FormatType = (e.key === "b" || e.key === "B") ? "bold" : "italic";
+      const target = e.currentTarget;
+      const start = target.selectionStart ?? 0;
+      const end = target.selectionEnd ?? 0;
+      const { newText, newStart, newEnd } = applyInlineFormat(editValue, start, end, format);
+      setEditValue(newText);
+      requestAnimationFrame(() => {
+        if (activeInputRef.current) {
+          activeInputRef.current.setSelectionRange(newStart, newEnd);
+          if (activeInputRef.current.tagName.toLowerCase() === "textarea") {
+            activeInputRef.current.style.height = "auto";
+            activeInputRef.current.style.height = `${Math.max(20, activeInputRef.current.scrollHeight)}px`;
+          }
+        }
+      });
+      return;
+    }
 
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -421,7 +456,7 @@ export function RfqExcelTableGrid({
                       style={{ minHeight: "1.25rem", fontSize: "11px" }}
                     />
                   ) : (
-                    <span>{item.description || "\u00A0"}</span>
+                    <FormattedCellText text={item.description} fallback="\u00A0" />
                   )}
 
                   {selectedCell?.row === idx && selectedCell?.col === 0 && !isEditing && (
