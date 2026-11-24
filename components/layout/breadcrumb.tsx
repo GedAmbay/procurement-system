@@ -12,13 +12,10 @@ const pageTitles: Record<string, string> = {
   "/abstract": "Abstract of Canvass",
   "/purchase-orders": "Purchase Orders",
   "/suppliers": "Suppliers",
-  "/items": "Items & Catalog",
   "/signatories": "Signatories",
-  "/fund-sources": "Fund Sources",
   "/offices": "Offices",
   "/users": "User Management",
   "/audit-log": "Audit Trail",
-  "/reports": "Reports",
   "/acceptances": "Acceptance & Inspection",
   "/archives": "Archives",
 };

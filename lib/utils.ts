@@ -90,7 +90,7 @@ export type Role = keyof typeof ROLES;
 export const ROLE_LABELS: Record<string, string> = {
   ADMIN: "System Administrator",
   BAC_SECRETARIAT: "BAC Secretariat",
-  END_USER: "End User (BAC Secretariat Staff)",
+  END_USER: "Clerk",
 };
 
 export const PR_STATUS_LABELS: Record<string, string> = {

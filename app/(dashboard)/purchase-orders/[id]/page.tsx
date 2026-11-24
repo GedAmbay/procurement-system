@@ -217,8 +217,8 @@ export default function PurchaseOrderEditor() {
           const winningQuote =
             validQuotes.length > 0
               ? validQuotes.reduce((prev: any, curr: any) =>
-                  prev.totalAmount < curr.totalAmount ? prev : curr
-                )
+                prev.totalAmount < curr.totalAmount ? prev : curr
+              )
               : null;
 
           const resolvedSupplierId = data.supplierId || winningQuote?.supplierId || "";
@@ -674,8 +674,8 @@ export default function PurchaseOrderEditor() {
   const winningQuote =
     validQuotes.length > 0
       ? validQuotes.reduce((prev: any, curr: any) =>
-          prev.totalAmount < curr.totalAmount ? prev : curr
-        )
+        prev.totalAmount < curr.totalAmount ? prev : curr
+      )
       : null;
 
   const selectedSupplier =
@@ -700,18 +700,18 @@ export default function PurchaseOrderEditor() {
     calculatedItemsTotal > 0
       ? calculatedItemsTotal
       : poData.totalAmount && poData.totalAmount > 0
-      ? poData.totalAmount
-      : winningQuote?.totalAmount || 0;
+        ? poData.totalAmount
+        : winningQuote?.totalAmount || 0;
 
   const supplierName = selectedSupplier?.name || "";
   const supplierFontSize =
     supplierName.length > 55
       ? "text-[10px]"
       : supplierName.length > 42
-      ? "text-[11.5px]"
-      : supplierName.length > 30
-      ? "text-[13px]"
-      : "text-[15px]";
+        ? "text-[11.5px]"
+        : supplierName.length > 30
+          ? "text-[13px]"
+          : "text-[15px]";
 
   const supplierAddress = selectedSupplier?.address || "";
   let addressLine1 = supplierAddress;
@@ -753,8 +753,8 @@ export default function PurchaseOrderEditor() {
               {poData.poNumber?.trim()
                 ? poData.poNumber.trim()
                 : isJob
-                ? "Job Order"
-                : "Purchase Order"}
+                  ? "Job Order"
+                  : "Purchase Order"}
             </h2>
             <div className="flex items-center gap-2">
               {poData.status === "COMPLETED" ? (
@@ -802,14 +802,14 @@ export default function PurchaseOrderEditor() {
           {(poData.status === "SIGNED" ||
             poData.status === "PARTIALLY_DELIVERED" ||
             poData.status === "COMPLETED") && (
-            <Link
-              href={`/acceptances/hub/${poData.id}`}
-              className="flex items-center gap-2 text-slate-700 hover:text-slate-900 font-medium text-sm px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
-            >
-              <Package size={17} className="text-emerald-600" />
-              <span>Delivery Hub</span>
-            </Link>
-          )}
+              <Link
+                href={`/acceptances/hub/${poData.id}`}
+                className="flex items-center gap-2 text-slate-700 hover:text-slate-900 font-medium text-sm px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                <Package size={17} className="text-emerald-600" />
+                <span>Delivery Hub</span>
+              </Link>
+            )}
 
           <div className="h-5 w-px bg-slate-200 mx-1" />
 
@@ -1331,11 +1331,10 @@ export default function PurchaseOrderEditor() {
                       type="button"
                       onClick={() => !isReadOnly && setValue("orderType", "PURCHASE")}
                       disabled={isReadOnly}
-                      className={`py-1.5 px-3 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${
-                        !isJob
+                      className={`py-1.5 px-3 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${!isJob
                           ? "bg-white text-blue-600 shadow-sm border border-slate-200/60"
                           : "text-slate-500 hover:text-slate-800"
-                      }`}
+                        }`}
                     >
                       <span>Purchase Order</span>
                     </button>
@@ -1343,11 +1342,10 @@ export default function PurchaseOrderEditor() {
                       type="button"
                       onClick={() => !isReadOnly && setValue("orderType", "JOB")}
                       disabled={isReadOnly}
-                      className={`py-1.5 px-3 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${
-                        isJob
+                      className={`py-1.5 px-3 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${isJob
                           ? "bg-indigo-600 text-white shadow-sm"
                           : "text-slate-500 hover:text-slate-800"
-                      }`}
+                        }`}
                     >
                       <span>Job Order</span>
                     </button>
@@ -1632,7 +1630,7 @@ export default function PurchaseOrderEditor() {
                     <label className="form-label">
                       Description <span className="text-red-500">*</span>
                     </label>
-                    <span className="text-[10px] text-slate-400">Ctrl+B (Bold) · Ctrl+I (Italic)</span>
+
                   </div>
                   <textarea
                     rows={2}
@@ -1675,11 +1673,10 @@ export default function PurchaseOrderEditor() {
                         type="button"
                         onClick={() => !isReadOnly && updateItemAt(activeMain.rawIndex, { unit: u })}
                         disabled={isReadOnly}
-                        className={`text-[11px] px-2 py-0.5 rounded-md border transition-colors ${
-                          activeMain.item.unit?.toLowerCase() === u.toLowerCase()
+                        className={`text-[11px] px-2 py-0.5 rounded-md border transition-colors ${activeMain.item.unit?.toLowerCase() === u.toLowerCase()
                             ? "bg-blue-600 text-white border-blue-600"
                             : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
-                        }`}
+                          }`}
                       >
                         {u}
                       </button>
@@ -1728,7 +1725,7 @@ export default function PurchaseOrderEditor() {
                     ₱
                     {formatCurrency(
                       (typeof activeMain.item.quantity === "number" ? activeMain.item.quantity : 0) *
-                        (typeof activeMain.item.unitPrice === "number" ? activeMain.item.unitPrice : 0)
+                      (typeof activeMain.item.unitPrice === "number" ? activeMain.item.unitPrice : 0)
                     ).replace("₱", "")}
                   </span>
                 </div>
@@ -1905,7 +1902,7 @@ export default function PurchaseOrderEditor() {
                 <div>
                   <div className="flex items-center justify-between">
                     <label className="form-label">Description</label>
-                    <span className="text-[10px] text-slate-400">Ctrl+B (Bold) · Ctrl+I (Italic)</span>
+
                   </div>
                   <textarea
                     rows={3}

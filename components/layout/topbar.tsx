@@ -2,8 +2,17 @@
 
 import { signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
-import { Bell, LogOut, ChevronDown, User, PanelLeft } from "lucide-react";
-import { ROLE_LABELS } from "@/lib/utils";
+import Link from "next/link";
+import {
+  Bell,
+  LogOut,
+  ChevronDown,
+  User,
+  PanelLeft,
+  Building2,
+  Users,
+  FileText,
+} from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { useSidebar } from "@/components/layout/sidebar-context";
@@ -24,26 +33,31 @@ const pageTitles: Record<string, string> = {
   "/abstract": "Abstract of Canvass",
   "/purchase-orders": "Purchase Orders",
   "/suppliers": "Suppliers",
-  "/items": "Items & Catalog",
   "/signatories": "Signatories",
-  "/fund-sources": "Fund Sources",
   "/offices": "Offices",
   "/users": "User Management",
   "/audit-log": "Audit Trail",
-  "/reports": "Reports",
   "/acceptances": "Acceptance & Inspection",
   "/archives": "Archives",
 };
+
+interface CalendarNotification {
+  id: string;
+  title: string;
+  message: string;
+  date: string | Date;
+}
 
 export default function Topbar({ user }: TopbarProps) {
   const pathname = usePathname();
   const { isEditor, isRail, isOverlayOpen, toggleOverlay, toggleButtonRef } = useSidebar();
   const [showMenu, setShowMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications, setNotifications] = useState<any[]>([]);
-  
+  const [notifications, setNotifications] = useState<CalendarNotification[]>([]);
+
   const notifRef = useRef<HTMLDivElement>(null);
-  
+  const menuRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     async function fetchNotifs() {
       if (user.role === "ADMIN" || user.role === "BAC_SECRETARIAT") {
@@ -66,9 +80,22 @@ export default function Topbar({ user }: TopbarProps) {
       if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
         setShowNotifications(false);
       }
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setShowNotifications(false);
+        setShowMenu(false);
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
   }, []);
 
   const getTitle = () => {
@@ -162,92 +189,145 @@ export default function Topbar({ user }: TopbarProps) {
         </div>
 
         {/* User menu */}
-        <div style={{ position: "relative" }}>
+        <div style={{ position: "relative" }} ref={menuRef}>
           <button
             onClick={() => setShowMenu(!showMenu)}
+            type="button"
+            aria-expanded={showMenu}
+            aria-haspopup="true"
+            className={`group flex items-center gap-2.5 py-1 pl-1.5 pr-3 rounded-full cursor-pointer transition-all duration-200 select-none ${showMenu
+              ? "bg-white ring-2 ring-blue-500/20 shadow-sm"
+              : "bg-[var(--color-page-bg)] hover:bg-white/80"
+              }`}
             style={{
-              display: "flex", alignItems: "center", gap: "0.5rem",
-              padding: "0.5rem 1rem 0.5rem 0.5rem",
-              border: "none", borderRadius: "9999px",
-              background: "var(--color-page-bg)",
-              boxShadow: "var(--shadow-neu-drop-sm)",
-              cursor: "pointer",
-              transition: "all 0.2s ease-in-out",
+              boxShadow: showMenu ? "0 4px 12px rgba(15,23,42,0.08)" : "var(--shadow-neu-drop-sm)",
             }}
-            onMouseDown={(e) => e.currentTarget.style.boxShadow = "var(--shadow-neu-inner-sm)"}
-            onMouseUp={(e) => e.currentTarget.style.boxShadow = "var(--shadow-neu-drop-sm)"}
           >
-            <div style={{
-              width: "28px", height: "28px", borderRadius: "50%",
-              background: "linear-gradient(135deg, #2563eb, #7c3aed)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              color: "white", fontWeight: "700", fontSize: "0.75rem",
-            }}>
-              {user.name?.charAt(0) ?? "U"}
+            {/* Avatar with User icon & online dot */}
+            <div className="relative shrink-0">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white ring-2 ring-white/90 shadow-2xs">
+                <User size={15} className="stroke-[2.25]" />
+              </div>
+              <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full" />
             </div>
-            <div style={{ textAlign: "left", display: "block" }}>
-              <div style={{ fontSize: "0.8125rem", fontWeight: "600", color: "#0f172a", lineHeight: "1.2" }}>
+
+            {/* User name & role label */}
+            <div className="text-left hidden sm:block">
+              <div className="text-sm font-bold text-slate-800 leading-tight group-hover:text-blue-600 transition-colors">
                 {user.name?.split(" ")[0]}
               </div>
-              <div style={{ fontSize: "0.625rem", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.03em" }}>
-                {user.role?.replace(/_/g, " ")}
+              <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest leading-none mt-0.5">
+                {user.role === "END_USER" ? "CLERK" : user.role?.replace(/_/g, " ")}
               </div>
             </div>
-            <ChevronDown size={14} color="#94a3b8" />
+
+            {/* Chevron with rotation animation */}
+            <ChevronDown
+              size={14}
+              className={`text-slate-400 transition-transform duration-200 ${showMenu ? "rotate-180 text-blue-600" : "group-hover:text-slate-600"
+                }`}
+            />
           </button>
 
           {showMenu && (
-            <>
-              <div
-                style={{ position: "fixed", inset: 0, zIndex: 40 }}
-                onClick={() => setShowMenu(false)}
-              />
-              <div style={{
-                position: "absolute", right: 0, top: "calc(100% + 1rem)",
-                background: "var(--color-page-bg)", border: "none",
-                borderRadius: "1rem", minWidth: "220px",
-                boxShadow: "var(--shadow-neu-drop)",
-                zIndex: 50, overflow: "hidden",
+            <div
+              className="absolute right-0 top-[calc(100%+0.625rem)] w-72 bg-white/98 backdrop-blur-md rounded-2xl border border-slate-200/90 shadow-[0_20px_45px_-12px_rgba(15,23,42,0.18),0_4px_12px_-2px_rgba(15,23,42,0.06)] z-50 overflow-hidden"
+              style={{
                 transformOrigin: "top right",
-                animation: "dropdownOpen 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards",
-              }}>
-                <div style={{ padding: "1rem", borderBottom: "1px solid rgba(209, 217, 230, 0.5)" }}>
-                  <div style={{ fontSize: "0.875rem", fontWeight: "600", color: "#0f172a" }}>{user.name}</div>
-                  <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>{user.email}</div>
-                  <div style={{
-                    marginTop: "0.375rem",
-                    display: "inline-block",
-                    background: "#eff6ff",
-                    color: "#1d4ed8",
-                    fontSize: "0.625rem",
-                    fontWeight: "700",
-                    padding: "0.1rem 0.5rem",
-                    borderRadius: "4px",
-                    textTransform: "uppercase",
-                  }}>
-                    {ROLE_LABELS[user.role ?? ""] ?? user.role}
+                animation: "dropdownOpen 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+              }}
+            >
+              {/* Header: User Identity & Profile details */}
+              <div className="p-3.5 bg-gradient-to-b from-slate-50 via-blue-50/30 to-white border-b border-slate-100">
+                <div className="flex items-start gap-3">
+                  <div className="relative shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white ring-2 ring-white shadow-xs">
+                      <User size={18} className="stroke-[2.25]" />
+                    </div>
+                    <span
+                      className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full flex items-center justify-center"
+                      title="Active Session"
+                    >
+                      <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                    </span>
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[13px] font-bold text-slate-900 truncate tracking-tight leading-snug">
+                      {user.name}
+                    </div>
+                    <div className="text-[11px] text-slate-500 truncate mt-0.5 font-normal">
+                      {user.email || "No email registered"}
+                    </div>
                   </div>
                 </div>
-                <div style={{ padding: "0.5rem" }}>
-                  <button
-                    onClick={() => signOut({ callbackUrl: "/login" })}
-                    style={{
-                      width: "100%", display: "flex", alignItems: "center", gap: "0.625rem",
-                      padding: "0.5rem 0.75rem", borderRadius: "0.5rem",
-                      border: "none", background: "none", cursor: "pointer",
-                      color: "#dc2626", fontSize: "0.875rem", fontWeight: "500",
-                      transition: "background 0.15s",
-                      textAlign: "left",
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = "#fef2f2")}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
-                  >
-                    <LogOut size={16} />
-                    Sign Out
-                  </button>
+
+                <div className="mt-2.5 pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
+                  <span className="inline-flex items-center gap-1 font-medium text-slate-600 truncate max-w-[170px]">
+                    <Building2 size={12} className="text-slate-400 shrink-0" />
+                    {user.officeName || "Bids & Awards Committee"}
+                  </span>
+                  <span className="text-[10px] font-medium text-slate-400 shrink-0">
+                    Pandan, Antique
+                  </span>
                 </div>
               </div>
-            </>
+
+              {/* Quick Role Navigation Links */}
+              {(user.role === "ADMIN" || user.role === "BAC_SECRETARIAT") && (
+                <div className="p-1.5 space-y-0.5">
+                  {user.role === "ADMIN" && (
+                    <Link
+                      href="/users"
+                      onClick={() => setShowMenu(false)}
+                      className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-medium text-slate-700 hover:text-blue-600 hover:bg-slate-50 transition-colors group"
+                    >
+                      <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 group-hover:text-blue-600 group-hover:bg-blue-50 transition-colors">
+                        <Users size={14} />
+                      </div>
+                      <div className="flex-1">
+                        <span className="font-semibold block">User Management</span>
+                        <span className="text-[10px] text-slate-400 block font-normal leading-tight">
+                          System accounts & roles
+                        </span>
+                      </div>
+                    </Link>
+                  )}
+
+                  <Link
+                    href="/audit-log"
+                    onClick={() => setShowMenu(false)}
+                    className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-medium text-slate-700 hover:text-blue-600 hover:bg-slate-50 transition-colors group"
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 group-hover:text-blue-600 group-hover:bg-blue-50 transition-colors">
+                      <FileText size={14} />
+                    </div>
+                    <div className="flex-1">
+                      <span className="font-semibold block">Audit Trail</span>
+                      <span className="text-[10px] text-slate-400 block font-normal leading-tight">
+                        System events & activity
+                      </span>
+                    </div>
+                  </Link>
+                </div>
+              )}
+
+              {/* Sign Out Button */}
+              <div className="p-1.5 border-t border-slate-100 bg-slate-50/50">
+                <button
+                  onClick={() => signOut({ callbackUrl: "/login" })}
+                  type="button"
+                  className="group w-full flex items-center gap-2.5 p-2 rounded-xl hover:bg-red-50 text-slate-700 hover:text-red-600 transition-all duration-150 cursor-pointer"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-red-100/70 text-red-600 flex items-center justify-center group-hover:bg-red-600 group-hover:text-white transition-all shadow-2xs">
+                    <LogOut size={15} className="stroke-[2.25]" />
+                  </div>
+                  <span className="text-xs font-semibold leading-tight group-hover:text-red-700">
+                    Sign Out
+                  </span>
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </div>

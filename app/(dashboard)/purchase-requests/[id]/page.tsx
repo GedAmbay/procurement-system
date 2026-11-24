@@ -1143,8 +1143,8 @@ export default function PurchaseRequestEditor() {
               {isReadOnly
                 ? "Read-only while the document is locked."
                 : isNew
-                ? `Edit the details for the ${isJob ? "job request" : "purchase request"}.`
-                : `Update the details for the ${isJob ? "job request" : "purchase request"}.`}
+                  ? `Edit the details for the ${isJob ? "job request" : "purchase request"}.`
+                  : `Update the details for the ${isJob ? "job request" : "purchase request"}.`}
             </p>
           </div>
 
@@ -1290,11 +1290,10 @@ export default function PurchaseRequestEditor() {
                   <div className="space-y-1.5">
                     <label
                       onClick={() => !isReadOnly && setValue("isDirectAcquisition", false)}
-                      className={`p-2.5 rounded-xl border flex items-start gap-2.5 cursor-pointer transition-colors ${
-                        !watchAllFields.isDirectAcquisition
+                      className={`p-2.5 rounded-xl border flex items-start gap-2.5 cursor-pointer transition-colors ${!watchAllFields.isDirectAcquisition
                           ? "border-blue-400 bg-blue-50/50"
                           : "border-slate-200 hover:bg-slate-50"
-                      }`}
+                        }`}
                     >
                       <input
                         type="radio"
@@ -1311,11 +1310,10 @@ export default function PurchaseRequestEditor() {
 
                     <label
                       onClick={() => !isReadOnly && setValue("isDirectAcquisition", true)}
-                      className={`p-2.5 rounded-xl border flex items-start gap-2.5 cursor-pointer transition-colors ${
-                        watchAllFields.isDirectAcquisition
+                      className={`p-2.5 rounded-xl border flex items-start gap-2.5 cursor-pointer transition-colors ${watchAllFields.isDirectAcquisition
                           ? "border-blue-400 bg-blue-50/50"
                           : "border-slate-200 hover:bg-slate-50"
-                      }`}
+                        }`}
                     >
                       <input
                         type="radio"
@@ -1427,7 +1425,7 @@ export default function PurchaseRequestEditor() {
                 <div>
                   <div className="flex items-center justify-between">
                     <label className="form-label text-xs">Description *</label>
-                    <span className="text-[10px] text-slate-400">Ctrl+B (Bold) · Ctrl+I (Italic)</span>
+
                   </div>
                   <textarea
                     rows={2}
@@ -1464,11 +1462,10 @@ export default function PurchaseRequestEditor() {
                           key={u}
                           type="button"
                           onClick={() => !isReadOnly && updateItemAt(activeMain.rawIndex, { unit: u })}
-                          className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border transition-colors ${
-                            isSelected
+                          className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border transition-colors ${isSelected
                               ? "bg-blue-600 text-white border-blue-600 shadow-2xs"
                               : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
-                          }`}
+                            }`}
                         >
                           {u}
                         </button>
@@ -1656,7 +1653,7 @@ export default function PurchaseRequestEditor() {
                 <div>
                   <div className="flex items-center justify-between">
                     <label className="form-label text-xs">Description</label>
-                    <span className="text-[10px] text-slate-400">Ctrl+B (Bold) · Ctrl+I (Italic)</span>
+
                   </div>
                   <textarea
                     rows={2}

@@ -996,8 +996,8 @@ export default function RfqLivePreviewPage() {
                         {watchDeadline
                           ? formatDate(watchDeadline)
                           : rfq.deadline
-                          ? formatDate(rfq.deadline)
-                          : "______________________________________"}
+                            ? formatDate(rfq.deadline)
+                            : "______________________________________"}
                       </span>{" "}
                       in the return envelope attached herewith. <br />
                     </div>
@@ -1143,8 +1143,8 @@ export default function RfqLivePreviewPage() {
               {isReadOnly
                 ? "Read-only while the RFQ is issued."
                 : !rfq.rfqNumber
-                ? "Edit the details for the Request for Quotation."
-                : "Update the details for the Request for Quotation."}
+                  ? "Edit the details for the Request for Quotation."
+                  : "Update the details for the Request for Quotation."}
             </p>
           </div>
 
@@ -1441,7 +1441,7 @@ export default function RfqLivePreviewPage() {
                 <div>
                   <div className="flex items-center justify-between">
                     <label className="form-label text-xs">Description *</label>
-                    <span className="text-[10px] text-slate-400">Ctrl+B (Bold) · Ctrl+I (Italic)</span>
+
                   </div>
                   <textarea
                     rows={3}
@@ -1487,11 +1487,10 @@ export default function RfqLivePreviewPage() {
                           key={u}
                           type="button"
                           onClick={() => !isReadOnly && updateItemAt(activeMain.rawIndex, { unit: u })}
-                          className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border transition-colors ${
-                            isSelected
+                          className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border transition-colors ${isSelected
                               ? "bg-blue-600 text-white border-blue-600 shadow-2xs"
                               : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
-                          }`}
+                            }`}
                         >
                           {u}
                         </button>
@@ -1659,7 +1658,7 @@ export default function RfqLivePreviewPage() {
                 <div>
                   <div className="flex items-center justify-between">
                     <label className="form-label text-xs">Description</label>
-                    <span className="text-[10px] text-slate-400">Ctrl+B (Bold) · Ctrl+I (Italic)</span>
+
                   </div>
                   <textarea
                     rows={3}

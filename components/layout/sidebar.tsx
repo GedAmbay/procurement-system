@@ -4,8 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, ShoppingCart, FileText, ClipboardList,
-  Package, Users, Building2, Tag, Wallet,
-  BarChart3, History, ChevronRight, CheckSquare, Archive,
+  Package, Users, Building2,
+  History, ChevronRight, CheckSquare, Archive,
   X, Pin, PinOff
 } from "lucide-react";
 import { LGU_INFO } from "@/lib/utils";
@@ -43,9 +43,7 @@ const navItems = [
     section: "Master Data",
     items: [
       { label: "Suppliers", href: "/suppliers", icon: Building2, roles: [] },
-      { label: "Items & Catalog", href: "/items", icon: Tag, roles: [] },
       { label: "Signatories", href: "/signatories", icon: Users, roles: [] },
-      { label: "Fund Sources", href: "/fund-sources", icon: Wallet, roles: [] },
       { label: "Offices", href: "/offices", icon: Building2, roles: [] },
     ],
   },
@@ -54,7 +52,6 @@ const navItems = [
     items: [
       { label: "User Management", href: "/users", icon: Users, roles: ["ADMIN"] },
       { label: "Audit Trail", href: "/audit-log", icon: History, roles: ["ADMIN", "BAC_SECRETARIAT"] },
-      { label: "Reports", href: "/reports", icon: BarChart3, roles: [] },
     ],
   },
 ];
