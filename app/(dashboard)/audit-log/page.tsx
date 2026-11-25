@@ -70,6 +70,8 @@ const DOC_TYPES = [
   { value: "ABSTRACT", label: "Abstract of Canvass" },
   { value: "PO", label: "Purchase Order (PO)" },
   { value: "ACCEPTANCE", label: "Inspection & Acceptance (AIR)" },
+  { value: "AUTH", label: "Authentication & Security" },
+  { value: "USER", label: "User Account Management" },
 ];
 
 const ACTIONS = [
@@ -81,6 +83,12 @@ const ACTIONS = [
   { value: "FINALIZE", label: "Finalized" },
   { value: "OPENED", label: "Viewed / Opened" },
   { value: "DELETE", label: "Deleted" },
+  { value: "LOGIN_SUCCESS", label: "Sign In Success" },
+  { value: "LOGIN_FAILED", label: "Sign In Failed" },
+  { value: "ACCOUNT_LOCKED", label: "Account Locked" },
+  { value: "ACCOUNT_UNLOCKED", label: "Account Unlocked" },
+  { value: "PASSWORD_CHANGED", label: "Password Changed" },
+  { value: "PASSWORD_RESET", label: "Admin Password Reset" },
 ];
 
 function getActionBadge(action: string) {

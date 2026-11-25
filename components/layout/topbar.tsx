@@ -12,6 +12,7 @@ import {
   Building2,
   Users,
   FileText,
+  KeyRound,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
@@ -20,6 +21,7 @@ import { useSidebar } from "@/components/layout/sidebar-context";
 interface TopbarProps {
   user: {
     name?: string | null;
+    username?: string | null;
     email?: string | null;
     role?: string;
     officeName?: string;
@@ -257,7 +259,8 @@ export default function Topbar({ user }: TopbarProps) {
                       {user.name}
                     </div>
                     <div className="text-[11px] text-slate-500 truncate mt-0.5 font-normal">
-                      {user.email || "No email registered"}
+                      {user.username ? `ID: ${user.username}` : user.email || "No ID"}
+                      {user.email && user.username ? ` • ${user.email}` : ""}
                     </div>
                   </div>
                 </div>
@@ -311,6 +314,25 @@ export default function Topbar({ user }: TopbarProps) {
                   </Link>
                 </div>
               )}
+
+              {/* Account & Change Password */}
+              <div className="p-1.5 border-t border-slate-100">
+                <Link
+                  href="/change-password"
+                  onClick={() => setShowMenu(false)}
+                  className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-medium text-slate-700 hover:text-blue-600 hover:bg-slate-50 transition-colors group"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 group-hover:text-blue-600 group-hover:bg-blue-50 transition-colors">
+                    <KeyRound size={14} />
+                  </div>
+                  <div className="flex-1">
+                    <span className="font-semibold block">Change Password</span>
+                    <span className="text-[10px] text-slate-400 block font-normal leading-tight">
+                      Update your login password
+                    </span>
+                  </div>
+                </Link>
+              </div>
 
               {/* Sign Out Button */}
               <div className="p-1.5 border-t border-slate-100 bg-slate-50/50">

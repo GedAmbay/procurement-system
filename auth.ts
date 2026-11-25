@@ -1,12 +1,43 @@
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+
+class AccountLockedError extends CredentialsSignin {
+  code = "account_locked";
+}
+
+class AccountInactiveError extends CredentialsSignin {
+  code = "account_inactive";
+}
+
+async function logAuthEvent(userId: string, action: string, notes: string) {
+  try {
+    await prisma.documentAuditLog.create({
+      data: {
+        documentType: "AUTH",
+        documentId: userId,
+        action,
+        userId,
+        notes,
+      },
+    });
+  } catch {
+    // Non-blocking audit log write
+  }
+}
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma),
-  session: { strategy: "jwt" },
+  session: {
+    strategy: "jwt",
+    maxAge: 8 * 60 * 60, // 8 hours
+    updateAge: 15 * 60,
+  },
   pages: {
     signIn: "/login",
   },
@@ -14,78 +45,155 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     CredentialsProvider({
       name: "credentials",
       credentials: {
-        email: { label: "Email", type: "email" },
+        username: { label: "Employee ID / Username", type: "text" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+        const rawUsername = (credentials?.username as string | undefined)?.trim();
+        const rawPassword = credentials?.password as string | undefined;
+        if (!rawUsername || !rawPassword) return null;
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string },
+        const user = await prisma.user.findFirst({
+          where: {
+            username: { equals: rawUsername, mode: "insensitive" },
+          },
           include: { office: true },
         });
 
-        if (!user || !user.isActive) return null;
+        if (!user) return null;
 
-        const isValid = await bcrypt.compare(
-          credentials.password as string,
-          user.password
-        );
-        if (!isValid) return null;
+        if (!user.isActive) {
+          await logAuthEvent(user.id, "LOGIN_FAILED", "Login blocked: account is inactive.");
+          throw new AccountInactiveError();
+        }
+
+        if (user.lockedUntil && user.lockedUntil > new Date()) {
+          await logAuthEvent(user.id, "LOGIN_FAILED", "Login blocked: account is temporarily locked.");
+          throw new AccountLockedError();
+        }
+
+        const isValid = await bcrypt.compare(rawPassword, user.password);
+
+        if (!isValid) {
+          const nextAttempts = (user.failedLoginAttempts ?? 0) + 1;
+          const shouldLock = nextAttempts >= MAX_FAILED_ATTEMPTS;
+
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              failedLoginAttempts: shouldLock ? 0 : nextAttempts,
+              lockedUntil: shouldLock ? new Date(Date.now() + LOCKOUT_DURATION_MS) : null,
+            },
+          });
+
+          await logAuthEvent(
+            user.id,
+            shouldLock ? "ACCOUNT_LOCKED" : "LOGIN_FAILED",
+            shouldLock
+              ? "Account locked for 15 minutes after 5 failed login attempts."
+              : `Failed login attempt (${nextAttempts}/${MAX_FAILED_ATTEMPTS}).`
+          );
+
+          if (shouldLock) {
+            throw new AccountLockedError();
+          }
+          return null;
+        }
+
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            failedLoginAttempts: 0,
+            lockedUntil: null,
+            lastLoginAt: new Date(),
+          },
+        });
+
+        await logAuthEvent(user.id, "LOGIN_SUCCESS", `Signed in as ${user.username}.`);
 
         return {
           id: user.id,
           name: user.name,
+          username: user.username,
           email: user.email,
           role: user.role,
           officeId: user.officeId,
           officeName: user.office?.name,
+          mustChangePassword: user.mustChangePassword,
         };
       },
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
+        token.id = user.id;
+        token.username = (user as any).username;
+        token.email = user.email;
         token.role = (user as any).role;
         token.officeId = (user as any).officeId;
         token.officeName = (user as any).officeName;
-        token.id = user.id;
+        token.mustChangePassword = Boolean((user as any).mustChangePassword);
+        token.loginAt = Date.now();
+        return token;
       }
+
+      if (token?.id) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: {
+              id: true,
+              name: true,
+              username: true,
+              email: true,
+              role: true,
+              officeId: true,
+              isActive: true,
+              mustChangePassword: true,
+              passwordChangedAt: true,
+              office: { select: { name: true } },
+            },
+          });
+
+          if (!dbUser || !dbUser.isActive) {
+            return null;
+          }
+
+          if (trigger === "update") {
+            token.loginAt = Date.now();
+          } else if (
+            dbUser.passwordChangedAt &&
+            token.loginAt &&
+            dbUser.passwordChangedAt.getTime() > (token.loginAt as number)
+          ) {
+            return null;
+          }
+
+          token.name = dbUser.name;
+          token.username = dbUser.username;
+          token.email = dbUser.email;
+          token.role = dbUser.role;
+          token.officeId = dbUser.officeId;
+          token.officeName = dbUser.office?.name;
+          token.mustChangePassword = dbUser.mustChangePassword;
+        } catch {
+          // Keep existing token if transient DB error occurs
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {
-      if (token) {
-        session.user.id = (token.id || token.sub) as string;
-        (session.user as any).role = token.role;
-        (session.user as any).officeId = token.officeId;
-        (session.user as any).officeName = token.officeName;
-
-        // Auto-heal session if database was migrated or re-seeded (stale JWT cookie from previous DB)
-        if (session.user.email) {
-          try {
-            const currentDbUser = await prisma.user.findUnique({
-              where: { id: session.user.id },
-              select: { id: true, officeId: true, role: true, office: { select: { name: true } } },
-            });
-
-            if (!currentDbUser) {
-              const matchedUser = await prisma.user.findUnique({
-                where: { email: session.user.email },
-                select: { id: true, officeId: true, role: true, office: { select: { name: true } } },
-              });
-              if (matchedUser) {
-                session.user.id = matchedUser.id;
-                (session.user as any).officeId = matchedUser.officeId;
-                (session.user as any).officeName = matchedUser.office?.name;
-                (session.user as any).role = matchedUser.role;
-              }
-            }
-          } catch {
-            // Fail open to standard session data if DB query errors
-          }
-        }
-      }
+      if (!token) return session;
+      session.user.id = (token.id || token.sub) as string;
+      session.user.name = (token.name as string) ?? session.user.name;
+      session.user.email = (token.email as string | null) ?? "";
+      (session.user as any).username = token.username;
+      (session.user as any).role = token.role;
+      (session.user as any).officeId = token.officeId;
+      (session.user as any).officeName = token.officeName;
+      (session.user as any).mustChangePassword = Boolean(token.mustChangePassword);
       return session;
     },
   },

@@ -11,11 +11,17 @@ datasource db {
 model User {
   id                     String                 @id @default(cuid())
   name                   String
-  email                  String                 @unique
+  username               String                 @unique
+  email                  String?                @unique
   password               String
   role                   String                 @default("END_USER")
   officeId               String?
   isActive               Boolean                @default(true)
+  mustChangePassword     Boolean                @default(false)
+  failedLoginAttempts    Int                    @default(0)
+  lockedUntil            DateTime?
+  lastLoginAt            DateTime?
+  passwordChangedAt      DateTime?
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
   auditLogs              DocumentAuditLog[]

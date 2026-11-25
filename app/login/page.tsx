@@ -1,29 +1,47 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect, Suspense } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
 import { LGU_INFO } from "@/lib/utils";
 import SplashScreen from "@/components/ui/splash-screen";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [showSplash, setShowSplash] = useState(false);
+
+  useEffect(() => {
+    const reason = searchParams.get("reason");
+    if (reason === "idle") {
+      setError("Your session expired after 30 minutes of inactivity. Please sign in again.");
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setShowSplash(true);
     startTransition(async () => {
-      const result = await signIn("credentials", { email, password, redirect: false });
+      const result = await signIn("credentials", {
+        username: username.trim(),
+        password,
+        redirect: false,
+      });
       if (result?.error) {
-        setError("Invalid email or password. Please try again.");
+        if (result.code === "account_locked") {
+          setError("Account locked for 15 minutes due to 5 failed login attempts. Contact the System Administrator to unlock.");
+        } else if (result.code === "account_inactive") {
+          setError("Your account has been deactivated. Contact the System Administrator.");
+        } else {
+          setError("Invalid Employee ID / Username or password. Please try again.");
+        }
         setShowSplash(false);
       } else {
         router.push("/dashboard");
@@ -31,11 +49,6 @@ export default function LoginPage() {
       }
     });
   };
-
-  const demoAccounts = [
-    { label: "Admin", email: "admin@pandan.gov.ph", password: "Admin@1234", color: "#515050ff" },
-    { label: "BAC", email: "bac@pandan.gov.ph", password: "Bac@1234", color: "#515050ff" },
-  ];
 
   return (
     <>
@@ -195,14 +208,15 @@ export default function LoginPage() {
                   display: "block", color: "#374151",
                   fontSize: "0.8125rem", fontWeight: 600, marginBottom: "0.4rem",
                 }}>
-                  Email Address
+                  Employee ID / Username
                 </label>
                 <input
-                  id="login-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@pandan.gov.ph"
+                  id="login-username"
+                  type="text"
+                  autoComplete="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="e.g., ADMIN-001 or jdelacruz"
                   required
                   style={{
                     width: "100%", padding: "0.7rem 0.875rem",
@@ -281,41 +295,13 @@ export default function LoginPage() {
               </button>
             </form>
 
-            <div style={{ marginTop: "1.75rem", paddingTop: "1.5rem", borderTop: "1px solid #e2e8f0" }}>
-              <p style={{
-                color: "#94a3b8", fontSize: "0.7375rem", fontWeight: 600,
-                textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "0.75rem",
-              }}>
-                Demo Accounts — click to fill
+            <div style={{ marginTop: "1.75rem", paddingTop: "1.25rem", borderTop: "1px solid #e2e8f0" }}>
+              <p style={{ color: "#94a3b8", fontSize: "0.75rem", textAlign: "center", lineHeight: 1.5 }}>
+                Accounts are issued exclusively by the System Administrator.
+                <br />
+                For password resets or access issues, contact your Admin.
               </p>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
-                {demoAccounts.map((acc) => (
-                  <button
-                    key={acc.email}
-                    type="button"
-                    onClick={() => { setEmail(acc.email); setPassword(acc.password); }}
-                    style={{
-                      padding: "0.3rem 0.75rem", borderRadius: "9px",
-                      border: "none",
-                      background: "#ECF0F3", color: acc.color,
-                      fontSize: "0.775rem", fontWeight: 600, cursor: "pointer",
-                      boxShadow: "10px 10px 20px #D1D9E6, -10px -10px 20px #ffffff",
-                      transition: "all 0.2s ease-in-out",
-                    }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = "6px 6px 12px #D1D9E6, -6px -6px 12px #ffffff"; }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = "10px 10px 20px #D1D9E6, -10px -10px 20px #ffffff"; }}
-                    onMouseDown={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = "inset 6px 6px 12px #D1D9E6, inset -6px -6px 12px #ffffff"; }}
-                    onMouseUp={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = "6px 6px 12px #D1D9E6, -6px -6px 12px #ffffff"; }}
-                  >
-                    {acc.label}
-                  </button>
-                ))}
-              </div>
             </div>
-
-            <p style={{ color: "#cbd5e1", fontSize: "0.75rem", textAlign: "center", marginTop: "2rem" }}>
-              For account issues, contact the System Administrator
-            </p>
           </div>
         </div>
 
@@ -327,5 +313,13 @@ export default function LoginPage() {
         `}</style>
       </div>
     </>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
   );
 }

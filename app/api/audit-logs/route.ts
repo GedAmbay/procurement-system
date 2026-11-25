@@ -78,6 +78,7 @@ export async function GET(request: NextRequest) {
         { notes: { contains: search, mode: "insensitive" } },
         { metadata: { contains: search, mode: "insensitive" } },
         { user: { name: { contains: search, mode: "insensitive" } } },
+        { user: { username: { contains: search, mode: "insensitive" } } },
         { user: { email: { contains: search, mode: "insensitive" } } },
       ];
     }

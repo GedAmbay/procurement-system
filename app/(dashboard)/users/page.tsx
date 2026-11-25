@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Users, CheckCircle2, XCircle, Shield, Building2, Pencil, Trash2, UserX, UserCheck } from "lucide-react";
+import { Users, CheckCircle2, Shield, Building2, Pencil, Trash2, UserX, UserCheck, Lock, KeyRound, Unlock } from "lucide-react";
 import DataTable from "@/components/ui/data-table";
 import FormModal from "@/components/ui/form-modal";
 import ConfirmModal from "@/components/ui/confirm-modal";
@@ -13,9 +13,13 @@ import { useSession } from "next-auth/react";
 interface User {
   id: string;
   name: string;
-  email: string;
+  username: string;
+  email?: string | null;
   role: string;
   isActive: boolean;
+  mustChangePassword?: boolean;
+  lockedUntil?: string | null;
+  lastLoginAt?: string | null;
   officeId?: string | null;
   office?: { id?: string; name: string } | null;
   createdAt: string;
@@ -30,7 +34,7 @@ const ROLE_COLORS: Record<string, { bg: string; color: string }> = {
 export default function UsersPage() {
   const { data: session } = useSession();
   const currentUserId = (session?.user as any)?.id;
-  const currentUserEmail = session?.user?.email;
+  const currentUsername = (session?.user as any)?.username;
 
   const [showModal, setShowModal] = useState(false);
   const [editTarget, setEditTarget] = useState<User | null>(null);
@@ -53,7 +57,7 @@ export default function UsersPage() {
     if (!toggleTarget) return;
     const { user, targetActive } = toggleTarget;
 
-    if (user.id === currentUserId || user.email === currentUserEmail) {
+    if (user.id === currentUserId || user.username === currentUsername) {
       toast.error("You cannot deactivate your own account");
       setToggleTarget(null);
       return;
@@ -89,7 +93,7 @@ export default function UsersPage() {
   const handleDeleteUser = async () => {
     if (!deleteTarget) return;
 
-    if (deleteTarget.id === currentUserId || deleteTarget.email === currentUserEmail) {
+    if (deleteTarget.id === currentUserId || deleteTarget.username === currentUsername) {
       toast.error("You cannot delete your own account");
       setDeleteTarget(null);
       return;
@@ -117,11 +121,30 @@ export default function UsersPage() {
     }
   };
 
+  const handleUnlockUser = async (user: User) => {
+    try {
+      const res = await fetch(`/api/users/${user.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ unlockAccount: true }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to unlock account");
+      }
+      toast.success(`Account ${user.username} unlocked`);
+      setRefreshKey((k) => k + 1);
+    } catch (err: any) {
+      toast.error(err.message || "An error occurred");
+    }
+  };
+
   const handleSubmit = async (data: Record<string, string>) => {
     if (editTarget) {
       const payload: Record<string, any> = {
         name: data.name,
-        email: data.email,
+        username: data.username,
+        email: data.email || null,
         role: data.role,
         officeId: data.officeId || null,
       };
@@ -139,19 +162,23 @@ export default function UsersPage() {
         const e = await res.json();
         throw new Error(e.error ?? "Failed to update user");
       }
-      toast.success("User account updated successfully");
+      toast.success(
+        payload.password
+          ? "User updated and temporary password issued (must change at next login)"
+          : "User account updated successfully"
+      );
     } else {
       const res = await fetch("/api/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, email: data.email || null }),
       });
 
       if (!res.ok) {
         const e = await res.json();
         throw new Error(e.error ?? "Failed to create user");
       }
-      toast.success("User account created successfully");
+      toast.success("User account created (user must change temporary password at first login)");
     }
 
     setRefreshKey((k) => k + 1);
@@ -160,10 +187,11 @@ export default function UsersPage() {
   const columns = [
     {
       key: "name",
-      label: "Name",
+      label: "Name & Employee ID",
       width: "28%",
       render: (row: User) => {
-        const isSelf = row.id === currentUserId || row.email === currentUserEmail;
+        const isSelf = row.id === currentUserId || row.username === currentUsername;
+        const isLocked = Boolean(row.lockedUntil && new Date(row.lockedUntil) > new Date());
         return (
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
             <div
@@ -185,7 +213,7 @@ export default function UsersPage() {
               {row.name.charAt(0).toUpperCase()}
             </div>
             <div style={{ minWidth: 0, overflow: "hidden" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", flexWrap: "wrap" }}>
                 <span
                   style={{
                     fontWeight: "600",
@@ -212,17 +240,59 @@ export default function UsersPage() {
                     YOU
                   </span>
                 )}
+                {isLocked && (
+                  <span
+                    title="Locked due to failed login attempts"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "2px",
+                      fontSize: "0.625rem",
+                      fontWeight: 700,
+                      padding: "1px 5px",
+                      borderRadius: "4px",
+                      backgroundColor: "#fee2e2",
+                      color: "#b91c1c",
+                      lineHeight: "1.2",
+                    }}
+                  >
+                    <Lock size={9} /> LOCKED
+                  </span>
+                )}
+                {row.mustChangePassword && (
+                  <span
+                    title="Must change temporary password on next login"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "2px",
+                      fontSize: "0.625rem",
+                      fontWeight: 700,
+                      padding: "1px 5px",
+                      borderRadius: "4px",
+                      backgroundColor: "#fef3c7",
+                      color: "#92400e",
+                      lineHeight: "1.2",
+                    }}
+                  >
+                    <KeyRound size={9} /> TEMP PW
+                  </span>
+                )}
               </div>
               <div
                 style={{
                   fontSize: "0.75rem",
-                  color: "#64748b",
+                  color: "#475569",
+                  fontWeight: 600,
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                 }}
               >
-                {row.email}
+                ID: {row.username}
+                {row.email ? (
+                  <span style={{ color: "#94a3b8", fontWeight: 400 }}> • {row.email}</span>
+                ) : null}
               </div>
             </div>
           </div>
@@ -305,12 +375,35 @@ export default function UsersPage() {
       align: "center",
       width: "10%",
       render: (row: User) => {
-        const isSelf = row.id === currentUserId || row.email === currentUserEmail;
+        const isSelf = row.id === currentUserId || row.username === currentUsername;
+        const isLocked = Boolean(row.lockedUntil && new Date(row.lockedUntil) > new Date());
         return (
           <div
             style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.375rem" }}
             onClick={(e) => e.stopPropagation()}
           >
+            {isLocked && (
+              <button
+                type="button"
+                onClick={() => handleUnlockUser(row)}
+                title="Unlock Account"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "28px",
+                  height: "28px",
+                  borderRadius: "6px",
+                  border: "1px solid #fecaca",
+                  background: "#fef2f2",
+                  color: "#dc2626",
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                }}
+              >
+                <Unlock size={13} />
+              </button>
+            )}
             <button
               type="button"
               onClick={() => {
@@ -427,14 +520,23 @@ export default function UsersPage() {
   ];
 
   const userFields = [
+    { key: "username", label: "Employee ID / Username", required: true, placeholder: "e.g., BAC-001 or jdelacruz" },
     { key: "name", label: "Full Name", required: true, placeholder: "e.g., Maria Santos" },
-    { key: "email", label: "Email Address", type: "email" as const, required: true, placeholder: "user@pandan.gov.ph" },
+    {
+      key: "email",
+      label: "Notification Email (Optional)",
+      type: "email" as const,
+      required: false,
+      placeholder: "Optional — for alerts only, not used for login",
+    },
     {
       key: "password",
-      label: editTarget ? "New Password (optional)" : "Password",
+      label: editTarget ? "Reset Password (optional)" : "Temporary Password",
       type: "password" as const,
       required: !editTarget,
-      placeholder: editTarget ? "Leave blank to keep existing password" : "Minimum 6 characters",
+      placeholder: editTarget
+        ? "Leave blank to keep current password"
+        : "Min 10 chars (upper, lower, number/symbol)",
     },
     {
       key: "role",
@@ -456,10 +558,10 @@ export default function UsersPage() {
       <DataTable<User>
         key={refreshKey}
         title="User Management"
-        description="Manage system user accounts and role assignments (Admin only)"
+        description="Manage system user accounts, temporary passwords, and role assignments (Admin only)"
         apiPath="/api/users"
         columns={columns}
-        searchPlaceholder="Search users by name, email, or role..."
+        searchPlaceholder="Search users by name, employee ID, or role..."
         onAdd={() => {
           setEditTarget(null);
           setShowModal(true);
@@ -475,7 +577,7 @@ export default function UsersPage() {
               row.isActive ? <UserX size={16} /> : <CheckCircle2 size={16} />,
             color: (row: User) => (row.isActive ? "#d97706" : "#16a34a"),
             onClick: (row: User) => {
-              if (row.id === currentUserId || row.email === currentUserEmail) {
+              if (row.id === currentUserId || row.username === currentUsername) {
                 toast.error("You cannot change the active status of your own account");
                 return;
               }
@@ -484,7 +586,7 @@ export default function UsersPage() {
           },
         ]}
         onDelete={async (row: User) => {
-          if (row.id === currentUserId || row.email === currentUserEmail) {
+          if (row.id === currentUserId || row.username === currentUsername) {
             toast.error("You cannot delete your own account");
             return;
           }
@@ -502,8 +604,9 @@ export default function UsersPage() {
           initialValues={
             editTarget
               ? {
+                  username: editTarget.username,
                   name: editTarget.name,
-                  email: editTarget.email,
+                  email: editTarget.email || "",
                   role: editTarget.role,
                   officeId: editTarget.officeId || (editTarget.office as any)?.id || "",
                   password: "",

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { validatePasswordStrength } from "./password";
 
 export const prLineItemSchema = z.object({
   itemId: z.string().nullable().optional(),
@@ -26,9 +27,28 @@ export const purchaseRequestSchema = z.object({
 
 
 export const userCreateSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  email: z.string().email("Invalid email"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  name: z.string().trim().min(1, "Name is required"),
+  username: z
+    .string()
+    .trim()
+    .min(3, "Employee ID / Username must be at least 3 characters")
+    .max(40, "Employee ID / Username must be at most 40 characters")
+    .regex(/^[A-Za-z0-9._-]+$/, "Only letters, numbers, dots, underscores, and hyphens are allowed"),
+  email: z
+    .string()
+    .trim()
+    .optional()
+    .nullable()
+    .transform((v) => (v && v.length > 0 ? v : null))
+    .refine((v) => v === null || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), "Invalid notification email"),
+  password: z
+    .string()
+    .superRefine((val, ctx) => {
+      const check = validatePasswordStrength(val);
+      if (!check.valid) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: check.error || "Weak password" });
+      }
+    }),
   role: z.enum(["ADMIN", "BAC_SECRETARIAT", "END_USER"]),
   officeId: z.string().nullable().optional(),
 });

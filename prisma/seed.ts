@@ -38,77 +38,89 @@ async function main() {
   console.log("✅ Offices created");
 
   // ─── Users ────────────────────────────────────────────────
-  const hashedPassword = await bcrypt.hash("Admin@1234", 12);
+  const hashedPassword = await bcrypt.hash("Admin@12345", 12);
 
   await prisma.user.upsert({
-    where: { email: "admin@pandan.gov.ph" },
+    where: { username: "ADMIN-001" },
     update: {},
     create: {
       name: "System Administrator",
-      email: "admin@pandan.gov.ph",
+      username: "ADMIN-001",
+      email: null,
       password: hashedPassword,
       role: "ADMIN",
       officeId: officeAdmin.id,
+      mustChangePassword: false,
     },
   });
 
   await prisma.user.upsert({
-    where: { email: "bac@pandan.gov.ph" },
+    where: { username: "BAC-001" },
     update: {},
     create: {
       name: "BAC Secretariat",
-      email: "bac@pandan.gov.ph",
-      password: await bcrypt.hash("Bac@1234", 12),
+      username: "BAC-001",
+      email: null,
+      password: await bcrypt.hash("Bac@123456", 12),
       role: "BAC_SECRETARIAT",
       officeId: officeBAC.id,
+      mustChangePassword: false,
     },
   });
 
   await prisma.user.upsert({
-    where: { email: "enduser@pandan.gov.ph" },
+    where: { username: "USER-001" },
     update: {},
     create: {
       name: "Maria Santos",
-      email: "enduser@pandan.gov.ph",
-      password: await bcrypt.hash("User@1234", 12),
+      username: "USER-001",
+      email: null,
+      password: await bcrypt.hash("User@12345", 12),
       role: "END_USER",
       officeId: officeHealth.id,
+      mustChangePassword: false,
     },
   });
 
   await prisma.user.upsert({
-    where: { email: "budget@pandan.gov.ph" },
+    where: { username: "BUDGET-001" },
     update: {},
     create: {
       name: "CPA Luz Bautista",
-      email: "budget@pandan.gov.ph",
-      password: await bcrypt.hash("Budget@1234", 12),
+      username: "BUDGET-001",
+      email: null,
+      password: await bcrypt.hash("Budget@12345", 12),
       role: "BUDGET_OFFICER",
       officeId: officeFinance.id,
+      mustChangePassword: false,
     },
   });
 
   await prisma.user.upsert({
-    where: { email: "supply@pandan.gov.ph" },
+    where: { username: "SUPPLY-001" },
     update: {},
     create: {
       name: "Pedro Garcia",
-      email: "supply@pandan.gov.ph",
-      password: await bcrypt.hash("Supply@1234", 12),
+      username: "SUPPLY-001",
+      email: null,
+      password: await bcrypt.hash("Supply@12345", 12),
       role: "SUPPLY_OFFICER",
       officeId: officeAdmin.id,
+      mustChangePassword: false,
     },
   });
 
   await prisma.user.upsert({
-    where: { email: "mayor@pandan.gov.ph" },
+    where: { username: "MAYOR-001" },
     update: {},
     create: {
       name: "Hon. Ricardo Dela Cruz",
-      email: "mayor@pandan.gov.ph",
-      password: await bcrypt.hash("Mayor@1234", 12),
+      username: "MAYOR-001",
+      email: null,
+      password: await bcrypt.hash("Mayor@12345", 12),
       role: "APPROVING_OFFICIAL",
       officeId: officeAdmin.id,
+      mustChangePassword: false,
     },
   });
 

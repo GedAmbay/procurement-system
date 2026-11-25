@@ -1,10 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
+import { signOut } from "next-auth/react";
 import { useSidebar } from "@/components/layout/sidebar-context";
 import Sidebar from "@/components/layout/sidebar";
 import Topbar from "@/components/layout/topbar";
 import Breadcrumb from "@/components/layout/breadcrumb";
+
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 
 export default function DashboardShell({
   user,
@@ -14,6 +17,26 @@ export default function DashboardShell({
   children: React.ReactNode;
 }) {
   const { isRail, isEditor } = useSidebar();
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+
+    const resetTimer = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        signOut({ callbackUrl: "/login?reason=idle" });
+      }, IDLE_TIMEOUT_MS);
+    };
+
+    const events = ["mousedown", "keydown", "scroll", "touchstart"];
+    events.forEach((ev) => window.addEventListener(ev, resetTimer, { passive: true }));
+    resetTimer();
+
+    return () => {
+      clearTimeout(timer);
+      events.forEach((ev) => window.removeEventListener(ev, resetTimer));
+    };
+  }, []);
 
   return (
     <div
