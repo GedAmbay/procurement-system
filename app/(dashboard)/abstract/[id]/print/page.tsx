@@ -494,14 +494,10 @@ export default function AbstractLivePreviewPage() {
     }
   };
 
-  const handleUnlockConfirm = async (password?: string) => {
-    if (!password) {
-      toast.error("Password is required");
-      return;
-    }
+  const handleUnlockConfirm = () => {
     setIsUnlocked(true);
     setUnlockModalOpen(false);
-    toast.success("Document unlocked securely");
+    toast.success("Editing enabled");
   };
 
   const handleSaveConfirm = () => {
@@ -1884,7 +1880,6 @@ export default function AbstractLivePreviewPage() {
         title="Unlock Document"
         message="This document is finalized. Are you sure you want to unlock it for editing?"
         confirmText="Unlock Document"
-        requirePassword={true}
         isDestructive={true}
       />
     </div>

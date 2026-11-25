@@ -23,15 +23,98 @@ export async function GET(
       officeId: true,
       isActive: true,
       mustChangePassword: true,
+      failedLoginAttempts: true,
       lockedUntil: true,
       lastLoginAt: true,
+      passwordChangedAt: true,
       createdAt: true,
-      office: { select: { id: true, name: true } },
+      updatedAt: true,
+      office: { select: { id: true, name: true, code: true } },
+      _count: {
+        select: {
+          purchaseRequests: true,
+          rfqsCreated: true,
+          abstractsCreated: true,
+          purchaseOrdersCreated: true,
+          acceptancesCreated: true,
+          auditLogs: true,
+        },
+      },
+      purchaseRequests: {
+        take: 5,
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          prNumber: true,
+          purpose: true,
+          totalAmount: true,
+          createdAt: true,
+        },
+      },
+      rfqsCreated: {
+        take: 5,
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          rfqNumber: true,
+          remarks: true,
+          status: true,
+          createdAt: true,
+        },
+      },
+      purchaseOrdersCreated: {
+        take: 5,
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          poNumber: true,
+          totalAmount: true,
+          status: true,
+          createdAt: true,
+        },
+      },
     },
   });
 
   if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
-  return NextResponse.json(user);
+
+  const [accountEvents, userActions] = await Promise.all([
+    prisma.documentAuditLog.findMany({
+      where: {
+        documentId: id,
+        documentType: { in: ["USER", "AUTH"] },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 15,
+      select: {
+        id: true,
+        documentType: true,
+        action: true,
+        notes: true,
+        createdAt: true,
+        user: { select: { id: true, name: true, username: true } },
+      },
+    }),
+    prisma.documentAuditLog.findMany({
+      where: { userId: id },
+      orderBy: { createdAt: "desc" },
+      take: 15,
+      select: {
+        id: true,
+        documentType: true,
+        documentId: true,
+        action: true,
+        notes: true,
+        createdAt: true,
+      },
+    }),
+  ]);
+
+  return NextResponse.json({
+    ...user,
+    accountEvents,
+    userActions,
+  });
 }
 
 export async function PATCH(
@@ -60,7 +143,7 @@ export async function PATCH(
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  const data: any = {};
+  const data: Record<string, unknown> = {};
   if (body.name !== undefined) data.name = String(body.name).trim();
   if (body.username !== undefined) {
     const cleanUsername = String(body.username).trim();
@@ -160,15 +243,16 @@ export async function PATCH(
     }
 
     return NextResponse.json(updated);
-  } catch (e: any) {
-    if (e.code === "P2002") {
-      const target = Array.isArray(e.meta?.target) ? e.meta.target.join(",") : String(e.meta?.target || "");
+  } catch (e: unknown) {
+    const err = e as { code?: string; meta?: { target?: unknown }; message?: string };
+    if (err.code === "P2002") {
+      const target = Array.isArray(err.meta?.target) ? err.meta.target.join(",") : String(err.meta?.target || "");
       const msg = target.includes("username")
         ? "Employee ID / Username already exists"
         : "Notification email is already used by another account";
       return NextResponse.json({ error: msg }, { status: 409 });
     }
-    return NextResponse.json({ error: e.message || "Failed to update user" }, { status: 500 });
+    return NextResponse.json({ error: err.message || "Failed to update user" }, { status: 500 });
   }
 }
 

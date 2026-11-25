@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect, Suspense } from "react";
+import { useState, useTransition, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
@@ -13,16 +13,20 @@ function LoginForm() {
   const [isPending, startTransition] = useTransition();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [usernameFocused, setUsernameFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [showSplash, setShowSplash] = useState(false);
 
-  useEffect(() => {
-    const reason = searchParams.get("reason");
-    if (reason === "idle") {
-      setError("Your session expired after 30 minutes of inactivity. Please sign in again.");
-    }
-  }, [searchParams]);
+  const isUsernameFloating = usernameFocused || username.length > 0;
+  const isPasswordFloating = passwordFocused || password.length > 0;
+
+  const idleMessage =
+    !error && searchParams.get("reason") === "idle"
+      ? "Your session expired after 30 minutes of inactivity. Please sign in again."
+      : "";
+  const displayError = error || idleMessage;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -190,7 +194,7 @@ function LoginForm() {
               </p>
             </div>
 
-            {error && (
+            {displayError && (
               <div style={{
                 display: "flex", alignItems: "center", gap: "0.625rem",
                 background: "#fef2f2", border: "1px solid #fecaca",
@@ -198,78 +202,119 @@ function LoginForm() {
                 marginBottom: "1.25rem", color: "#dc2626", fontSize: "0.875rem",
               }}>
                 <AlertCircle size={16} style={{ flexShrink: 0 }} />
-                {error}
+                {displayError}
               </div>
             )}
 
-            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.125rem" }}>
-              <div>
-                <label style={{
-                  display: "block", color: "#374151",
-                  fontSize: "0.8125rem", fontWeight: 600, marginBottom: "0.4rem",
-                }}>
-                  Employee ID / Username
-                </label>
+            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <div style={{ position: "relative" }}>
                 <input
                   id="login-username"
                   type="text"
                   autoComplete="username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="e.g., ADMIN-001 or jdelacruz"
+                  onFocus={() => setUsernameFocused(true)}
+                  onBlur={() => setUsernameFocused(false)}
+                  placeholder=" "
                   required
                   style={{
-                    width: "100%", padding: "0.7rem 0.875rem",
-                    border: "none", borderRadius: "0.625rem",
-                    fontSize: "0.9rem", color: "#0f172a", background: "#ECF0F3",
-                    outline: "none", boxSizing: "border-box",
-                    boxShadow: "inset 18px 18px 30px #D1D9E6, inset -18px -18px 30px #ffffff",
-                    transition: "all 0.2s ease-in-out",
+                    width: "100%",
+                    height: "54px",
+                    padding: "1.25rem 0.875rem 0.4rem",
+                    border: usernameFocused ? "2px solid #0f172a" : "2px solid transparent",
+                    borderRadius: "0.625rem",
+                    fontSize: "0.9rem",
+                    fontWeight: 500,
+                    color: "#0f172a",
+                    background: usernameFocused ? "#ffffff" : "#ECF0F3",
+                    outline: "none",
+                    boxSizing: "border-box",
+                    boxShadow: usernameFocused
+                      ? "none"
+                      : "inset 18px 18px 30px #D1D9E6, inset -18px -18px 30px #ffffff",
+                    transition: "all 0.16s ease-in-out",
                   }}
-                  onFocus={(e) => { e.target.style.boxShadow = "inset 20px 20px 32px #cbd5e1, inset -20px -20px 32px #ffffff"; }}
-                  onBlur={(e) => { e.target.style.boxShadow = "inset 18px 18px 30px #D1D9E6, inset -18px -18px 30px #ffffff"; }}
                 />
+                <label
+                  htmlFor="login-username"
+                  style={{
+                    position: "absolute",
+                    left: "0.875rem",
+                    top: isUsernameFloating ? "0.45rem" : "50%",
+                    transform: isUsernameFloating ? "translateY(0)" : "translateY(-50%)",
+                    fontSize: isUsernameFloating ? "0.625rem" : "0.75rem",
+                    fontWeight: 700,
+                    letterSpacing: "0.06em",
+                    textTransform: "uppercase",
+                    color: usernameFocused ? "#0f172a" : "#64748b",
+                    pointerEvents: "none",
+                    transition: "all 0.16s cubic-bezier(0.4, 0, 0.2, 1)",
+                  }}
+                >
+                  Username
+                </label>
               </div>
 
-              <div>
-                <label style={{
-                  display: "block", color: "#374151",
-                  fontSize: "0.8125rem", fontWeight: 600, marginBottom: "0.4rem",
-                }}>
+              <div style={{ position: "relative" }}>
+                <input
+                  id="login-password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onFocus={() => setPasswordFocused(true)}
+                  onBlur={() => setPasswordFocused(false)}
+                  placeholder=" "
+                  required
+                  style={{
+                    width: "100%",
+                    height: "54px",
+                    padding: "1.25rem 2.75rem 0.4rem 0.875rem",
+                    border: passwordFocused ? "2px solid #0f172a" : "2px solid transparent",
+                    borderRadius: "0.625rem",
+                    fontSize: "0.9rem",
+                    fontWeight: 500,
+                    color: "#0f172a",
+                    background: passwordFocused ? "#ffffff" : "#ECF0F3",
+                    outline: "none",
+                    boxSizing: "border-box",
+                    boxShadow: passwordFocused
+                      ? "none"
+                      : "inset 18px 18px 30px #D1D9E6, inset -18px -18px 30px #ffffff",
+                    transition: "all 0.16s ease-in-out",
+                  }}
+                />
+                <label
+                  htmlFor="login-password"
+                  style={{
+                    position: "absolute",
+                    left: "0.875rem",
+                    top: isPasswordFloating ? "0.45rem" : "50%",
+                    transform: isPasswordFloating ? "translateY(0)" : "translateY(-50%)",
+                    fontSize: isPasswordFloating ? "0.625rem" : "0.75rem",
+                    fontWeight: 700,
+                    letterSpacing: "0.06em",
+                    textTransform: "uppercase",
+                    color: passwordFocused ? "#0f172a" : "#64748b",
+                    pointerEvents: "none",
+                    transition: "all 0.16s cubic-bezier(0.4, 0, 0.2, 1)",
+                  }}
+                >
                   Password
                 </label>
-                <div style={{ position: "relative" }}>
-                  <input
-                    id="login-password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
-                    required
-                    style={{
-                      width: "100%", padding: "0.7rem 2.75rem 0.7rem 0.875rem",
-                      border: "none", borderRadius: "0.625rem",
-                      fontSize: "0.9rem", color: "#0f172a", background: "#ECF0F3",
-                      outline: "none", boxSizing: "border-box",
-                      boxShadow: "inset 18px 18px 30px #D1D9E6, inset -18px -18px 30px #ffffff",
-                      transition: "all 0.2s ease-in-out",
-                    }}
-                    onFocus={(e) => { e.target.style.boxShadow = "inset 20px 20px 32px #cbd5e1, inset -20px -20px 32px #ffffff"; }}
-                    onBlur={(e) => { e.target.style.boxShadow = "inset 18px 18px 30px #D1D9E6, inset -18px -18px 30px #ffffff"; }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    style={{
-                      position: "absolute", right: "0.75rem", top: "50%",
-                      transform: "translateY(-50%)", background: "none",
-                      border: "none", cursor: "pointer", color: "#94a3b8",
-                      display: "flex", alignItems: "center", padding: 0,
-                    }}
-                  >
-                    {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: "absolute", right: "0.75rem", top: "50%",
+                    transform: "translateY(-50%)", background: "none",
+                    border: "none", cursor: "pointer", color: "#94a3b8",
+                    display: "flex", alignItems: "center", padding: 0,
+                  }}
+                >
+                  {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                </button>
               </div>
 
               <button

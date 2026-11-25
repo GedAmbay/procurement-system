@@ -372,15 +372,10 @@ export default function AcceptanceEditor() {
     handleSubmit(onSubmit)();
   };
 
-  const handleUnlockConfirm = async (password?: string) => {
-    if (!password) {
-      toast.error("Password is required");
-      return;
-    }
-
+  const handleUnlockConfirm = () => {
     setIsUnlocked(true);
     setUnlockModalOpen(false);
-    toast.success("Document unlocked securely");
+    toast.success("Editing enabled");
   };
 
   if (loading) return <LoaderWave variant="page" label="Loading acceptance..." />;
@@ -1461,7 +1456,6 @@ export default function AcceptanceEditor() {
         title="Unlock Document"
         message="This document has been issued. Are you sure you want to unlock it for editing?"
         confirmText="Unlock Document"
-        requirePassword={true}
         isDestructive={true}
       />
     </div>

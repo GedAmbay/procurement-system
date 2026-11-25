@@ -6,7 +6,7 @@ import { validatePasswordStrength } from "@/lib/password";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  const userId = (session?.user as any)?.id;
+  const userId = session?.user?.id;
 
   if (!session || !userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

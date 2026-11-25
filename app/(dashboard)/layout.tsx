@@ -9,12 +9,12 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const session = await auth();
-  if (!session || !(session.user as any)?.id) redirect("/login");
-  if ((session.user as any)?.mustChangePassword) redirect("/change-password");
+  if (!session || !session.user?.id) redirect("/login");
+  if (session.user.mustChangePassword) redirect("/change-password");
 
   return (
     <SidebarProvider>
-      <DashboardShell user={session.user as any}>
+      <DashboardShell user={session.user}>
         {children}
       </DashboardShell>
     </SidebarProvider>

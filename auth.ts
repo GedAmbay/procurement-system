@@ -128,12 +128,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id;
-        token.username = (user as any).username;
+        token.username = user.username;
         token.email = user.email;
-        token.role = (user as any).role;
-        token.officeId = (user as any).officeId;
-        token.officeName = (user as any).officeName;
-        token.mustChangePassword = Boolean((user as any).mustChangePassword);
+        token.role = user.role;
+        token.officeId = user.officeId;
+        token.officeName = user.officeName;
+        token.mustChangePassword = Boolean(user.mustChangePassword);
         token.loginAt = Date.now();
         return token;
       }
@@ -189,11 +189,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       session.user.id = (token.id || token.sub) as string;
       session.user.name = (token.name as string) ?? session.user.name;
       session.user.email = (token.email as string | null) ?? "";
-      (session.user as any).username = token.username;
-      (session.user as any).role = token.role;
-      (session.user as any).officeId = token.officeId;
-      (session.user as any).officeName = token.officeName;
-      (session.user as any).mustChangePassword = Boolean(token.mustChangePassword);
+      session.user.username = token.username;
+      session.user.role = token.role;
+      session.user.officeId = token.officeId;
+      session.user.officeName = token.officeName ?? undefined;
+      session.user.mustChangePassword = Boolean(token.mustChangePassword);
       return session;
     },
   },

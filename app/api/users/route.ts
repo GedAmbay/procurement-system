@@ -82,9 +82,10 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(user, { status: 201 });
-  } catch (e: any) {
-    if (e.code === "P2002") {
-      const target = Array.isArray(e.meta?.target) ? e.meta.target.join(",") : String(e.meta?.target || "");
+  } catch (e: unknown) {
+    const err = e as { code?: string; meta?: { target?: unknown } };
+    if (err.code === "P2002") {
+      const target = Array.isArray(err.meta?.target) ? err.meta.target.join(",") : String(err.meta?.target || "");
       const msg = target.includes("username")
         ? "Employee ID / Username already exists"
         : target.includes("email")

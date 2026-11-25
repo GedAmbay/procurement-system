@@ -1,7 +1,23 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Users, CheckCircle2, Shield, Building2, Pencil, Trash2, UserX, UserCheck, Lock, KeyRound, Unlock } from "lucide-react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  Users,
+  CheckCircle2,
+  Shield,
+  Building2,
+  Pencil,
+  Trash2,
+  UserX,
+  UserCheck,
+  Lock,
+  KeyRound,
+  Unlock,
+  Eye,
+  Clock,
+} from "lucide-react";
 import DataTable from "@/components/ui/data-table";
 import FormModal from "@/components/ui/form-modal";
 import ConfirmModal from "@/components/ui/confirm-modal";
@@ -32,9 +48,10 @@ const ROLE_COLORS: Record<string, { bg: string; color: string }> = {
 };
 
 export default function UsersPage() {
+  const router = useRouter();
   const { data: session } = useSession();
-  const currentUserId = (session?.user as any)?.id;
-  const currentUsername = (session?.user as any)?.username;
+  const currentUserId = session?.user?.id;
+  const currentUsername = session?.user?.username;
 
   const [showModal, setShowModal] = useState(false);
   const [editTarget, setEditTarget] = useState<User | null>(null);
@@ -83,8 +100,8 @@ export default function UsersPage() {
       );
       setToggleTarget(null);
       setRefreshKey((k) => k + 1);
-    } catch (err: any) {
-      toast.error(err.message || "An error occurred");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setActionLoading(false);
     }
@@ -114,8 +131,8 @@ export default function UsersPage() {
       toast.success(resData.message || "User account removed");
       setDeleteTarget(null);
       setRefreshKey((k) => k + 1);
-    } catch (err: any) {
-      toast.error(err.message || "An error occurred");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setActionLoading(false);
     }
@@ -134,14 +151,14 @@ export default function UsersPage() {
       }
       toast.success(`Account ${user.username} unlocked`);
       setRefreshKey((k) => k + 1);
-    } catch (err: any) {
-      toast.error(err.message || "An error occurred");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "An error occurred");
     }
   };
 
   const handleSubmit = async (data: Record<string, string>) => {
     if (editTarget) {
-      const payload: Record<string, any> = {
+      const payload: Record<string, string | null> = {
         name: data.name,
         username: data.username,
         email: data.email || null,
@@ -188,12 +205,18 @@ export default function UsersPage() {
     {
       key: "name",
       label: "Name & Employee ID",
-      width: "28%",
+      width: "26%",
+      sortable: true,
       render: (row: User) => {
         const isSelf = row.id === currentUserId || row.username === currentUsername;
         const isLocked = Boolean(row.lockedUntil && new Date(row.lockedUntil) > new Date());
         return (
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <Link
+            href={`/users/${row.id}`}
+            onClick={(e) => e.stopPropagation()}
+            style={{ display: "flex", alignItems: "center", gap: "0.75rem", textDecoration: "none" }}
+            className="group"
+          >
             <div
               style={{
                 width: "36px",
@@ -215,12 +238,14 @@ export default function UsersPage() {
             <div style={{ minWidth: 0, overflow: "hidden" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", flexWrap: "wrap" }}>
                 <span
+                  className="group-hover:text-blue-600 group-hover:underline"
                   style={{
                     fontWeight: "600",
                     color: "#0f172a",
                     whiteSpace: "nowrap",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
+                    transition: "color 0.15s",
                   }}
                 >
                   {row.name}
@@ -295,14 +320,15 @@ export default function UsersPage() {
                 ) : null}
               </div>
             </div>
-          </div>
+          </Link>
         );
       },
     },
     {
       key: "role",
       label: "Role",
-      width: "20%",
+      width: "17%",
+      sortable: true,
       render: (row: User) => {
         const c = ROLE_COLORS[row.role] ?? { bg: "#f1f5f9", color: "#475569" };
         return (
@@ -329,7 +355,7 @@ export default function UsersPage() {
     {
       key: "office",
       label: "Office",
-      width: "20%",
+      width: "18%",
       render: (row: User) => (
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           <Building2 size={14} style={{ color: "#94a3b8", flexShrink: 0 }} />
@@ -351,14 +377,45 @@ export default function UsersPage() {
       key: "isActive",
       label: "Status",
       align: "center",
-      width: "11%",
+      width: "9%",
+      sortable: true,
       render: (row: User) => <StatusBadge status={row.isActive} />,
+    },
+    {
+      key: "lastLoginAt",
+      label: "Last Login",
+      align: "center",
+      width: "12%",
+      sortable: true,
+      render: (row: User) => (
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "4px",
+            fontSize: "0.8125rem",
+            color: row.lastLoginAt ? "#475569" : "#94a3b8",
+          }}
+        >
+          <Clock size={12} style={{ flexShrink: 0, opacity: 0.7 }} />
+          <span>
+            {row.lastLoginAt
+              ? new Date(row.lastLoginAt).toLocaleDateString("en-PH", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                })
+              : "Never"}
+          </span>
+        </div>
+      ),
     },
     {
       key: "createdAt",
       label: "Account Created",
       align: "center",
-      width: "11%",
+      width: "10%",
+      sortable: true,
       render: (row: User) => (
         <span style={{ fontSize: "0.8125rem", color: "#64748b" }}>
           {new Date(row.createdAt).toLocaleDateString("en-PH", {
@@ -373,7 +430,7 @@ export default function UsersPage() {
       key: "actions",
       label: "Actions",
       align: "center",
-      width: "10%",
+      width: "13%",
       render: (row: User) => {
         const isSelf = row.id === currentUserId || row.username === currentUsername;
         const isLocked = Boolean(row.lockedUntil && new Date(row.lockedUntil) > new Date());
@@ -382,6 +439,36 @@ export default function UsersPage() {
             style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.375rem" }}
             onClick={(e) => e.stopPropagation()}
           >
+            <button
+              type="button"
+              onClick={() => router.push(`/users/${row.id}`)}
+              title="Open User Profile"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "28px",
+                height: "28px",
+                borderRadius: "6px",
+                border: "1px solid #e2e8f0",
+                background: "#ffffff",
+                color: "#475569",
+                cursor: "pointer",
+                transition: "all 0.15s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = "#2563eb";
+                e.currentTarget.style.borderColor = "#93c5fd";
+                e.currentTarget.style.background = "#eff6ff";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = "#475569";
+                e.currentTarget.style.borderColor = "#e2e8f0";
+                e.currentTarget.style.background = "#ffffff";
+              }}
+            >
+              <Eye size={13} />
+            </button>
             {isLocked && (
               <button
                 type="button"
@@ -558,10 +645,29 @@ export default function UsersPage() {
       <DataTable<User>
         key={refreshKey}
         title="User Management"
-        description="Manage system user accounts, temporary passwords, and role assignments (Admin only)"
+        description="Manage system user accounts, temporary passwords, and role assignments (Admin only). Click a user or press the eye icon to open their full profile."
         apiPath="/api/users"
         columns={columns}
         searchPlaceholder="Search users by name, employee ID, or role..."
+        filterKey="role"
+        filterTabs={[
+          { label: "All Roles", value: null },
+          { label: "System Administrator", value: "ADMIN" },
+          { label: "BAC Secretariat", value: "BAC_SECRETARIAT" },
+          { label: "Clerk", value: "END_USER" },
+        ]}
+        departmentFilterKey={(row) => row.office?.name || "No Office Assigned"}
+        customFilters={[
+          { label: "Active", filterFn: (row) => row.isActive },
+          { label: "Inactive", filterFn: (row) => !row.isActive },
+          {
+            label: "Locked",
+            filterFn: (row) => Boolean(row.lockedUntil && new Date(row.lockedUntil) > new Date()),
+          },
+          { label: "Temp Password", filterFn: (row) => Boolean(row.mustChangePassword) },
+        ]}
+        onView={(row) => router.push(`/users/${row.id}`)}
+        onRowDoubleClick={(row) => router.push(`/users/${row.id}`)}
         onAdd={() => {
           setEditTarget(null);
           setShowModal(true);
@@ -608,7 +714,7 @@ export default function UsersPage() {
                   name: editTarget.name,
                   email: editTarget.email || "",
                   role: editTarget.role,
-                  officeId: editTarget.officeId || (editTarget.office as any)?.id || "",
+                  officeId: editTarget.officeId || editTarget.office?.id || "",
                   password: "",
                 }
               : {}

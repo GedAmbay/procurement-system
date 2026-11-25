@@ -9,11 +9,21 @@ import Breadcrumb from "@/components/layout/breadcrumb";
 
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 
+interface DashboardUser {
+  id?: string;
+  name?: string | null;
+  username?: string | null;
+  email?: string | null;
+  role?: string;
+  officeId?: string | null;
+  officeName?: string;
+}
+
 export default function DashboardShell({
   user,
   children,
 }: {
-  user: any;
+  user: DashboardUser;
   children: React.ReactNode;
 }) {
   const { isRail, isEditor } = useSidebar();
@@ -45,16 +55,14 @@ export default function DashboardShell({
     >
       <Sidebar user={user} />
       <div
-        className={`main-content print:!bg-white print:!min-h-0 print:!h-auto print:!block ${
-          isRail ? "is-rail" : ""
-        }`}
+        className={`main-content print:!bg-white print:!min-h-0 print:!h-auto print:!block ${isRail ? "is-rail" : ""
+          }`}
         style={{ flex: 1, background: "var(--color-page-bg, #e8edf4)" }}
       >
         <Topbar user={user} />
         <main
-          className={`page-content print:!bg-white print:!min-h-0 print:!h-auto print:!block ${
-            isEditor ? "!p-0 overflow-hidden" : ""
-          }`}
+          className={`page-content print:!bg-white print:!min-h-0 print:!h-auto print:!block ${isEditor ? "!p-0 overflow-hidden" : ""
+            }`}
           style={{ display: "flex", flexDirection: "column" }}
         >
           {!isEditor && (

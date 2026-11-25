@@ -137,14 +137,10 @@ export default function PurchaseOrderEditor() {
     };
   }, []);
 
-  const handleUnlockConfirm = async (password?: string) => {
-    if (!password) {
-      toast.error("Password is required");
-      return;
-    }
+  const handleUnlockConfirm = () => {
     setIsUnlocked(true);
     setUnlockModalOpen(false);
-    toast.success("Document unlocked securely");
+    toast.success("Editing enabled");
   };
 
   const handleSaveConfirm = () => {
@@ -1332,8 +1328,8 @@ export default function PurchaseOrderEditor() {
                       onClick={() => !isReadOnly && setValue("orderType", "PURCHASE")}
                       disabled={isReadOnly}
                       className={`py-1.5 px-3 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${!isJob
-                          ? "bg-white text-blue-600 shadow-sm border border-slate-200/60"
-                          : "text-slate-500 hover:text-slate-800"
+                        ? "bg-white text-blue-600 shadow-sm border border-slate-200/60"
+                        : "text-slate-500 hover:text-slate-800"
                         }`}
                     >
                       <span>Purchase Order</span>
@@ -1343,8 +1339,8 @@ export default function PurchaseOrderEditor() {
                       onClick={() => !isReadOnly && setValue("orderType", "JOB")}
                       disabled={isReadOnly}
                       className={`py-1.5 px-3 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${isJob
-                          ? "bg-indigo-600 text-white shadow-sm"
-                          : "text-slate-500 hover:text-slate-800"
+                        ? "bg-indigo-600 text-white shadow-sm"
+                        : "text-slate-500 hover:text-slate-800"
                         }`}
                     >
                       <span>Job Order</span>
@@ -1674,8 +1670,8 @@ export default function PurchaseOrderEditor() {
                         onClick={() => !isReadOnly && updateItemAt(activeMain.rawIndex, { unit: u })}
                         disabled={isReadOnly}
                         className={`text-[11px] px-2 py-0.5 rounded-md border transition-colors ${activeMain.item.unit?.toLowerCase() === u.toLowerCase()
-                            ? "bg-blue-600 text-white border-blue-600"
-                            : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                          ? "bg-blue-600 text-white border-blue-600"
+                          : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
                           }`}
                       >
                         {u}
@@ -2032,7 +2028,6 @@ export default function PurchaseOrderEditor() {
         title="Unlock Document"
         message="This document is locked. Are you sure you want to unlock it for editing?"
         confirmText="Unlock Document"
-        requirePassword={true}
         isDestructive={true}
       />
     </div>

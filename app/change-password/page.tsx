@@ -10,8 +10,8 @@ export default function ChangePasswordPage() {
   const { data: session, update } = useSession();
   const router = useRouter();
 
-  const mustChange = Boolean((session?.user as any)?.mustChangePassword);
-  const username = (session?.user as any)?.username || session?.user?.name || "";
+  const mustChange = Boolean(session?.user?.mustChangePassword);
+  const username = session?.user?.username || session?.user?.name || "";
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
