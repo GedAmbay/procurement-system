@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import Link from "next/link";
 import {
   Users,
   Calendar,
@@ -10,9 +11,8 @@ import {
   ChevronRight,
   Edit2,
   Trash2,
-  X,
-  Building2,
-  Check,
+  Eye,
+  ExternalLink,
 } from "lucide-react";
 import FormModal from "@/components/ui/form-modal";
 import ConfirmModal from "@/components/ui/confirm-modal";
@@ -61,6 +61,55 @@ interface LeaveRecord {
     position: string;
     role: string;
   };
+}
+
+interface CalendarScheduleEvent {
+  id: string;
+  title: string;
+  eventType: string;
+  eventDate: string;
+  eventTime?: string | null;
+  prId?: string | null;
+  pr?: { id: string; prNumber: string | null; purpose: string } | null;
+}
+
+const PROCUREMENT_EVENT_KEYWORDS = [
+  "award",
+  "pre-bid",
+  "pre bid",
+  "bid opening",
+  "bidding",
+  "pre-proc",
+  "pre proc",
+];
+
+function isProcurementScheduleEvent(eventType: string, title?: string): boolean {
+  const combined = `${eventType || ""} ${title || ""}`.toLowerCase();
+  return PROCUREMENT_EVENT_KEYWORDS.some((kw) => combined.includes(kw));
+}
+
+function getScheduleEventStyle(eventType: string, title?: string): string {
+  const t = `${eventType} ${title || ""}`.toLowerCase();
+  if (t.includes("award")) return "bg-emerald-100/90 text-emerald-800 border border-emerald-200";
+  if (t.includes("pre-bid") || t.includes("pre bid"))
+    return "bg-teal-100/90 text-teal-800 border border-teal-200";
+  if (t.includes("pre-proc") || t.includes("pre proc"))
+    return "bg-violet-100/90 text-violet-800 border border-violet-200";
+  return "bg-indigo-100/90 text-indigo-800 border border-indigo-200";
+}
+
+function formatLocalYMD(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function getUtcYMD(dateInput: string | Date): string {
+  const d = new Date(dateInput);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(
+    d.getUTCDate()
+  ).padStart(2, "0")}`;
 }
 
 const SIGNATORY_ROLES = [
@@ -186,13 +235,18 @@ export default function SignatoriesPage() {
   // Attendance Calendar state
   const [calendarDate, setCalendarDate] = useState<Date>(new Date());
   const [selectedCalendarDay, setSelectedCalendarDay] = useState<Date>(new Date());
+  const [calendarEvents, setCalendarEvents] = useState<CalendarScheduleEvent[]>([]);
 
   // Attendance Records table filter
-  const [leaveStatusFilter, setLeaveStatusFilter] = useState<"ALL" | "ON_LEAVE" | "OB" | "ABSENT">("ALL");
+  const [leaveStatusFilter, setLeaveStatusFilter] = useState<
+    "ALL" | "ON_LEAVE" | "OB" | "ON_TRAVEL" | "ABSENT"
+  >("ALL");
 
   // Add / Edit Leave form state
   const [formSignatoryId, setFormSignatoryId] = useState("");
-  const [formStatus, setFormStatus] = useState<"ON_LEAVE" | "OB" | "ABSENT">("ON_LEAVE");
+  const [formStatus, setFormStatus] = useState<"ON_LEAVE" | "OB" | "ON_TRAVEL" | "ABSENT">(
+    "ON_LEAVE"
+  );
   const [formStartDate, setFormStartDate] = useState(new Date().toISOString().split("T")[0]);
   const [formEndDate, setFormEndDate] = useState(new Date().toISOString().split("T")[0]);
   const [formSignsInBehalf, setFormSignsInBehalf] = useState("");
@@ -229,8 +283,52 @@ export default function SignatoriesPage() {
   }, []);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    let active = true;
+    Promise.all([
+      fetch("/api/signatories"),
+      fetch("/api/bac/leave"),
+      fetch("/api/offices"),
+    ])
+      .then(async ([sigRes, leaveRes, officeRes]) => {
+        if (!active) return;
+        if (sigRes.ok) setSignatories(await sigRes.json());
+        if (leaveRes.ok) setLeaves(await leaveRes.json());
+        if (officeRes.ok) setOffices(await officeRes.json());
+      })
+      .catch(() => {
+        if (active) toast.error("Failed to load signatories data");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Fetch dashboard calendar events (Award, Pre-Bid, Bidding/Bid Opening, Pre-Proc) for the viewed month
+  useEffect(() => {
+    const y = calendarDate.getFullYear();
+    const m = calendarDate.getMonth();
+    const monthStart = new Date(y, m, 1, 0, 0, 0, 0).toISOString();
+    const monthEnd = new Date(y, m + 1, 0, 23, 59, 59, 999).toISOString();
+
+    fetch(`/api/calendar?start=${encodeURIComponent(monthStart)}&end=${encodeURIComponent(monthEnd)}`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => {
+        if (!Array.isArray(data)) {
+          setCalendarEvents([]);
+          return;
+        }
+        setCalendarEvents(
+          data.filter((ev: CalendarScheduleEvent) =>
+            isProcurementScheduleEvent(ev.eventType, ev.title)
+          )
+        );
+      })
+      .catch(() => setCalendarEvents([]));
+  }, [calendarDate]);
 
   // Counts for tabs
   const counts = useMemo(() => {
@@ -313,8 +411,8 @@ export default function SignatoriesPage() {
       }
       setShowSignatoryModal(false);
       fetchData();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to save signatory");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to save signatory");
     }
   };
 
@@ -348,12 +446,12 @@ export default function SignatoriesPage() {
       isToday: boolean;
     }> = [];
 
-    const todayStr = new Date().toISOString().split("T")[0];
+    const todayStr = formatLocalYMD(new Date());
 
     // Leading days from previous month
     for (let i = firstDayIndex - 1; i >= 0; i--) {
       const d = new Date(year, month - 1, prevMonthDays - i);
-      const dStr = d.toISOString().split("T")[0];
+      const dStr = formatLocalYMD(d);
       days.push({
         date: d,
         dateStr: dStr,
@@ -365,7 +463,7 @@ export default function SignatoriesPage() {
     // Days of current month
     for (let i = 1; i <= daysInMonth; i++) {
       const d = new Date(year, month, i);
-      const dStr = d.toISOString().split("T")[0];
+      const dStr = formatLocalYMD(d);
       days.push({
         date: d,
         dateStr: dStr,
@@ -379,7 +477,7 @@ export default function SignatoriesPage() {
     const remaining = totalCells - days.length;
     for (let i = 1; i <= remaining; i++) {
       const d = new Date(year, month + 1, i);
-      const dStr = d.toISOString().split("T")[0];
+      const dStr = formatLocalYMD(d);
       days.push({
         date: d,
         dateStr: dStr,
@@ -390,6 +488,10 @@ export default function SignatoriesPage() {
 
     return days;
   }, [year, month]);
+
+  const getEventsForDate = (dateStr: string) => {
+    return calendarEvents.filter((ev) => getUtcYMD(ev.eventDate) === dateStr);
+  };
 
   // Leaves active on a specific day
   const getLeavesForDate = (date: Date) => {
@@ -426,9 +528,17 @@ export default function SignatoriesPage() {
 
       // Status filter
       if (leaveStatusFilter === "ON_LEAVE") {
-        if (rec.leaveType === "OFFICIAL_BUSINESS" || rec.leaveType === "OB" || rec.leaveType === "ABSENT") return false;
+        if (
+          rec.leaveType === "OFFICIAL_BUSINESS" ||
+          rec.leaveType === "OB" ||
+          rec.leaveType === "ON_TRAVEL" ||
+          rec.leaveType === "ABSENT"
+        )
+          return false;
       } else if (leaveStatusFilter === "OB") {
         if (rec.leaveType !== "OFFICIAL_BUSINESS" && rec.leaveType !== "OB") return false;
+      } else if (leaveStatusFilter === "ON_TRAVEL") {
+        if (rec.leaveType !== "ON_TRAVEL") return false;
       } else if (leaveStatusFilter === "ABSENT") {
         if (rec.leaveType !== "ABSENT") return false;
       }
@@ -440,7 +550,7 @@ export default function SignatoriesPage() {
   // Click on a calendar day
   const handleCalendarDayClick = (dayDate: Date) => {
     setSelectedCalendarDay(dayDate);
-    const dateStr = dayDate.toISOString().split("T")[0];
+    const dateStr = formatLocalYMD(dayDate);
     setFormStartDate(dateStr);
     setFormEndDate(dateStr);
   };
@@ -466,8 +576,22 @@ export default function SignatoriesPage() {
         signatoryId: formSignatoryId,
         startDate: formStartDate,
         endDate: formEndDate,
-        leaveType: formStatus === "OB" ? "OFFICIAL_BUSINESS" : formStatus === "ABSENT" ? "ABSENT" : "VACATION",
-        reason: formStatus === "OB" ? "Official Business" : formStatus === "ABSENT" ? "Absent" : "On Leave",
+        leaveType:
+          formStatus === "OB"
+            ? "OFFICIAL_BUSINESS"
+            : formStatus === "ON_TRAVEL"
+            ? "ON_TRAVEL"
+            : formStatus === "ABSENT"
+            ? "ABSENT"
+            : "VACATION",
+        reason:
+          formStatus === "OB"
+            ? "Official Business"
+            : formStatus === "ON_TRAVEL"
+            ? "On Travel"
+            : formStatus === "ABSENT"
+            ? "Absent"
+            : "On Leave",
         approvedBy: formSignsInBehalf.trim() || null,
       };
 
@@ -493,8 +617,8 @@ export default function SignatoriesPage() {
       setEditingLeaveId(null);
       setFormSignsInBehalf("");
       fetchData();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to save record");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to save record");
     }
   };
 
@@ -504,6 +628,8 @@ export default function SignatoriesPage() {
     setFormSignatoryId(rec.signatoryId);
     if (rec.leaveType === "OFFICIAL_BUSINESS" || rec.leaveType === "OB") {
       setFormStatus("OB");
+    } else if (rec.leaveType === "ON_TRAVEL") {
+      setFormStatus("ON_TRAVEL");
     } else if (rec.leaveType === "ABSENT") {
       setFormStatus("ABSENT");
     } else {
@@ -552,11 +678,10 @@ export default function SignatoriesPage() {
               <button
                 type="button"
                 onClick={() => setActiveTab("ALL")}
-                className={`h-9 px-4 rounded-full text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${
-                  activeTab === "ALL"
-                    ? "bg-slate-900 text-white shadow-xs"
-                    : "bg-white hover:bg-slate-50 text-slate-600 border border-slate-200/80 shadow-2xs"
-                }`}
+                className={`h-9 px-4 rounded-full text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${activeTab === "ALL"
+                  ? "bg-slate-900 text-white shadow-xs"
+                  : "bg-white hover:bg-slate-50 text-slate-600 border border-slate-200/80 shadow-2xs"
+                  }`}
               >
                 <span>All</span>
                 <span className={`text-[11px] font-bold ${activeTab === "ALL" ? "text-slate-300" : "text-slate-400"}`}>
@@ -567,17 +692,15 @@ export default function SignatoriesPage() {
               <button
                 type="button"
                 onClick={() => setActiveTab("ABSTRACT")}
-                className={`h-9 px-4 rounded-full text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${
-                  activeTab === "ABSTRACT"
-                    ? "bg-slate-900 text-white shadow-xs"
-                    : "bg-white hover:bg-slate-50 text-slate-600 border border-slate-200/80 shadow-2xs"
-                }`}
+                className={`h-9 px-4 rounded-full text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${activeTab === "ABSTRACT"
+                  ? "bg-slate-900 text-white shadow-xs"
+                  : "bg-white hover:bg-slate-50 text-slate-600 border border-slate-200/80 shadow-2xs"
+                  }`}
               >
                 <span>Abstract</span>
                 <span
-                  className={`text-[11px] font-bold ${
-                    activeTab === "ABSTRACT" ? "text-slate-300" : "text-slate-400"
-                  }`}
+                  className={`text-[11px] font-bold ${activeTab === "ABSTRACT" ? "text-slate-300" : "text-slate-400"
+                    }`}
                 >
                   {counts.abstract}
                 </span>
@@ -586,17 +709,15 @@ export default function SignatoriesPage() {
               <button
                 type="button"
                 onClick={() => setActiveTab("ACCEPTANCE")}
-                className={`h-9 px-4 rounded-full text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${
-                  activeTab === "ACCEPTANCE"
-                    ? "bg-slate-900 text-white shadow-xs"
-                    : "bg-white hover:bg-slate-50 text-slate-600 border border-slate-200/80 shadow-2xs"
-                }`}
+                className={`h-9 px-4 rounded-full text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${activeTab === "ACCEPTANCE"
+                  ? "bg-slate-900 text-white shadow-xs"
+                  : "bg-white hover:bg-slate-50 text-slate-600 border border-slate-200/80 shadow-2xs"
+                  }`}
               >
                 <span>Acceptance</span>
                 <span
-                  className={`text-[11px] font-bold ${
-                    activeTab === "ACCEPTANCE" ? "text-slate-300" : "text-slate-400"
-                  }`}
+                  className={`text-[11px] font-bold ${activeTab === "ACCEPTANCE" ? "text-slate-300" : "text-slate-400"
+                    }`}
                 >
                   {counts.acceptance}
                 </span>
@@ -674,8 +795,9 @@ export default function SignatoriesPage() {
                     const activeLeave = sig.bacLeaves && sig.bacLeaves.length > 0 ? sig.bacLeaves[0] : null;
                     const isOB =
                       activeLeave?.leaveType === "OFFICIAL_BUSINESS" || activeLeave?.leaveType === "OB";
+                    const isOnTravel = activeLeave?.leaveType === "ON_TRAVEL";
                     const isAbsent = activeLeave?.leaveType === "ABSENT";
-                    const isOnLeave = activeLeave && !isOB && !isAbsent;
+                    const isOnLeave = activeLeave && !isOB && !isOnTravel && !isAbsent;
 
                     return (
                       <tr
@@ -684,15 +806,20 @@ export default function SignatoriesPage() {
                       >
                         {/* Signatory Column: Avatar + Name + Position */}
                         <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
+                          <Link
+                            href={`/signatories/${sig.id}`}
+                            className="flex items-center gap-3 group/link"
+                          >
                             <div className="w-9 h-9 rounded-full bg-blue-50 text-blue-700 border border-blue-200/60 font-bold text-xs flex items-center justify-center shrink-0 tracking-tight">
                               {getInitials(sig.name)}
                             </div>
                             <div className="flex flex-col">
-                              <span className="font-bold text-slate-800 text-sm">{sig.name}</span>
+                              <span className="font-bold text-slate-800 text-sm group-hover/link:text-blue-600 group-hover/link:underline">
+                                {sig.name}
+                              </span>
                               <span className="text-xs text-slate-500 font-medium">{sig.position}</span>
                             </div>
-                          </div>
+                          </Link>
                         </td>
 
                         {/* Role Badge */}
@@ -721,6 +848,10 @@ export default function SignatoriesPage() {
                             <span className="inline-block text-xs font-medium px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200/70">
                               OB · today
                             </span>
+                          ) : isOnTravel ? (
+                            <span className="inline-block text-xs font-medium px-3 py-1 rounded-full bg-cyan-50 text-cyan-800 border border-cyan-200/70">
+                              On Travel · today
+                            </span>
                           ) : isAbsent ? (
                             <span className="inline-block text-xs font-medium px-3 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200/70">
                               Absent · today
@@ -736,6 +867,15 @@ export default function SignatoriesPage() {
                         {/* Action Column */}
                         <td className="px-6 py-4 text-right whitespace-nowrap">
                           <div className="inline-flex items-center gap-3">
+                            <Link
+                              href={`/signatories/${sig.id}`}
+                              className="inline-flex items-center gap-1 text-slate-600 hover:text-blue-600 font-semibold text-xs"
+                              title="View Monthly Attendance"
+                            >
+                              <Eye size={13} />
+                              Attendance
+                            </Link>
+
                             <button
                               type="button"
                               onClick={() => handleOpenSetLeave(sig)}
@@ -808,12 +948,30 @@ export default function SignatoriesPage() {
               </div>
 
               {/* Legend on right */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800">
                   On Leave
                 </span>
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-100 text-blue-700">
+                <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700">
                   OB
+                </span>
+                <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-cyan-100 text-cyan-800">
+                  On Travel
+                </span>
+                <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-700">
+                  Absent
+                </span>
+                <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-violet-100 text-violet-700">
+                  Pre-Proc
+                </span>
+                <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-teal-100 text-teal-700">
+                  Pre-Bid
+                </span>
+                <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
+                  Bid Opening
+                </span>
+                <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                  Award
                 </span>
               </div>
             </div>
@@ -831,15 +989,21 @@ export default function SignatoriesPage() {
             <div className="grid grid-cols-7 border-l border-t border-slate-100">
               {calendarDays.map((cell, idx) => {
                 const dayLeaves = getLeavesForDate(cell.date);
+                const dayEvents = getEventsForDate(cell.dateStr);
                 const isSelected = selectedCalendarDay.toDateString() === cell.date.toDateString();
+
+                const combinedCount = dayLeaves.length + dayEvents.length;
+                const maxVisible = 3;
+                const visibleLeaves = dayLeaves.slice(0, maxVisible);
+                const remainingSlots = Math.max(0, maxVisible - visibleLeaves.length);
+                const visibleEvents = dayEvents.slice(0, remainingSlots);
 
                 return (
                   <div
                     key={idx}
                     onClick={() => handleCalendarDayClick(cell.date)}
-                    className={`min-h-[96px] p-1.5 border-r border-b border-slate-100 transition-colors cursor-pointer flex flex-col justify-between ${
-                      cell.isCurrentMonth ? "bg-white hover:bg-slate-50/70" : "bg-slate-50/40 text-slate-400"
-                    } ${isSelected ? "ring-2 ring-blue-500/30 bg-blue-50/20" : ""}`}
+                    className={`min-h-[108px] p-1.5 border-r border-b border-slate-100 transition-colors cursor-pointer flex flex-col justify-between ${cell.isCurrentMonth ? "bg-white hover:bg-slate-50/70" : "bg-slate-50/40 text-slate-400"
+                      } ${isSelected ? "ring-2 ring-blue-500/30 bg-blue-50/20" : ""}`}
                   >
                     <div className="flex items-center justify-between">
                       {cell.isToday ? (
@@ -848,19 +1012,19 @@ export default function SignatoriesPage() {
                         </div>
                       ) : (
                         <span
-                          className={`text-xs font-semibold pl-1 ${
-                            cell.isCurrentMonth ? "text-slate-700" : "text-slate-400"
-                          }`}
+                          className={`text-xs font-semibold pl-1 ${cell.isCurrentMonth ? "text-slate-700" : "text-slate-400"
+                            }`}
                         >
                           {cell.date.getDate()}
                         </span>
                       )}
                     </div>
 
-                    {/* Leave / OB badges inside cell */}
+                    {/* Leave / OB & Scheduled BAC Events inside cell */}
                     <div className="mt-1 space-y-1 overflow-hidden">
-                      {dayLeaves.slice(0, 3).map((l) => {
+                      {visibleLeaves.map((l) => {
                         const isOB = l.leaveType === "OFFICIAL_BUSINESS" || l.leaveType === "OB";
+                        const isOnTravel = l.leaveType === "ON_TRAVEL";
                         const isAbsent = l.leaveType === "ABSENT";
                         const nameParts = l.signatory.name.split(" ");
                         const shortName = nameParts.length > 1 ? nameParts[0] : l.signatory.name;
@@ -872,29 +1036,44 @@ export default function SignatoriesPage() {
 
                         const label = isOB
                           ? `${rolePrefix} - OB`
-                          : isAbsent
-                          ? `${rolePrefix} - Absent`
-                          : `${rolePrefix} - Leave`;
+                          : isOnTravel
+                            ? `${rolePrefix} - Travel`
+                            : isAbsent
+                              ? `${rolePrefix} - Absent`
+                              : `${rolePrefix} - Leave`;
 
                         return (
                           <div
                             key={l.id}
                             title={`${l.signatory.name} (${label})`}
-                            className={`px-1.5 py-0.5 rounded text-[10px] font-semibold truncate ${
-                              isOB
-                                ? "bg-blue-100/90 text-blue-800"
+                            className={`px-1.5 py-0.5 rounded text-[10px] font-semibold truncate ${isOB
+                              ? "bg-blue-100/90 text-blue-800"
+                              : isOnTravel
+                                ? "bg-cyan-100/90 text-cyan-900"
                                 : isAbsent
-                                ? "bg-rose-100/90 text-rose-800"
-                                : "bg-amber-100/90 text-amber-900"
-                            }`}
+                                  ? "bg-rose-100/90 text-rose-800"
+                                  : "bg-amber-100/90 text-amber-900"
+                              }`}
                           >
                             {label}
                           </div>
                         );
                       })}
-                      {dayLeaves.length > 3 && (
+                      {visibleEvents.map((ev) => (
+                        <div
+                          key={ev.id}
+                          title={`${ev.eventType}: ${ev.title}${ev.eventTime ? ` (${ev.eventTime})` : ""}`}
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-semibold truncate ${getScheduleEventStyle(
+                            ev.eventType,
+                            ev.title
+                          )}`}
+                        >
+                          {ev.eventType}: {ev.title}
+                        </div>
+                      ))}
+                      {combinedCount > maxVisible && (
                         <div className="text-[9px] text-slate-400 font-bold pl-1">
-                          +{dayLeaves.length - 3} more
+                          +{combinedCount - maxVisible} more
                         </div>
                       )}
                     </div>
@@ -923,12 +1102,17 @@ export default function SignatoriesPage() {
 
                   <select
                     value={leaveStatusFilter}
-                    onChange={(e: any) => setLeaveStatusFilter(e.target.value)}
+                    onChange={(e) =>
+                      setLeaveStatusFilter(
+                        e.target.value as "ALL" | "ON_LEAVE" | "OB" | "ON_TRAVEL" | "ABSENT"
+                      )
+                    }
                     className="h-8 px-2.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
                   >
                     <option value="ALL">All statuses</option>
                     <option value="ON_LEAVE">On Leave</option>
                     <option value="OB">OB</option>
+                    <option value="ON_TRAVEL">On Travel</option>
                     <option value="ABSENT">Absent</option>
                   </select>
                 </div>
@@ -953,30 +1137,37 @@ export default function SignatoriesPage() {
                     <tbody className="divide-y divide-slate-100 text-xs">
                       {filteredLeaveRecords.map((rec) => {
                         const isOB = rec.leaveType === "OFFICIAL_BUSINESS" || rec.leaveType === "OB";
+                        const isOnTravel = rec.leaveType === "ON_TRAVEL";
                         const isAbsent = rec.leaveType === "ABSENT";
 
                         return (
                           <tr key={rec.id} className="hover:bg-slate-50/60 transition-colors">
                             <td className="py-3 px-3">
-                              <div className="flex flex-col">
-                                <span className="font-bold text-slate-800 text-xs">{rec.signatory.name}</span>
+                              <Link
+                                href={`/signatories/${rec.signatory.id}`}
+                                className="flex flex-col group/sig"
+                              >
+                                <span className="font-bold text-slate-800 text-xs group-hover/sig:text-blue-600 group-hover/sig:underline">
+                                  {rec.signatory.name}
+                                </span>
                                 <span className="text-[11px] text-slate-400">
                                   {getRoleLabel(rec.signatory.role) || rec.signatory.position}
                                 </span>
-                              </div>
+                              </Link>
                             </td>
 
                             <td className="py-3 px-3 whitespace-nowrap">
                               <span
-                                className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
-                                  isOB
-                                    ? "bg-blue-100 text-blue-700"
+                                className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${isOB
+                                  ? "bg-blue-100 text-blue-700"
+                                  : isOnTravel
+                                    ? "bg-cyan-100 text-cyan-800"
                                     : isAbsent
-                                    ? "bg-rose-100 text-rose-700"
-                                    : "bg-amber-100 text-amber-800"
-                                }`}
+                                      ? "bg-rose-100 text-rose-700"
+                                      : "bg-amber-100 text-amber-800"
+                                  }`}
                               >
-                                {isOB ? "OB" : isAbsent ? "Absent" : "On Leave"}
+                                {isOB ? "OB" : isOnTravel ? "On Travel" : isAbsent ? "Absent" : "On Leave"}
                               </span>
                             </td>
 
@@ -1022,6 +1213,65 @@ export default function SignatoriesPage() {
               <p className="text-xs text-slate-400 italic mt-4">
                 Documents dated within these ranges show the status above the signatory&apos;s name.
               </p>
+
+              {/* Scheduled BAC Activities from Dashboard Calendar */}
+              <div className="mt-6 border-t border-slate-100 pt-5">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-bold text-slate-900 text-sm">
+                    Scheduled BAC Activities ({calendarEvents.length})
+                  </h4>
+                  <span className="text-[11px] text-slate-400">
+                    Synced from Dashboard Calendar (Pre-Proc, Pre-Bid, Bid Opening, Award)
+                  </span>
+                </div>
+
+                {calendarEvents.length === 0 ? (
+                  <div className="py-6 text-center text-slate-400 text-xs italic border border-dashed border-slate-200 rounded-xl">
+                    No Award, Pre-Bid, Bid Opening, or Pre-Proc schedules set for this month.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {calendarEvents.map((ev) => (
+                      <div
+                        key={ev.id}
+                        className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-slate-50/50 px-3.5 py-2.5 text-xs"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span
+                            className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${getScheduleEventStyle(
+                              ev.eventType,
+                              ev.title
+                            )}`}
+                          >
+                            {ev.eventType}
+                          </span>
+                          <span className="font-semibold text-slate-800 truncate">{ev.title}</span>
+                        </div>
+
+                        <div className="flex items-center gap-3 shrink-0 text-slate-500">
+                          <span>
+                            {new Date(ev.eventDate).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
+                            {ev.eventTime ? ` • ${ev.eventTime}` : ""}
+                          </span>
+                          {ev.pr?.id && (
+                            <Link
+                              href={`/procurement-folders/${ev.pr.id}`}
+                              className="inline-flex items-center gap-1 font-semibold text-blue-600 hover:underline"
+                            >
+                              {ev.pr.prNumber || "Folder"}
+                              <ExternalLink size={11} />
+                            </Link>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Right Column: Add leave / OB Card (~35% width) */}
@@ -1066,37 +1316,44 @@ export default function SignatoriesPage() {
                 {/* Status Toggle Buttons */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Status</label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     <button
                       type="button"
                       onClick={() => setFormStatus("ON_LEAVE")}
-                      className={`h-9 rounded-xl text-xs font-semibold transition border cursor-pointer ${
-                        formStatus === "ON_LEAVE"
-                          ? "bg-amber-100 text-amber-900 border-amber-300 shadow-2xs"
-                          : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                      }`}
+                      className={`h-9 rounded-xl text-xs font-semibold transition border cursor-pointer ${formStatus === "ON_LEAVE"
+                        ? "bg-amber-100 text-amber-900 border-amber-300 shadow-2xs"
+                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                        }`}
                     >
                       On Leave
                     </button>
                     <button
                       type="button"
                       onClick={() => setFormStatus("OB")}
-                      className={`h-9 rounded-xl text-xs font-semibold transition border cursor-pointer ${
-                        formStatus === "OB"
-                          ? "bg-blue-100 text-blue-900 border-blue-300 shadow-2xs"
-                          : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                      }`}
+                      className={`h-9 rounded-xl text-xs font-semibold transition border cursor-pointer ${formStatus === "OB"
+                        ? "bg-blue-100 text-blue-900 border-blue-300 shadow-2xs"
+                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                        }`}
                     >
                       OB
                     </button>
                     <button
                       type="button"
+                      onClick={() => setFormStatus("ON_TRAVEL")}
+                      className={`h-9 rounded-xl text-xs font-semibold transition border cursor-pointer ${formStatus === "ON_TRAVEL"
+                        ? "bg-cyan-100 text-cyan-900 border-cyan-300 shadow-2xs"
+                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                        }`}
+                    >
+                      On Travel
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => setFormStatus("ABSENT")}
-                      className={`h-9 rounded-xl text-xs font-semibold transition border cursor-pointer ${
-                        formStatus === "ABSENT"
-                          ? "bg-rose-100 text-rose-900 border-rose-300 shadow-2xs"
-                          : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                      }`}
+                      className={`h-9 rounded-xl text-xs font-semibold transition border cursor-pointer ${formStatus === "ABSENT"
+                        ? "bg-rose-100 text-rose-900 border-rose-300 shadow-2xs"
+                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                        }`}
                     >
                       Absent
                     </button>
@@ -1169,11 +1426,11 @@ export default function SignatoriesPage() {
           initialValues={
             editTarget
               ? {
-                  name: editTarget.name,
-                  position: editTarget.position,
-                  role: editTarget.role,
-                  officeId: editTarget.officeId || editTarget.office?.id || "",
-                }
+                name: editTarget.name,
+                position: editTarget.position,
+                role: editTarget.role,
+                officeId: editTarget.officeId || editTarget.office?.id || "",
+              }
               : {}
           }
           onClose={() => setShowSignatoryModal(false)}
@@ -1200,11 +1457,10 @@ export default function SignatoriesPage() {
         <ConfirmModal
           isOpen={true}
           title="Delete Leave / OB Record"
-          message={`Are you sure you want to delete this ${
-            leaveToDelete.leaveType === "OFFICIAL_BUSINESS" || leaveToDelete.leaveType === "OB"
-              ? "OB"
-              : "leave"
-          } record for ${leaveToDelete.signatory?.name}?`}
+          message={`Are you sure you want to delete this ${leaveToDelete.leaveType === "OFFICIAL_BUSINESS" || leaveToDelete.leaveType === "OB"
+            ? "OB"
+            : "leave"
+            } record for ${leaveToDelete.signatory?.name}?`}
           confirmText="Delete Record"
           isDestructive={true}
           onClose={() => setLeaveToDelete(null)}
