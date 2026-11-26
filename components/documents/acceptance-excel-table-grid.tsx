@@ -432,7 +432,7 @@ export function AcceptanceExcelTableGrid({
                   onDoubleClick={() => handleCellDoubleClick(idx, 1)}
                   className={`border-r-2 border-black border-b px-2 align-top leading-normal relative ${
                     !isReadOnly ? "cursor-cell" : ""
-                  } ${isSpec ? "pl-4" : hasSpecs ? "font-bold" : ""} ${
+                  } ${isSpec ? "" : hasSpecs ? "font-bold" : ""} ${
                     selectedCell?.row === idx && selectedCell?.col === 1
                       ? "outline outline-2 outline-[#1d4ed8] -outline-offset-2 bg-[#1d4ed8]/10 z-20"
                       : ""
@@ -455,7 +455,7 @@ export function AcceptanceExcelTableGrid({
                       style={{ minHeight: "1.25rem", fontSize: "14px" }}
                     />
                   ) : (
-                    <FormattedCellText text={item.description} fallback="\u00A0" />
+                    <FormattedCellText text={item.description} fallback={"\u00A0"} />
                   )}
 
                   {selectedCell?.row === idx && selectedCell?.col === 1 && !isEditing && (

@@ -41,7 +41,7 @@ interface DashboardClientProps {
     };
     bacSignatories: { id: string; name: string; position?: string | null; role: string }[];
   };
-  user: { name?: string; role?: string };
+  user: { name?: string; nickname?: string | null; role?: string };
 }
 
 export default function DashboardClient({ data, user }: DashboardClientProps) {
@@ -53,6 +53,9 @@ export default function DashboardClient({ data, user }: DashboardClientProps) {
   };
 
   const getGreetingName = () => {
+    if (user.nickname?.trim()) {
+      return user.nickname.trim();
+    }
     if (!user.name) {
       if (user.role === "BAC_SECRETARIAT") return "BAC Secretariat";
       if (user.role === "ADMIN") return "Administrator";

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { X, Search, ShoppingCart, FileText, ClipboardList, Package, CheckSquare, ArrowUpRight } from "lucide-react";
 import { RecentlyOpenedItem } from "./types";
 import { formatRelativeTime } from "@/lib/recently-opened";
+import { ModalPortal } from "@/components/ui/modal-portal";
 
 interface RecentlyOpenedModalProps {
   isOpen: boolean;
@@ -80,20 +81,13 @@ export function RecentlyOpenedModal({ isOpen, onClose, items }: RecentlyOpenedMo
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-150">
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity"
-        onClick={onClose}
-        aria-hidden="true"
-      />
-
+    <ModalPortal onBackdropClick={onClose}>
       {/* Modal Dialog */}
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="recent-modal-title"
-        className="relative w-full max-w-2xl max-h-[82vh] bg-white rounded-2xl shadow-2xl border border-slate-200/90 flex flex-col overflow-hidden z-10 animate-in zoom-in-95 duration-150"
+        className="relative w-full max-w-2xl max-h-[82vh] bg-white rounded-[1.25rem] shadow-[0_20px_50px_rgba(15,23,42,0.15)] border border-slate-200 flex flex-col overflow-hidden animate-in zoom-in-95 duration-150"
       >
         {/* Integrated Command/Search Header */}
         <div className="flex items-center px-4 py-3.5 border-b border-slate-100 gap-3 bg-white">
@@ -226,7 +220,7 @@ export function RecentlyOpenedModal({ isOpen, onClose, items }: RecentlyOpenedMo
           <span className="hidden sm:inline text-[11px] text-slate-400">Click any document to open live preview</span>
         </div>
       </div>
-    </div>
+    </ModalPortal>
   );
 }
 

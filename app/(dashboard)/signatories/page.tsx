@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import FormModal from "@/components/ui/form-modal";
 import ConfirmModal from "@/components/ui/confirm-modal";
+import CustomSelect from "@/components/ui/custom-select";
 import LoaderWave from "@/components/ui/loader-wave";
 import { toast } from "sonner";
 
@@ -421,12 +422,15 @@ export default function SignatoriesPage() {
     if (!signatoryToDelete) return;
     try {
       const res = await fetch(`/api/signatories/${signatoryToDelete.id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to delete signatory");
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        throw new Error(e.error ?? "Failed to delete signatory");
+      }
       toast.success("Signatory removed");
       setSignatoryToDelete(null);
       fetchData();
-    } catch {
-      toast.error("Failed to remove signatory");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to remove signatory");
     }
   };
 
@@ -1100,21 +1104,25 @@ export default function SignatoriesPage() {
                     {calendarDate.toLocaleDateString("en-US", { month: "short", year: "numeric" })}
                   </div>
 
-                  <select
-                    value={leaveStatusFilter}
-                    onChange={(e) =>
-                      setLeaveStatusFilter(
-                        e.target.value as "ALL" | "ON_LEAVE" | "OB" | "ON_TRAVEL" | "ABSENT"
-                      )
-                    }
-                    className="h-8 px-2.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
-                  >
-                    <option value="ALL">All statuses</option>
-                    <option value="ON_LEAVE">On Leave</option>
-                    <option value="OB">OB</option>
-                    <option value="ON_TRAVEL">On Travel</option>
-                    <option value="ABSENT">Absent</option>
-                  </select>
+                  <div className="w-36">
+                    <CustomSelect
+                      size="sm"
+                      searchable={false}
+                      value={leaveStatusFilter}
+                      onChange={(val) =>
+                        setLeaveStatusFilter(
+                          val as "ALL" | "ON_LEAVE" | "OB" | "ON_TRAVEL" | "ABSENT"
+                        )
+                      }
+                      options={[
+                        { value: "ALL", label: "All statuses" },
+                        { value: "ON_LEAVE", label: "On Leave" },
+                        { value: "OB", label: "OB" },
+                        { value: "ON_TRAVEL", label: "On Travel" },
+                        { value: "ABSENT", label: "Absent" },
+                      ]}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -1298,19 +1306,16 @@ export default function SignatoriesPage() {
                 {/* Signatory Select */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Signatory</label>
-                  <select
+                  <CustomSelect
+                    size="sm"
+                    placeholder="Select signatory"
                     value={formSignatoryId}
-                    onChange={(e) => setFormSignatoryId(e.target.value)}
-                    required
-                    className="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-2xs cursor-pointer"
-                  >
-                    <option value="">Select signatory</option>
-                    {signatories.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name} ({getRoleLabel(s.role)})
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => setFormSignatoryId(val)}
+                    options={signatories.map((s) => ({
+                      value: s.id,
+                      label: `${s.name} (${getRoleLabel(s.role)})`,
+                    }))}
+                  />
                 </div>
 
                 {/* Status Toggle Buttons */}
@@ -1389,20 +1394,21 @@ export default function SignatoriesPage() {
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Signs in behalf (optional)
                   </label>
-                  <select
+                  <CustomSelect
+                    size="sm"
+                    placeholder="Select OIC / alternate"
                     value={formSignsInBehalf}
-                    onChange={(e) => setFormSignsInBehalf(e.target.value)}
-                    className="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-2xs cursor-pointer"
-                  >
-                    <option value="">Select OIC / alternate</option>
-                    {signatories
-                      .filter((s) => s.id !== formSignatoryId)
-                      .map((s) => (
-                        <option key={s.id} value={s.name}>
-                          {s.name} ({getRoleLabel(s.role)})
-                        </option>
-                      ))}
-                  </select>
+                    onChange={(val) => setFormSignsInBehalf(val)}
+                    options={[
+                      { value: "", label: "Select OIC / alternate" },
+                      ...signatories
+                        .filter((s) => s.id !== formSignatoryId)
+                        .map((s) => ({
+                          value: s.name,
+                          label: `${s.name} (${getRoleLabel(s.role)})`,
+                        })),
+                    ]}
+                  />
                 </div>
 
                 {/* Submit button */}

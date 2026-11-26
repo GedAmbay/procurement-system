@@ -436,7 +436,7 @@ export function AbstractExcelTableGrid({
                   style={{
                     ...cell,
                     fontWeight: isSpec ? "normal" : hasSpecs ? "bold" : "normal",
-                    paddingLeft: isSpec ? "1.5rem" : "0.5rem",
+                    paddingLeft: "0.5rem",
                     position: "relative",
                   }}
                   className={`${!isReadOnly ? "cursor-cell" : ""} ${
@@ -445,7 +445,7 @@ export function AbstractExcelTableGrid({
                       : ""
                   }`}
                 >
-                  <FormattedCellText text={item.description} fallback="\u00A0" />
+                  <FormattedCellText text={item.description} fallback={"\u00A0"} />
                   {selectedCell?.row === idx && selectedCell?.col === 0 && !isEditing && (
                     <div
                       className="absolute -bottom-[2px] -right-[2px] w-[5px] h-[5px] bg-[#1d4ed8] pointer-events-none no-print z-30"

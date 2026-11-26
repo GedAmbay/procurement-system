@@ -558,7 +558,7 @@ export function PoExcelTableGrid({
                   onDoubleClick={() => handleCellDoubleClick(idx, 2)}
                   className={`border-r border-black p-0 px-1.5 align-top leading-normal relative ${
                     !isReadOnly ? "cursor-cell" : ""
-                  } ${isSpec ? "pl-4" : hasSpecs ? "font-bold" : ""} ${
+                  } ${isSpec ? "" : hasSpecs ? "font-bold" : ""} ${
                     selectedCell?.row === idx && selectedCell?.col === 2
                       ? "outline outline-2 outline-[#1d4ed8] -outline-offset-2 bg-[#1d4ed8]/10 z-20"
                       : ""
@@ -580,7 +580,7 @@ export function PoExcelTableGrid({
                       style={{ minHeight: "1.25rem", fontSize: "14px" }}
                     />
                   ) : (
-                    <FormattedCellText text={item.description} fallback="\u00A0" />
+                    <FormattedCellText text={item.description} fallback={"\u00A0"} />
                   )}
 
                   {selectedCell?.row === idx && selectedCell?.col === 2 && !isEditing && (

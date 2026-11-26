@@ -35,6 +35,20 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
 
-  await prisma.item.update({ where: { id }, data: { isActive: false } });
-  return NextResponse.json({ success: true });
+  try {
+    const lineItemCount = await prisma.prLineItem.count({ where: { itemId: id } });
+
+    if (lineItemCount > 0) {
+      return NextResponse.json(
+        { error: `Cannot delete item: it is currently referenced by ${lineItemCount} purchase request item(s).` },
+        { status: 400 }
+      );
+    }
+
+    await prisma.item.delete({ where: { id } });
+    return NextResponse.json({ success: true });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Failed to delete item";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

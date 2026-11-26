@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { AlertTriangle, X, Lock, CheckCircle2 } from "lucide-react";
 
 interface ConfirmModalProps {
@@ -29,6 +30,7 @@ export default function ConfirmModal({
   isLoading = false,
 }: ConfirmModalProps) {
   const [password, setPassword] = useState("");
+  const [passwordFocused, setPasswordFocused] = useState(false);
 
   useEffect(() => {
     if (!isOpen) {
@@ -54,13 +56,13 @@ export default function ConfirmModal({
     onConfirm(requirePassword ? pwd : undefined);
   };
 
-  return (
+  const modalContent = (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/45 backdrop-blur-xs animate-in fade-in duration-200"
       onClick={onClose}
     >
-      <div 
-        className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200"
+      <div
+        className="bg-white rounded-[1.25rem] border border-slate-200 shadow-[0_20px_50px_rgba(15,23,42,0.15)] w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6">
@@ -81,24 +83,58 @@ export default function ConfirmModal({
           <p className="text-slate-600 mb-6">{message}</p>
 
           {requirePassword && (
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Enter your password to continue
-              </label>
+            <div className="mb-6" style={{ position: "relative" }}>
               <input
+                id="confirm-modal-password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                onFocus={() => setPasswordFocused(true)}
+                onBlur={() => setPasswordFocused(false)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !isLoading && password) {
                     e.preventDefault();
                     handleConfirm();
                   }
                 }}
-                placeholder="••••••••"
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                placeholder=" "
                 autoFocus
+                style={{
+                  width: "100%",
+                  height: "54px",
+                  padding: "1.25rem 0.875rem 0.4rem",
+                  border: passwordFocused ? "2px solid #0f172a" : "2px solid transparent",
+                  borderRadius: "0.625rem",
+                  fontSize: "0.9rem",
+                  fontWeight: 500,
+                  color: "#0f172a",
+                  background: passwordFocused ? "#ffffff" : "#ECF0F3",
+                  outline: "none",
+                  boxSizing: "border-box",
+                  boxShadow: passwordFocused
+                    ? "none"
+                    : "inset 18px 18px 30px #D1D9E6, inset -18px -18px 30px #ffffff",
+                  transition: "all 0.16s ease-in-out",
+                }}
               />
+              <label
+                htmlFor="confirm-modal-password"
+                style={{
+                  position: "absolute",
+                  left: "0.875rem",
+                  top: passwordFocused || password.length > 0 ? "0.45rem" : "50%",
+                  transform: passwordFocused || password.length > 0 ? "translateY(0)" : "translateY(-50%)",
+                  fontSize: passwordFocused || password.length > 0 ? "0.625rem" : "0.75rem",
+                  fontWeight: 700,
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                  color: passwordFocused ? "#0f172a" : "#64748b",
+                  pointerEvents: "none",
+                  transition: "all 0.16s cubic-bezier(0.4, 0, 0.2, 1)",
+                }}
+              >
+                Enter your password to continue
+              </label>
             </div>
           )}
 
@@ -131,4 +167,7 @@ export default function ConfirmModal({
       </div>
     </div>
   );
+
+  if (typeof document === "undefined") return modalContent;
+  return createPortal(modalContent, document.body);
 }

@@ -42,6 +42,29 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
 
-  await prisma.supplier.update({ where: { id }, data: { isActive: false } });
-  return NextResponse.json({ success: true });
+  try {
+    const [poCount, quotationCount, rfqSupplierCount] = await Promise.all([
+      prisma.purchaseOrder.count({ where: { supplierId: id } }),
+      prisma.quotation.count({ where: { supplierId: id } }),
+      prisma.rfqSupplier.count({ where: { supplierId: id } }),
+    ]);
+
+    if (poCount > 0 || quotationCount > 0 || rfqSupplierCount > 0) {
+      const reasons: string[] = [];
+      if (poCount > 0) reasons.push(`${poCount} purchase order(s)`);
+      if (quotationCount > 0) reasons.push(`${quotationCount} quotation(s)`);
+      if (rfqSupplierCount > 0) reasons.push(`${rfqSupplierCount} RFQ(s)`);
+
+      return NextResponse.json(
+        { error: `Cannot delete supplier: it is currently referenced by ${reasons.join(", ")}.` },
+        { status: 400 }
+      );
+    }
+
+    await prisma.supplier.delete({ where: { id } });
+    return NextResponse.json({ success: true });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Failed to delete supplier";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

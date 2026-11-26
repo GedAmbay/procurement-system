@@ -52,12 +52,12 @@ const columns = [
 
 const supplierFields = [
   { key: "name", label: "Supplier / Company Name", required: true, placeholder: "e.g., ABC Medical Supplies Corp." },
-  { key: "philgepsNo", label: "PhilGEPS Registration No.", placeholder: "e.g., PH-2024-001" },
-  { key: "tin", label: "TIN (Tax Identification No.)", placeholder: "e.g., 123-456-789-000" },
-  { key: "address", label: "Business Address", type: "textarea" as const, placeholder: "Street, City, Province" },
+  { key: "philgepsNo", label: "PhilGEPS Registration No.", placeholder: "e.g., PH-2024-001", halfWidth: true },
+  { key: "tin", label: "TIN (Tax Identification No.)", placeholder: "e.g., 123-456-789-000", halfWidth: true },
+  { key: "address", label: "Business Address", type: "textarea" as const, placeholder: "Street, City, Province", rows: 2 },
   { key: "contactPerson", label: "Contact Person", placeholder: "Full name" },
-  { key: "contactNumber", label: "Contact Number", placeholder: "e.g., 09171234567" },
-  { key: "email", label: "Email Address", type: "email" as const, placeholder: "supplier@example.com" },
+  { key: "contactNumber", label: "Contact Number", placeholder: "e.g., 09171234567", halfWidth: true },
+  { key: "email", label: "Email Address", type: "email" as const, placeholder: "supplier@example.com", halfWidth: true },
 ];
 
 export default function SuppliersPage() {
@@ -87,7 +87,10 @@ export default function SuppliersPage() {
 
   const handleDelete = async (row: Supplier) => {
     const res = await fetch(`/api/suppliers/${row.id}`, { method: "DELETE" });
-    if (!res.ok) throw new Error("Failed to deactivate supplier");
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}));
+      throw new Error(e.error ?? "Failed to delete supplier");
+    }
   };
 
   return (

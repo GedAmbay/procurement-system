@@ -1,5 +1,7 @@
 "use client";
 
+import { ModalPortal } from "@/components/ui/modal-portal";
+
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -685,8 +687,8 @@ export default function AbstractHubPage() {
 
       {/* Finalize Dialog Modal */}
       {showFinalizeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6">
+        <ModalPortal onBackdropClick={() => !finalizing && setShowFinalizeModal(false)}>
+          <div className="bg-white rounded-[1.25rem] max-w-lg w-full p-6 sm:p-8 shadow-[0_20px_50px_rgba(15,23,42,0.15)] border border-slate-200 space-y-6 animate-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div>
                 <h3 className="text-xl font-black text-slate-900">
@@ -844,7 +846,7 @@ export default function AbstractHubPage() {
               </Button>
             </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
     </div>
   );

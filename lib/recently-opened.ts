@@ -61,66 +61,38 @@ export function formatRelativeTime(dateInput: string | Date | number): string {
 }
 
 export function getDefaultRecentlyOpened(): RecentlyOpenedItem[] {
-  return [
-    {
-      id: "recent-1",
-      documentId: "abstract-sample",
-      documentType: "Abstract",
-      title: "Abstract of Canvass",
-      officeName: "Bids and Awards Committee",
-      openedAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-      url: "/abstract",
-    },
-    {
-      id: "recent-2",
-      documentId: "rfq-sample",
-      documentType: "RFQ",
-      title: "Request for Quotation",
-      officeName: "Municipal Engineering Office",
-      openedAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
-      url: "/rfqs",
-    },
-    {
-      id: "recent-3",
-      documentId: "pr-sample",
-      documentType: "PR",
-      title: "Purchase Request",
-      officeName: "Municipal Mayor/Supply",
-      openedAt: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
-      url: "/purchase-requests",
-    },
-    {
-      id: "recent-4",
-      documentId: "po-sample",
-      documentType: "PO",
-      title: "Purchase Order",
-      officeName: "Municipal Engineering Office",
-      openedAt: new Date(Date.now() - 5 * 3600 * 1000).toISOString(),
-      url: "/purchase-orders",
-    },
-  ];
+  return [];
+}
+
+function isSampleItem(item: RecentlyOpenedItem): boolean {
+  return (
+    typeof item?.documentId === "string" && item.documentId.endsWith("-sample")
+  ) || (
+    typeof item?.id === "string" && /^recent-[1-4]$/.test(item.id)
+  );
 }
 
 export function getRecentlyOpened(userId: string = "current"): RecentlyOpenedItem[] {
   if (typeof window === "undefined") {
-    return getDefaultRecentlyOpened();
+    return [];
   }
 
   try {
     const raw = localStorage.getItem(`${STORAGE_KEY_PREFIX}${userId}`);
     if (!raw) {
-      // Store default records so they persist
-      const initial = getDefaultRecentlyOpened();
-      localStorage.setItem(`${STORAGE_KEY_PREFIX}${userId}`, JSON.stringify(initial));
-      return initial;
+      return [];
     }
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed) && parsed.length > 0) {
-      return parsed.slice(0, 20);
+      const cleaned = parsed.filter((item) => !isSampleItem(item));
+      if (cleaned.length !== parsed.length) {
+        localStorage.setItem(`${STORAGE_KEY_PREFIX}${userId}`, JSON.stringify(cleaned));
+      }
+      return cleaned.slice(0, 20);
     }
     return [];
   } catch {
-    return getDefaultRecentlyOpened();
+    return [];
   }
 }
 

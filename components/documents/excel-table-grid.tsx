@@ -548,7 +548,7 @@ export function ExcelTableGrid({
                     onDoubleClick={() => handleCellDoubleClick(idx, 2)}
                     className={`border border-black p-0 px-1 leading-tight whitespace-normal break-words align-top relative ${
                       !isReadOnly ? "cursor-cell" : ""
-                    } ${isSpec ? "pl-4 text-sm" : hasSpecs ? "font-bold" : ""} ${
+                    } ${isSpec ? "text-sm" : hasSpecs ? "font-bold" : ""} ${
                       selectedCell?.row === idx && selectedCell?.col === 2
                         ? "outline outline-2 outline-[#1d4ed8] -outline-offset-2 bg-[#1d4ed8]/10 z-20"
                         : ""
@@ -570,7 +570,7 @@ export function ExcelTableGrid({
                         style={{ minHeight: "1.25rem" }}
                       />
                     ) : (
-                      <FormattedCellText text={item.description} fallback="\u00A0" />
+                      <FormattedCellText text={item.description} fallback={"\u00A0"} />
                     )}
 
                     {/* Excel Fill Handle */}

@@ -114,6 +114,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         return {
           id: user.id,
           name: user.name,
+          nickname: user.nickname,
           username: user.username,
           email: user.email,
           role: user.role,
@@ -128,6 +129,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id;
+        token.nickname = user.nickname;
         token.username = user.username;
         token.email = user.email;
         token.role = user.role;
@@ -145,6 +147,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             select: {
               id: true,
               name: true,
+              nickname: true,
               username: true,
               email: true,
               role: true,
@@ -171,6 +174,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           }
 
           token.name = dbUser.name;
+          token.nickname = dbUser.nickname;
           token.username = dbUser.username;
           token.email = dbUser.email;
           token.role = dbUser.role;
@@ -188,6 +192,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (!token) return session;
       session.user.id = (token.id || token.sub) as string;
       session.user.name = (token.name as string) ?? session.user.name;
+      session.user.nickname = (token.nickname as string | null) ?? null;
       session.user.email = (token.email as string | null) ?? "";
       session.user.username = token.username;
       session.user.role = token.role;

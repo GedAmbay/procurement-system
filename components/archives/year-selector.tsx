@@ -1,22 +1,30 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import CustomSelect from "@/components/ui/custom-select";
 
-export default function YearSelector({ defaultValue, availableYears }: { defaultValue: number, availableYears: number[] }) {
+export default function YearSelector({
+  defaultValue,
+  availableYears,
+}: {
+  defaultValue: number;
+  availableYears: number[];
+}) {
   const router = useRouter();
-  
+
   return (
-    <select 
-      name="year" 
-      defaultValue={defaultValue}
-      onChange={(e) => {
-        router.push(`/archives?year=${e.target.value}`);
-      }}
-      className="form-select bg-white py-1 px-3"
-    >
-      {availableYears.map(y => (
-        <option key={y} value={y}>{y}</option>
-      ))}
-    </select>
+    <div className="w-28">
+      <CustomSelect
+        name="year"
+        size="sm"
+        searchable={false}
+        value={String(defaultValue)}
+        onChange={(val) => router.push(`/archives?year=${val}`)}
+        options={availableYears.map((y) => ({
+          value: String(y),
+          label: String(y),
+        }))}
+      />
+    </div>
   );
 }

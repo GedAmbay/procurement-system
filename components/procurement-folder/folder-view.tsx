@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
+import { ModalPortal } from "@/components/ui/modal-portal";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import {
   ProcurementStage,
@@ -908,12 +909,9 @@ export default function FolderView({ folderData, stages }: FolderViewProps) {
 
       {/* Full Timeline Modal */}
       {showTimelineModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs"
-          onClick={() => setShowTimelineModal(false)}
-        >
+        <ModalPortal onBackdropClick={() => setShowTimelineModal(false)}>
           <div
-            className="max-h-[80vh] w-full max-w-lg overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl"
+            className="max-h-[80vh] w-full max-w-lg overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white shadow-[0_20px_50px_rgba(15,23,42,0.15)] animate-in zoom-in-95 duration-150"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
@@ -957,7 +955,7 @@ export default function FolderView({ folderData, stages }: FolderViewProps) {
               </div>
             </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
     </div>
   );

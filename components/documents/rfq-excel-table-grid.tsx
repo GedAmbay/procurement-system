@@ -434,7 +434,7 @@ export function RfqExcelTableGrid({
                   onDoubleClick={() => handleCellDoubleClick(idx, 0)}
                   className={`border-x border-black py-0 px-1.5 align-top leading-normal relative ${
                     !isReadOnly ? "cursor-cell" : ""
-                  } ${isSpec ? "pl-4" : hasSpecs ? "font-bold" : ""} ${
+                  } ${isSpec ? "" : hasSpecs ? "font-bold" : ""} ${
                     selectedCell?.row === idx && selectedCell?.col === 0
                       ? "outline outline-2 outline-[#1d4ed8] -outline-offset-2 bg-[#1d4ed8]/10 z-20"
                       : ""
@@ -456,7 +456,7 @@ export function RfqExcelTableGrid({
                       style={{ minHeight: "1.25rem", fontSize: "11px" }}
                     />
                   ) : (
-                    <FormattedCellText text={item.description} fallback="\u00A0" />
+                    <FormattedCellText text={item.description} fallback={"\u00A0"} />
                   )}
 
                   {selectedCell?.row === idx && selectedCell?.col === 0 && !isEditing && (

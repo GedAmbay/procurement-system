@@ -12,7 +12,7 @@ import {
   Building2,
   Users,
   FileText,
-  KeyRound,
+  UserCog,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
@@ -21,6 +21,7 @@ import { useSidebar } from "@/components/layout/sidebar-context";
 interface TopbarProps {
   user: {
     name?: string | null;
+    nickname?: string | null;
     username?: string | null;
     email?: string | null;
     role?: string;
@@ -41,6 +42,7 @@ const pageTitles: Record<string, string> = {
   "/audit-log": "Audit Trail",
   "/acceptances": "Acceptance & Inspection",
   "/archives": "Archives",
+  "/profile": "Edit Profile",
 };
 
 interface CalendarNotification {
@@ -216,7 +218,7 @@ export default function Topbar({ user }: TopbarProps) {
             {/* User name & role label */}
             <div className="text-left hidden sm:block">
               <div className="text-sm font-bold text-slate-800 leading-tight group-hover:text-blue-600 transition-colors">
-                {user.name?.split(" ")[0]}
+                {user.nickname?.trim() || user.name?.split(" ")[0]}
               </div>
               <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest leading-none mt-0.5">
                 {user.role === "END_USER" ? "CLERK" : user.role?.replace(/_/g, " ")}
@@ -256,9 +258,10 @@ export default function Topbar({ user }: TopbarProps) {
 
                   <div className="flex-1 min-w-0">
                     <div className="text-[13px] font-bold text-slate-900 truncate tracking-tight leading-snug">
-                      {user.name}
+                      {user.nickname?.trim() || user.name}
                     </div>
                     <div className="text-[11px] text-slate-500 truncate mt-0.5 font-normal">
+                      {user.nickname?.trim() && user.name ? `${user.name} • ` : ""}
                       {user.username ? `ID: ${user.username}` : user.email || "No ID"}
                       {user.email && user.username ? ` • ${user.email}` : ""}
                     </div>
@@ -315,20 +318,20 @@ export default function Topbar({ user }: TopbarProps) {
                 </div>
               )}
 
-              {/* Account & Change Password */}
+              {/* Account & Edit Profile */}
               <div className="p-1.5 border-t border-slate-100">
                 <Link
-                  href="/change-password"
+                  href="/profile"
                   onClick={() => setShowMenu(false)}
                   className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-medium text-slate-700 hover:text-blue-600 hover:bg-slate-50 transition-colors group"
                 >
                   <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 group-hover:text-blue-600 group-hover:bg-blue-50 transition-colors">
-                    <KeyRound size={14} />
+                    <UserCog size={14} />
                   </div>
                   <div className="flex-1">
-                    <span className="font-semibold block">Change Password</span>
+                    <span className="font-semibold block">Edit Profile</span>
                     <span className="text-[10px] text-slate-400 block font-normal leading-tight">
-                      Update your login password
+                      Nickname & login password
                     </span>
                   </div>
                 </Link>

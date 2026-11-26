@@ -16,6 +16,8 @@ import {
 import { format } from "date-fns";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
+import CustomSelect from "@/components/ui/custom-select";
+import { ModalPortal, FloatingInput, FloatingTextarea } from "@/components/ui/modal-portal";
 
 export interface BacMemberItem {
   id: string;
@@ -418,8 +420,8 @@ export default function BacAttendancePanel({
 
       {/* Record Approved Leave Modal */}
       {showLeaveModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-slate-100">
+        <ModalPortal onBackdropClick={() => setShowLeaveModal(false)}>
+          <div className="bg-white rounded-[1.25rem] shadow-[0_20px_50px_rgba(15,23,42,0.15)] w-full max-w-md overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-150">
             <div className="flex justify-between items-center p-4 border-b border-slate-100 bg-slate-50/70">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center">
@@ -438,81 +440,58 @@ export default function BacAttendancePanel({
               </button>
             </div>
 
-            <form onSubmit={submitLeaveRecord} className="p-5 flex flex-col gap-4">
-              <div>
-                <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                  BAC Member *
-                </label>
-                <select
-                  required
-                  className="form-select text-xs font-medium"
-                  value={leaveSignatoryId}
-                  onChange={(e) => setLeaveSignatoryId(e.target.value)}
-                >
-                  <option value="">-- Select Member --</option>
-                  {members.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name} ({m.positionLabel})
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <form onSubmit={submitLeaveRecord} className="p-5 flex flex-col gap-3.5">
+              <CustomSelect
+                floatingLabel="BAC Member"
+                required
+                placeholder="-- Select Member --"
+                value={leaveSignatoryId}
+                onChange={(val) => setLeaveSignatoryId(val)}
+                options={members.map((m) => ({
+                  value: m.id,
+                  label: `${m.name} (${m.positionLabel})`,
+                }))}
+              />
 
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                    Start Date *
-                  </label>
-                  <input
-                    required
-                    type="date"
-                    className="form-input text-xs"
-                    value={leaveStartDate}
-                    onChange={(e) => setLeaveStartDate(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                    End Date *
-                  </label>
-                  <input
-                    required
-                    type="date"
-                    className="form-input text-xs"
-                    value={leaveEndDate}
-                    onChange={(e) => setLeaveEndDate(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                  Leave Type
-                </label>
-                <select
-                  className="form-select text-xs"
-                  value={leaveType}
-                  onChange={(e) => setLeaveType(e.target.value)}
-                >
-                  <option value="VACATION">Vacation Leave</option>
-                  <option value="SICK">Sick Leave</option>
-                  <option value="OFFICIAL_BUSINESS">Official Business (OB)</option>
-                  <option value="EMERGENCY">Emergency Leave</option>
-                  <option value="OTHER">Other</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                  Reason / Order Reference (Optional)
-                </label>
-                <textarea
-                  className="form-input text-xs h-20 resize-none"
-                  value={leaveReason}
-                  onChange={(e) => setLeaveReason(e.target.value)}
-                  placeholder="Official Travel Order / Special Leave Application..."
+                <FloatingInput
+                  label="Start Date"
+                  required
+                  type="date"
+                  value={leaveStartDate}
+                  onChange={(e) => setLeaveStartDate(e.target.value)}
+                />
+                <FloatingInput
+                  label="End Date"
+                  required
+                  type="date"
+                  value={leaveEndDate}
+                  onChange={(e) => setLeaveEndDate(e.target.value)}
                 />
               </div>
+
+              <CustomSelect
+                floatingLabel="Leave Type"
+                searchable={false}
+                value={leaveType}
+                onChange={(val) => setLeaveType(val)}
+                options={[
+                  { value: "VACATION", label: "Vacation Leave" },
+                  { value: "SICK", label: "Sick Leave" },
+                  { value: "OFFICIAL_BUSINESS", label: "Official Business (OB)" },
+                  { value: "EMERGENCY", label: "Emergency Leave" },
+                  { value: "OTHER", label: "Other" },
+                ]}
+              />
+
+              <FloatingTextarea
+                label="Reason / Order Reference"
+                optionalBadge
+                rows={3}
+                value={leaveReason}
+                onChange={(e) => setLeaveReason(e.target.value)}
+                placeholder="Official Travel Order / Special Leave Application..."
+              />
 
               <div className="flex justify-end gap-2 mt-2 pt-4 border-t border-slate-100">
                 <button
@@ -531,7 +510,7 @@ export default function BacAttendancePanel({
               </div>
             </form>
           </div>
-        </div>
+        </ModalPortal>
       )}
     </div>
   );

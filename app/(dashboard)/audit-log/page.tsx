@@ -28,6 +28,8 @@ import {
   Code,
 } from "lucide-react";
 import { toast } from "sonner";
+import CustomSelect from "@/components/ui/custom-select";
+import { ModalPortal } from "@/components/ui/modal-portal";
 import LoaderWave from "@/components/ui/loader-wave";
 import { getLivePreviewUrl } from "@/lib/recently-opened";
 
@@ -462,74 +464,67 @@ export default function AuditLogPage() {
 
           {/* Document Type Filter */}
           <div className="md:col-span-2">
-            <select
+            <CustomSelect
+              size="sm"
+              searchable={false}
               value={docTypeFilter}
-              onChange={(e) => {
-                setDocTypeFilter(e.target.value);
+              onChange={(val) => {
+                setDocTypeFilter(val);
                 setPage(1);
               }}
-              className="w-full py-2 px-3 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
-            >
-              {DOC_TYPES.map((dt) => (
-                <option key={dt.value} value={dt.value}>
-                  {dt.label}
-                </option>
-              ))}
-            </select>
+              options={DOC_TYPES.map((dt) => ({ value: dt.value, label: dt.label }))}
+            />
           </div>
 
           {/* Action Filter */}
           <div className="md:col-span-2">
-            <select
+            <CustomSelect
+              size="sm"
               value={actionFilter}
-              onChange={(e) => {
-                setActionFilter(e.target.value);
+              onChange={(val) => {
+                setActionFilter(val);
                 setPage(1);
               }}
-              className="w-full py-2 px-3 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
-            >
-              {ACTIONS.map((ac) => (
-                <option key={ac.value} value={ac.value}>
-                  {ac.label}
-                </option>
-              ))}
-            </select>
+              options={ACTIONS.map((ac) => ({ value: ac.value, label: ac.label }))}
+            />
           </div>
 
           {/* User Filter */}
           <div className="md:col-span-2">
-            <select
+            <CustomSelect
+              size="sm"
               value={userFilter}
-              onChange={(e) => {
-                setUserFilter(e.target.value);
+              onChange={(val) => {
+                setUserFilter(val);
                 setPage(1);
               }}
-              className="w-full py-2 px-3 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
-            >
-              <option value="ALL">All Staff / Users</option>
-              {userOptions.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name} ({u.role === "END_USER" ? "Clerk" : u.role})
-                </option>
-              ))}
-            </select>
+              options={[
+                { value: "ALL", label: "All Staff / Users" },
+                ...userOptions.map((u) => ({
+                  value: u.id,
+                  label: `${u.name} (${u.role === "END_USER" ? "Clerk" : u.role})`,
+                })),
+              ]}
+            />
           </div>
 
           {/* Date Range Preset */}
           <div className="md:col-span-2">
-            <select
+            <CustomSelect
+              size="sm"
+              searchable={false}
               value={dateRange}
-              onChange={(e) => {
-                setDateRange(e.target.value);
+              onChange={(val) => {
+                setDateRange(val);
                 setPage(1);
               }}
-              className="w-full py-2 px-3 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer font-medium"
-            >
-              <option value="ALL">All Dates</option>
-              <option value="TODAY">Today Only</option>
-              <option value="WEEK">Last 7 Days</option>
-              <option value="MONTH">Last 30 Days</option>
-            </select>
+              options={[
+                { value: "ALL", label: "All Dates" },
+                { value: "TODAY", label: "Today Only" },
+                { value: "WEEK", label: "Last 7 Days" },
+                { value: "MONTH", label: "Last 30 Days" },
+              ]}
+            />
           </div>
         </div>
 
@@ -712,19 +707,23 @@ export default function AuditLogPage() {
           <div className="p-4 border-t border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600">
             <div className="flex items-center gap-2">
               <span>Rows per page:</span>
-              <select
-                value={limit}
-                onChange={(e) => {
-                  setLimit(Number(e.target.value));
-                  setPage(1);
-                }}
-                className="py-1 px-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold cursor-pointer"
-              >
-                <option value={15}>15</option>
-                <option value={25}>25</option>
-                <option value={50}>50</option>
-                <option value={100}>100</option>
-              </select>
+              <div className="w-[74px]">
+                <CustomSelect
+                  size="sm"
+                  searchable={false}
+                  value={String(limit)}
+                  onChange={(val) => {
+                    setLimit(Number(val));
+                    setPage(1);
+                  }}
+                  options={[
+                    { value: "15", label: "15" },
+                    { value: "25", label: "25" },
+                    { value: "50", label: "50" },
+                    { value: "100", label: "100" },
+                  ]}
+                />
+              </div>
               <span className="text-slate-400">
                 · Showing {(page - 1) * limit + 1} to{" "}
                 {Math.min(page * limit, stats.totalFiltered)} of {stats.totalFiltered} entries
@@ -762,8 +761,8 @@ export default function AuditLogPage() {
 
       {/* Metadata Payload Modal */}
       {selectedLog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-          <div className="w-full max-w-xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <ModalPortal onBackdropClick={() => setSelectedLog(null)}>
+          <div className="w-full max-w-xl bg-white rounded-[1.25rem] shadow-[0_20px_50px_rgba(15,23,42,0.15)] border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
               <div className="flex items-center gap-2">
                 <Code size={16} className="text-blue-600" />
@@ -828,7 +827,7 @@ export default function AuditLogPage() {
               </button>
             </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
     </div>
   );

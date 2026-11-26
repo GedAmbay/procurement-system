@@ -12,6 +12,7 @@ const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 interface DashboardUser {
   id?: string;
   name?: string | null;
+  nickname?: string | null;
   username?: string | null;
   email?: string | null;
   role?: string;

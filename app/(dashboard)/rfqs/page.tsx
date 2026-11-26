@@ -27,6 +27,7 @@ import {
 import LoaderWave from "@/components/ui/loader-wave";
 import FormModal from "@/components/ui/form-modal";
 import ConfirmModal from "@/components/ui/confirm-modal";
+import CustomSelect from "@/components/ui/custom-select";
 import StatusBadge from "@/components/ui/status-badge";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
@@ -715,15 +716,19 @@ export default function RFQPage() {
 
               <div className="hidden sm:flex items-center gap-2">
                 <span>Rows per page</span>
-                <select
-                  value={rowsPerPage}
-                  onChange={(e) => setRowsPerPage(Number(e.target.value))}
-                  className="h-8 px-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-xs outline-none focus:border-blue-500 cursor-pointer"
-                >
-                  <option value={10}>10</option>
-                  <option value={25}>25</option>
-                  <option value={50}>50</option>
-                </select>
+                <div className="w-[72px]">
+                  <CustomSelect
+                    size="sm"
+                    searchable={false}
+                    value={String(rowsPerPage)}
+                    onChange={(val) => setRowsPerPage(Number(val))}
+                    options={[
+                      { value: "10", label: "10" },
+                      { value: "25", label: "25" },
+                      { value: "50", label: "50" },
+                    ]}
+                  />
+                </div>
               </div>
             </div>
 

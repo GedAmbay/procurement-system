@@ -14,6 +14,8 @@ import {
   addDays,
   parseISO,
 } from "date-fns";
+import CustomSelect from "@/components/ui/custom-select";
+import { ModalPortal, FloatingInput, FloatingTextarea } from "@/components/ui/modal-portal";
 import {
   ChevronLeft,
   ChevronRight,
@@ -754,8 +756,8 @@ export default function CalendarWidget() {
         const textareaClass = "w-full px-3.5 py-2.5 bg-slate-50/70 hover:bg-white focus:bg-white border border-slate-200/90 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-2xs resize-none";
 
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200/90 max-h-[90vh] flex flex-col transition-all">
+          <ModalPortal onBackdropClick={() => setShowEventModal(false)}>
+            <div className="bg-white rounded-[1.25rem] shadow-[0_20px_50px_rgba(15,23,42,0.15)] w-full max-w-lg overflow-hidden border border-slate-200 max-h-[90vh] flex flex-col transition-all animate-in zoom-in-95 duration-150">
               {/* Modal Header */}
               <div className="flex justify-between items-center px-6 py-4 border-b border-slate-100 bg-slate-50/60">
                 <div className="flex items-center gap-3">
@@ -984,48 +986,31 @@ export default function CalendarWidget() {
                     {/* Birthday-Specific Fields */}
                     {eventType === "Birthday" ? (
                       <>
-                        <div>
-                          <label className="text-xs font-bold text-slate-700 mb-1.5 block">
-                            Celebrant / Person Name <span className="text-rose-500">*</span>
-                          </label>
-                          <input
-                            required
-                            type="text"
-                            className={inputClass}
-                            value={recipient}
-                            onChange={(e) => {
-                              setRecipient(e.target.value);
-                              setTitle(`${e.target.value}'s Birthday`);
-                            }}
-                            placeholder="e.g. Engr. Carlos Cruz"
-                          />
-                        </div>
+                        <FloatingInput
+                          label="Celebrant / Person Name"
+                          required
+                          value={recipient}
+                          onChange={(e) => {
+                            setRecipient(e.target.value);
+                            setTitle(`${e.target.value}'s Birthday`);
+                          }}
+                          placeholder="e.g. Engr. Carlos Cruz"
+                        />
 
-                        <div>
-                          <label className="text-xs font-bold text-slate-700 mb-1.5 block">
-                            Event Title
-                          </label>
-                          <input
-                            type="text"
-                            className={inputClass}
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            placeholder="e.g. Engr. Cruz's Birthday"
-                          />
-                        </div>
+                        <FloatingInput
+                          label="Event Title"
+                          value={title}
+                          onChange={(e) => setTitle(e.target.value)}
+                          placeholder="e.g. Engr. Cruz's Birthday"
+                        />
 
-                        <div>
-                          <label className="text-xs font-bold text-slate-700 mb-1.5 block">
-                            Birth Date <span className="text-rose-500">*</span>
-                          </label>
-                          <input
-                            required
-                            type="date"
-                            className={inputClass}
-                            value={eventDateStr}
-                            onChange={(e) => setEventDateStr(e.target.value)}
-                          />
-                        </div>
+                        <FloatingInput
+                          label="Birth Date"
+                          required
+                          type="date"
+                          value={eventDateStr}
+                          onChange={(e) => setEventDateStr(e.target.value)}
+                        />
 
                         {/* Annual Recurring Birthday Card */}
                         <div className="flex items-center justify-between p-3.5 bg-pink-50/60 rounded-xl border border-pink-100/90">
@@ -1046,163 +1031,110 @@ export default function CalendarWidget() {
                           />
                         </div>
 
-                        <div>
-                          <label className="text-xs font-bold text-slate-700 mb-1.5 block">
-                            Department / Notes
-                          </label>
-                          <input
-                            type="text"
-                            className={inputClass}
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            placeholder="BAC Member / Municipal Engineering Office"
-                          />
-                        </div>
+                        <FloatingInput
+                          label="Department / Notes"
+                          value={description}
+                          onChange={(e) => setDescription(e.target.value)}
+                          placeholder="BAC Member / Municipal Engineering Office"
+                        />
                       </>
                     ) : (
                       /* Standard Categories (Pre-Bid, Bid Opening, Award Date, COA, Award / Recognition, Other) */
                       <>
-                        {/* Title */}
-                        <div>
-                          <label className="text-xs font-bold text-slate-700 mb-1.5 block">
-                            Title <span className="text-rose-500">*</span>
-                          </label>
-                          <input
-                            required
-                            type="text"
-                            className={inputClass}
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            placeholder={getTitlePlaceholder(eventType)}
-                          />
-                        </div>
+                        <FloatingInput
+                          label="Title"
+                          required
+                          value={title}
+                          onChange={(e) => setTitle(e.target.value)}
+                          placeholder={getTitlePlaceholder(eventType)}
+                        />
 
                         {/* Date & Time Row */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div>
-                            <label className="text-xs font-bold text-slate-700 mb-1.5 block">
-                              Date <span className="text-rose-500">*</span>
-                            </label>
-                            <input
-                              required
-                              type="date"
-                              className={inputClass}
-                              value={eventDateStr}
-                              onChange={(e) => setEventDateStr(e.target.value)}
-                            />
-                          </div>
+                          <FloatingInput
+                            label="Date"
+                            required
+                            type="date"
+                            value={eventDateStr}
+                            onChange={(e) => setEventDateStr(e.target.value)}
+                          />
                           {eventType !== "Award Date" ? (
-                            <div>
-                              <label className="text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
-                                <span>Time</span>
-                                <span className="text-[10px] text-slate-400 font-normal">Optional</span>
-                              </label>
-                              <input
-                                type="time"
-                                className={inputClass}
-                                value={eventTime}
-                                onChange={(e) => setEventTime(e.target.value)}
-                              />
-                            </div>
+                            <FloatingInput
+                              label="Time"
+                              optionalBadge
+                              type="time"
+                              value={eventTime}
+                              onChange={(e) => setEventTime(e.target.value)}
+                            />
                           ) : null}
                         </div>
 
                         {/* Linked PR (Pre-Bid, Bid Opening, Award Date, COA) */}
                         {(eventType === "Pre-Bid" || eventType === "Bid Opening" || eventType === "Award Date" || eventType === "COA") && (
-                          <div>
-                            <div className="flex items-center justify-between mb-1.5">
-                              <label className="text-xs font-bold text-slate-700">
-                                Linked Procurement Record (PR)
-                              </label>
-                              <span className="text-[10px] text-slate-400 font-normal">Optional</span>
-                            </div>
-                            <select
-                              className={selectClass}
-                              value={prId}
-                              onChange={(e) => {
-                                setPrId(e.target.value);
-                                const matched = prs.find((p) => p.id === e.target.value);
-                                if (matched) {
-                                  if (eventType === "Award Date") {
-                                    setTitle(`Award – ${matched.prNumber || "Procurement"}`);
-                                  } else if (!title) {
-                                    setTitle(`${eventType} – ${matched.prNumber}`);
-                                  }
+                          <CustomSelect
+                            floatingLabel="Linked Procurement Record (PR)"
+                            placeholder="-- None / General Event (Optional) --"
+                            value={prId}
+                            onChange={(val) => {
+                              setPrId(val);
+                              const matched = prs.find((p) => p.id === val);
+                              if (matched) {
+                                if (eventType === "Award Date") {
+                                  setTitle(`Award – ${matched.prNumber || "Procurement"}`);
+                                } else if (!title) {
+                                  setTitle(`${eventType} – ${matched.prNumber}`);
                                 }
-                              }}
-                            >
-                              <option value="">-- None / General Event (Optional) --</option>
-                              {prs.map((p) => (
-                                <option key={p.id} value={p.id}>
-                                  {p.prNumber} – {p.purpose.slice(0, 45)}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
+                              }
+                            }}
+                            options={[
+                              { value: "", label: "-- None / General Event (Optional) --" },
+                              ...prs.map((p) => ({
+                                value: p.id,
+                                label: `${p.prNumber} – ${p.purpose.slice(0, 45)}`,
+                              })),
+                            ]}
+                          />
                         )}
 
                         {/* Venue (Pre-Bid, Bid Opening, COA) */}
                         {(eventType === "Pre-Bid" || eventType === "Bid Opening" || eventType === "COA") && (
-                          <div>
-                            <label className="text-xs font-bold text-slate-700 mb-1.5 block">
-                              Venue / Location
-                            </label>
-                            <input
-                              type="text"
-                              className={inputClass}
-                              value={venue}
-                              onChange={(e) => setVenue(e.target.value)}
-                              placeholder="e.g. BAC Conference Room, Municipal Hall"
-                            />
-                          </div>
+                          <FloatingInput
+                            label="Venue / Location"
+                            value={venue}
+                            onChange={(e) => setVenue(e.target.value)}
+                            placeholder="e.g. BAC Conference Room, Municipal Hall"
+                          />
                         )}
 
                         {/* Participants (Pre-Bid) */}
                         {eventType === "Pre-Bid" && (
-                          <div>
-                            <label className="text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
-                              <span>Participants</span>
-                              <span className="text-[10px] text-slate-400 font-normal">Optional</span>
-                            </label>
-                            <input
-                              type="text"
-                              className={inputClass}
-                              value={participants}
-                              onChange={(e) => setParticipants(e.target.value)}
-                              placeholder="BAC Members, TWG, Secretariat, Observers"
-                            />
-                          </div>
+                          <FloatingInput
+                            label="Participants"
+                            optionalBadge
+                            value={participants}
+                            onChange={(e) => setParticipants(e.target.value)}
+                            placeholder="BAC Members, TWG, Secretariat, Observers"
+                          />
                         )}
 
                         {/* Recipient (Award / Recognition) */}
                         {eventType === "Award / Recognition" && (
-                          <div>
-                            <label className="text-xs font-bold text-slate-700 mb-1.5 block">
-                              Recipient or Department
-                            </label>
-                            <input
-                              type="text"
-                              className={inputClass}
-                              value={recipient}
-                              onChange={(e) => setRecipient(e.target.value)}
-                              placeholder="e.g. Municipal Engineering Office / Hon. Maria Santos"
-                            />
-                          </div>
+                          <FloatingInput
+                            label="Recipient or Department"
+                            value={recipient}
+                            onChange={(e) => setRecipient(e.target.value)}
+                            placeholder="e.g. Municipal Engineering Office / Hon. Maria Santos"
+                          />
                         )}
 
                         {/* Description / Notes */}
-                        <div>
-                          <label className="text-xs font-bold text-slate-700 mb-1.5 block">
-                            {eventType === "Award Date" ? "Notes / Conditions" : "Description / Agenda"}
-                          </label>
-                          <textarea
-                            rows={3}
-                            className={textareaClass}
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            placeholder={getDescriptionPlaceholder(eventType)}
-                          />
-                        </div>
+                        <FloatingTextarea
+                          label={eventType === "Award Date" ? "Notes / Conditions" : "Description / Agenda"}
+                          rows={3}
+                          value={description}
+                          onChange={(e) => setDescription(e.target.value)}
+                          placeholder={getDescriptionPlaceholder(eventType)}
+                        />
                       </>
                     )}
                   </div>
@@ -1240,7 +1172,7 @@ export default function CalendarWidget() {
                 </form>
               )}
             </div>
-          </div>
+          </ModalPortal>
         );
       })()}
     </div>

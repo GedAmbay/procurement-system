@@ -19,6 +19,8 @@ import {
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
+import CustomSelect from "@/components/ui/custom-select";
+import { ModalPortal, FloatingInput, FloatingTextarea } from "@/components/ui/modal-portal";
 
 export interface AnnouncementItem {
   id: string;
@@ -295,8 +297,8 @@ export default function AnnouncementsPanel() {
 
       {/* View All Announcements Modal */}
       {showViewAllModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl overflow-hidden border border-slate-100 max-h-[85vh] flex flex-col">
+        <ModalPortal onBackdropClick={() => setShowViewAllModal(false)}>
+          <div className="bg-white rounded-[1.25rem] shadow-[0_20px_50px_rgba(15,23,42,0.15)] w-full max-w-xl overflow-hidden border border-slate-200 max-h-[85vh] flex flex-col animate-in zoom-in-95 duration-150">
             <div className="flex justify-between items-center px-5 py-4 border-b border-slate-100 bg-slate-50/70">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
@@ -411,13 +413,13 @@ export default function AnnouncementsPanel() {
               </button>
             </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
 
       {/* Publish New Announcement Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-slate-100">
+        <ModalPortal onBackdropClick={() => setShowCreateModal(false)}>
+          <div className="bg-white rounded-[1.25rem] shadow-[0_20px_50px_rgba(15,23,42,0.15)] w-full max-w-md overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-150">
             <div className="flex justify-between items-center p-4 border-b border-slate-100 bg-slate-50/70">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
@@ -437,104 +439,73 @@ export default function AnnouncementsPanel() {
             </div>
 
             <form onSubmit={handleCreateAnnouncement} className="p-5 flex flex-col gap-3.5">
-              <div>
-                <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                  Notice Title *
-                </label>
-                <input
-                  required
-                  type="text"
-                  className="form-input text-xs"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="E.g., BAC Meeting – November 27, 2026"
-                />
-              </div>
+              <FloatingInput
+                label="Notice Title"
+                required
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="E.g., BAC Meeting – November 27, 2026"
+              />
 
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                    Date (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    className="form-input text-xs"
-                    value={eventDate}
-                    onChange={(e) => setEventDate(e.target.value)}
-                    placeholder="e.g. Nov 27, 2026"
-                  />
-                </div>
-                <div>
-                  <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                    Time (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    className="form-input text-xs"
-                    value={eventTime}
-                    onChange={(e) => setEventTime(e.target.value)}
-                    placeholder="e.g. 9:00 AM"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                  Venue (Optional)
-                </label>
-                <input
-                  type="text"
-                  className="form-input text-xs"
-                  value={venue}
-                  onChange={(e) => setVenue(e.target.value)}
-                  placeholder="E.g., BAC Conference Room"
+                <FloatingInput
+                  label="Date"
+                  optionalBadge
+                  value={eventDate}
+                  onChange={(e) => setEventDate(e.target.value)}
+                  placeholder="e.g. Nov 27, 2026"
+                />
+                <FloatingInput
+                  label="Time"
+                  optionalBadge
+                  value={eventTime}
+                  onChange={(e) => setEventTime(e.target.value)}
+                  placeholder="e.g. 9:00 AM"
                 />
               </div>
+
+              <FloatingInput
+                label="Venue"
+                optionalBadge
+                value={venue}
+                onChange={(e) => setVenue(e.target.value)}
+                placeholder="E.g., BAC Conference Room"
+              />
 
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                    Target Audience
-                  </label>
-                  <select
-                    className="form-select text-xs"
-                    value={targetAudience}
-                    onChange={(e) => setTargetAudience(e.target.value)}
-                  >
-                    <option value="ALL">All Users</option>
-                    <option value="BAC_MEMBERS">BAC Members Only</option>
-                    <option value="END_USERS">End-User Departments</option>
-                    <option value="SECRETARIAT">Secretariat</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                    Priority
-                  </label>
-                  <select
-                    className="form-select text-xs"
-                    value={priority}
-                    onChange={(e) => setPriority(e.target.value)}
-                  >
-                    <option value="NORMAL">Normal</option>
-                    <option value="HIGH">High Priority</option>
-                    <option value="URGENT">Urgent Notice</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="form-label text-xs font-bold text-slate-700 mb-1 block">
-                  Notice Body / Details *
-                </label>
-                <textarea
-                  required
-                  className="form-input text-xs h-20 resize-none"
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  placeholder="Regular BAC Meeting for the opening and evaluation of bids..."
+                <CustomSelect
+                  floatingLabel="Target Audience"
+                  searchable={false}
+                  value={targetAudience}
+                  onChange={(val) => setTargetAudience(val)}
+                  options={[
+                    { value: "ALL", label: "All Users" },
+                    { value: "BAC_MEMBERS", label: "BAC Members Only" },
+                    { value: "END_USERS", label: "End-User Departments" },
+                    { value: "SECRETARIAT", label: "Secretariat" },
+                  ]}
+                />
+                <CustomSelect
+                  floatingLabel="Priority"
+                  searchable={false}
+                  value={priority}
+                  onChange={(val) => setPriority(val)}
+                  options={[
+                    { value: "NORMAL", label: "Normal" },
+                    { value: "HIGH", label: "High Priority" },
+                    { value: "URGENT", label: "Urgent Notice" },
+                  ]}
                 />
               </div>
+
+              <FloatingTextarea
+                label="Notice Body / Details"
+                required
+                rows={3}
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Regular BAC Meeting for the opening and evaluation of bids..."
+              />
 
               <div className="flex items-center gap-2 p-2.5 bg-blue-50/60 rounded-xl border border-blue-100">
                 <input
@@ -569,7 +540,7 @@ export default function AnnouncementsPanel() {
               </div>
             </form>
           </div>
-        </div>
+        </ModalPortal>
       )}
     </div>
   );

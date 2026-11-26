@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import LoaderWave from "@/components/ui/loader-wave";
 import ConfirmModal from "@/components/ui/confirm-modal";
+import CustomSelect from "@/components/ui/custom-select";
 import { toast } from "sonner";
 
 export interface Column<T> {
@@ -811,15 +812,19 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
 
               <div className="hidden sm:flex items-center gap-2">
                 <span>Rows per page</span>
-                <select
-                  value={itemsPerPage}
-                  onChange={(e) => setItemsPerPage(Number(e.target.value))}
-                  className="h-8 px-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-xs outline-none focus:border-blue-500 cursor-pointer"
-                >
-                  <option value={10}>10</option>
-                  <option value={25}>25</option>
-                  <option value={50}>50</option>
-                </select>
+                <div className="w-[72px]">
+                  <CustomSelect
+                    size="sm"
+                    searchable={false}
+                    value={String(itemsPerPage)}
+                    onChange={(val) => setItemsPerPage(Number(val))}
+                    options={[
+                      { value: "10", label: "10" },
+                      { value: "25", label: "25" },
+                      { value: "50", label: "50" },
+                    ]}
+                  />
+                </div>
               </div>
             </div>
 
