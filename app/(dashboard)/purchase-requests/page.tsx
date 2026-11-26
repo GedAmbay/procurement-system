@@ -134,14 +134,10 @@ export default function PurchaseRequestsPage() {
   };
 
   const handleDelete = async (row: PR) => {
-    if (!confirm("Are you sure you want to delete this PR?")) return;
-    try {
-      const res = await fetch(`/api/purchase-requests/${row.id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error();
-      // Optional toast.success here if toast is imported, but let's assume it works without or just use window.alert
-      setRefreshKey(k => k + 1);
-    } catch {
-      alert("Failed to delete PR");
+    const res = await fetch(`/api/purchase-requests/${row.id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || "Failed to delete PR");
     }
   };
 

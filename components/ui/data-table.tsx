@@ -46,6 +46,7 @@ export interface DataTableProps<T extends { id: string; isActive?: boolean }> {
   onRowDoubleClick?: (row: T) => void;
   onDuplicate?: (row: T) => void;
   onDelete?: (row: T) => Promise<void>;
+  onBulkDelete?: (rows: T[]) => Promise<void>;
   deleteModalTitle?: string;
   deleteModalMessage?: string;
   deleteConfirmText?: string;
@@ -80,6 +81,7 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
   onRowDoubleClick,
   onDuplicate,
   onDelete,
+  onBulkDelete,
   deleteModalTitle,
   deleteModalMessage,
   deleteConfirmText,
@@ -363,19 +365,27 @@ export default function DataTable<T extends { id: string; isActive?: boolean }>(
   };
 
   const handleBulkDelete = async () => {
-    if (!onDelete || selectedIds.length === 0) return;
+    if ((!onDelete && !onBulkDelete) || selectedIds.length === 0) return;
     if (!confirm(`Are you sure you want to delete ${selectedIds.length} selected record(s)?`)) return;
     try {
-      for (const id of selectedIds) {
-        const item = data.find((d) => d.id === id);
-        if (item) await onDelete(item);
+      const selectedRows = selectedIds
+        .map((id) => data.find((d) => d.id === id))
+        .filter((d): d is T => Boolean(d));
+      if (selectedRows.length === 0) return;
+
+      if (onBulkDelete) {
+        await onBulkDelete(selectedRows);
+      } else if (onDelete) {
+        for (const item of selectedRows) {
+          await onDelete(item);
+        }
+        toast.success(`Deleted ${selectedRows.length} record(s)`);
       }
-      toast.success(`Deleted ${selectedIds.length} record(s)`);
       setSelectedIds([]);
       setShowMoreActions(false);
       fetchData();
-    } catch (e: any) {
-      toast.error(e.message || "Failed to delete selected records");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to delete selected records");
     }
   };
 

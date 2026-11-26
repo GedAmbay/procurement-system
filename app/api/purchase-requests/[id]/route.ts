@@ -223,9 +223,45 @@ export async function DELETE(
     const pr = await prisma.purchaseRequest.findUnique({ where: { id } });
     if (!pr) return NextResponse.json({ error: "PR not found" }, { status: 404 });
 
-    await prisma.purchaseRequest.delete({ where: { id } });
+    await prisma.$transaction(async (tx) => {
+      await tx.calendarEvent.deleteMany({ where: { prId: id } });
+
+      await tx.acceptance.deleteMany({
+        where: {
+          po: {
+            OR: [{ prId: id }, { abstract: { rfq: { prId: id } } }],
+          },
+        },
+      });
+
+      await tx.purchaseOrder.deleteMany({
+        where: {
+          OR: [{ prId: id }, { abstract: { rfq: { prId: id } } }],
+        },
+      });
+
+      await tx.abstractOfCanvass.deleteMany({
+        where: { rfq: { prId: id } },
+      });
+
+      await tx.quotationLineItem.deleteMany({
+        where: {
+          OR: [
+            { quotation: { rfq: { prId: id } } },
+            { rfqLineItem: { rfq: { prId: id } } },
+          ],
+        },
+      });
+
+      await tx.rfq.deleteMany({ where: { prId: id } });
+
+      await tx.purchaseRequest.delete({ where: { id } });
+    });
+
     return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+  } catch (error: unknown) {
+    console.error("PR Delete Error:", error);
+    const message = error instanceof Error ? error.message : "Failed to delete Purchase Request";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

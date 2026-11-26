@@ -169,13 +169,10 @@ export default function PurchaseOrdersPage() {
   };
 
   const handleDelete = async (row: PO) => {
-    if (!confirm("Are you sure you want to delete this Purchase Order?")) return;
-    try {
-      const res = await fetch(`/api/purchase-orders/${row.id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error();
-      setRefreshKey(k => k + 1);
-    } catch {
-      alert("Failed to delete Purchase Order");
+    const res = await fetch(`/api/purchase-orders/${row.id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || "Failed to delete Purchase Order");
     }
   };
 

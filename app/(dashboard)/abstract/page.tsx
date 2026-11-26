@@ -149,13 +149,10 @@ export default function abstractPage() {
   };
 
   const handleDelete = async (row: abstract) => {
-    if (!confirm("Are you sure you want to delete this abstract?")) return;
-    try {
-      const res = await fetch(`/api/abstract/${row.id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error();
-      setRefreshKey(k => k + 1);
-    } catch {
-      alert("Failed to delete abstract");
+    const res = await fetch(`/api/abstract/${row.id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || "Failed to delete abstract");
     }
   };
 

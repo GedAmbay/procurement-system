@@ -138,6 +138,38 @@ export default function UsersPage() {
     }
   };
 
+  const handleBulkDeleteUsers = async (rows: User[]) => {
+    const selfSelected = rows.some(
+      (r) => r.id === currentUserId || r.username === currentUsername
+    );
+    const deletable = rows.filter(
+      (r) => r.id !== currentUserId && r.username !== currentUsername
+    );
+
+    if (selfSelected && deletable.length === 0) {
+      toast.error("You cannot delete your own account");
+      return;
+    }
+
+    let deletedCount = 0;
+    for (const user of deletable) {
+      const res = await fetch(`/api/users/${user.id}?permanent=true`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `Failed to delete ${user.name}`);
+      }
+      deletedCount++;
+    }
+
+    if (selfSelected) {
+      toast.warning(`Deleted ${deletedCount} user(s); skipped your own account`);
+    } else {
+      toast.success(`Deleted ${deletedCount} user account(s)`);
+    }
+  };
+
   const handleUnlockUser = async (user: User) => {
     try {
       const res = await fetch(`/api/users/${user.id}`, {
@@ -698,6 +730,7 @@ export default function UsersPage() {
           }
           setDeleteTarget(row);
         }}
+        onBulkDelete={handleBulkDeleteUsers}
         emptyIcon={<Users size={40} style={{ opacity: 0.3 }} />}
         emptyText="No users found"
       />

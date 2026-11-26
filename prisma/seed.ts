@@ -229,13 +229,6 @@ async function main() {
   }
 
   console.log("\n🎉 Seed completed successfully!");
-  console.log("\n📋 Demo Login Credentials:");
-  console.log("   Admin:     admin@pandan.gov.ph    / Admin@1234");
-  console.log("   BAC:       bac@pandan.gov.ph      / Bac@1234");
-  console.log("   End User:  enduser@pandan.gov.ph  / User@1234");
-  console.log("   Budget:    budget@pandan.gov.ph   / Budget@1234");
-  console.log("   Supply:    supply@pandan.gov.ph   / Supply@1234");
-  console.log("   Mayor:     mayor@pandan.gov.ph    / Mayor@1234");
 }
 
 main()
