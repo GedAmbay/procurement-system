@@ -1,5 +1,6 @@
 "use client";
 import LoaderWave from "@/components/ui/loader-wave";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -341,6 +342,7 @@ export default function AcceptanceEditor() {
       toast.success("Acceptance report saved successfully");
       fetchAcceptance();
       setLastSaved(new Date());
+      markClean();
       if (session?.user?.name) setLastSavedBy(session.user.name);
       setIsUnlocked(false);
     } catch (e: any) {
@@ -377,6 +379,13 @@ export default function AcceptanceEditor() {
     setUnlockModalOpen(false);
     toast.success("Editing enabled");
   };
+
+  const acceptanceReadOnly = Boolean(acceptance && acceptance.status !== "DRAFT" && !isUnlocked);
+  const { markClean, UnsavedChangesModal } = useUnsavedChanges(
+    JSON.stringify(watchAll),
+    !loading && Boolean(acceptance),
+    acceptanceReadOnly
+  );
 
   if (loading) return <LoaderWave variant="page" label="Loading acceptance..." />;
   if (!acceptance) return <div className="p-8 text-center text-slate-500">Report not found</div>;
@@ -929,6 +938,7 @@ export default function AcceptanceEditor() {
                     </div>
                     <input
                       type="text"
+                      autoComplete="off"
                       {...register("airNumber")}
                       disabled={isReadOnly}
                       placeholder="e.g. 26-01-001"
@@ -1458,6 +1468,8 @@ export default function AcceptanceEditor() {
         confirmText="Unlock Document"
         isDestructive={true}
       />
+
+      {UnsavedChangesModal}
     </div>
   );
 }

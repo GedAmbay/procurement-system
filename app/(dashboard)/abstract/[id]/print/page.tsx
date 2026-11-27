@@ -1,6 +1,7 @@
 "use client";
 
 import LoaderWave from "@/components/ui/loader-wave";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -478,6 +479,7 @@ export default function AbstractLivePreviewPage() {
       const updated = await res.json();
       setData((prev: any) => ({ ...prev, ...updated }));
       setLastSaved(new Date());
+      markClean();
       if (updated.lastSavedBy) {
         setLastSavedBy(updated.lastSavedBy);
       } else if (session?.user?.name) {
@@ -504,6 +506,24 @@ export default function AbstractLivePreviewPage() {
     setSaveModalOpen(false);
     saveChanges();
   };
+
+  const abstractReadOnly = Boolean(data && data.status !== "DRAFT" && !isUnlocked);
+  const { markClean, UnsavedChangesModal } = useUnsavedChanges(
+    JSON.stringify({
+      docDate,
+      bacResNo,
+      dateReceived,
+      dateAwarded,
+      reqOfficerName,
+      reqOfficerOffice,
+      selectedSigIds,
+      sigOverrides,
+      dirtyQuotations: Array.from(dirtyQuotationIds),
+      localQuotations,
+    }),
+    !loading && Boolean(data),
+    abstractReadOnly
+  );
 
   if (loading) return <LoaderWave variant="page" label="Preparing document..." />;
   if (!data)
@@ -1264,6 +1284,7 @@ export default function AbstractLivePreviewPage() {
                     </label>
                     <input
                       type="text"
+                      autoComplete="off"
                       value={bacResNo}
                       onChange={(e) => setBacResNo(e.target.value)}
                       disabled={isReadOnly}
@@ -1882,6 +1903,8 @@ export default function AbstractLivePreviewPage() {
         confirmText="Unlock Document"
         isDestructive={true}
       />
+
+      {UnsavedChangesModal}
     </div>
   );
 }

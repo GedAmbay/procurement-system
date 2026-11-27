@@ -2,6 +2,7 @@
 import LoaderWave from "@/components/ui/loader-wave";
 import CustomSelect from "@/components/ui/custom-select";
 import ConfirmModal from "@/components/ui/confirm-modal";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { ExcelTableGrid } from "@/components/documents/excel-table-grid";
 import { FormattedCellText } from "@/components/ui/formatted-cell-text";
 import { handleTextFormattingKeyDown } from "@/lib/format-text-helpers";
@@ -719,10 +720,12 @@ export default function PurchaseRequestEditor() {
       toast.success(isNew ? "PR created successfully" : "PR updated successfully");
 
       if (isNew) {
+        markClean();
         router.push(`/purchase-requests/${result.id}`);
       } else {
         setPrData(result);
         setLastSaved(new Date());
+        markClean();
         if (result.lastSavedBy) {
           setLastSavedBy(result.lastSavedBy);
         } else if (session?.user?.name) {
@@ -760,6 +763,11 @@ export default function PurchaseRequestEditor() {
   };
 
   const isReadOnly = isViewMode || (!isNew && !isUnlocked);
+  const { markClean, UnsavedChangesModal } = useUnsavedChanges(
+    JSON.stringify(watchAllFields),
+    !loading,
+    isReadOnly
+  );
 
   const getSavedTimeText = () => {
     if (!lastSaved) return null;
@@ -1202,6 +1210,7 @@ export default function PurchaseRequestEditor() {
                     </label>
                     <input
                       type="text"
+                      autoComplete="off"
                       {...register("prNumber")}
                       disabled={isReadOnly}
                       onBlur={(e) => {
@@ -1773,6 +1782,8 @@ export default function PurchaseRequestEditor() {
         confirmText="Unlock Document"
         isDestructive={true}
       />
+
+      {UnsavedChangesModal}
     </div>
   );
 }

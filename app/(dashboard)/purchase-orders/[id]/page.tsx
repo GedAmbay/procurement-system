@@ -2,6 +2,7 @@
 import LoaderWave from "@/components/ui/loader-wave";
 import CustomSelect from "@/components/ui/custom-select";
 import ConfirmModal from "@/components/ui/confirm-modal";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { EditablePreviewInput } from "@/components/documents/editable-preview-input";
 import { PoExcelTableGrid, PoLineItem } from "@/components/documents/po-excel-table-grid";
 import { FormattedCellText } from "@/components/ui/formatted-cell-text";
@@ -621,6 +622,7 @@ export default function PurchaseOrderEditor() {
         setPoData((prev: any) => ({ ...prev, ...updated }));
         setDeletedLineItemIds([]);
         setLastSaved(new Date());
+        markClean();
         if (updated.lastSavedBy) {
           setLastSavedBy(updated.lastSavedBy);
         } else if (session?.user?.name) {
@@ -658,6 +660,17 @@ export default function PurchaseOrderEditor() {
       toast.error("Update failed");
     }
   };
+
+  const poReadOnly = Boolean(poData && poData.status === "COMPLETED" && !isUnlocked);
+  const { markClean, UnsavedChangesModal } = useUnsavedChanges(
+    JSON.stringify({
+      form: watchAll,
+      lineItems: poData?.lineItems ?? [],
+      deletedLineItemIds,
+    }),
+    !loading && Boolean(poData),
+    poReadOnly
+  );
 
   if (loading) return <LoaderWave variant="page" label="Loading purchase order..." />;
   if (!poData) return <div className="p-8 text-center text-slate-500">PO not found</div>;
@@ -1358,6 +1371,7 @@ export default function PurchaseOrderEditor() {
                     </div>
                     <input
                       type="text"
+                      autoComplete="off"
                       {...register("poNumber")}
                       disabled={isReadOnly}
                       placeholder="e.g. 26-01-001"
@@ -2030,6 +2044,8 @@ export default function PurchaseOrderEditor() {
         confirmText="Unlock Document"
         isDestructive={true}
       />
+
+      {UnsavedChangesModal}
     </div>
   );
 }

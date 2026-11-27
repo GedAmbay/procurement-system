@@ -2,6 +2,7 @@
 
 import LoaderWave from "@/components/ui/loader-wave";
 import CustomSelect from "@/components/ui/custom-select";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -545,6 +546,7 @@ export default function RfqLivePreviewPage() {
       setRfq(updated);
       setDeletedLineItemIds([]);
       setLastSaved(new Date(updated.updatedAt || Date.now()));
+      markClean();
       if (updated.lastSavedBy) {
         setLastSavedBy(updated.lastSavedBy);
       } else if (session?.user?.name) {
@@ -605,6 +607,7 @@ export default function RfqLivePreviewPage() {
       setRfq(updated);
       setDeletedLineItemIds([]);
       setLastSaved(new Date(updated.updatedAt || Date.now()));
+      markClean();
       if (updated.lastSavedBy) {
         setLastSavedBy(updated.lastSavedBy);
       } else if (session?.user?.name) {
@@ -630,6 +633,17 @@ export default function RfqLivePreviewPage() {
     setSaveModalOpen(false);
     handleSubmit(onSubmit)();
   };
+
+  const rfqReadOnly = Boolean(rfq && rfq.status !== "DRAFT" && !isUnlocked);
+  const { markClean, UnsavedChangesModal } = useUnsavedChanges(
+    JSON.stringify({
+      form: watch(),
+      lineItems: rfq?.lineItems ?? [],
+      deletedLineItemIds,
+    }),
+    !loading && Boolean(rfq),
+    rfqReadOnly
+  );
 
   if (loading) return <LoaderWave variant="page" label="Loading RFQ..." />;
   if (!rfq) return <div>Error loading data</div>;
@@ -1175,6 +1189,7 @@ export default function RfqLivePreviewPage() {
                     </label>
                     <input
                       type="text"
+                      autoComplete="off"
                       {...register("rfqNumber")}
                       disabled={isReadOnly}
                       placeholder="e.g. 26-01-001"
@@ -1785,6 +1800,8 @@ export default function RfqLivePreviewPage() {
         confirmText="Unlock Document"
         isDestructive={true}
       />
+
+      {UnsavedChangesModal}
     </div>
   );
 }

@@ -13,6 +13,7 @@ interface ConfirmModalProps {
   confirmText?: string;
   cancelText?: string;
   isDestructive?: boolean;
+  variant?: "default" | "destructive" | "warning";
   requirePassword?: boolean;
   isLoading?: boolean;
 }
@@ -26,11 +27,14 @@ export default function ConfirmModal({
   confirmText = "Confirm",
   cancelText = "Cancel",
   isDestructive = false,
+  variant,
   requirePassword = false,
   isLoading = false,
 }: ConfirmModalProps) {
   const [password, setPassword] = useState("");
   const [passwordFocused, setPasswordFocused] = useState(false);
+
+  const resolvedVariant = variant ?? (isDestructive ? "destructive" : "default");
 
   useEffect(() => {
     if (!isOpen) {
@@ -56,34 +60,85 @@ export default function ConfirmModal({
     onConfirm(requirePassword ? pwd : undefined);
   };
 
+  const stylesByVariant = {
+    destructive: {
+      accentBar: "from-red-500 via-rose-500 to-red-600",
+      iconWrap: "bg-red-50 text-red-600 ring-4 ring-red-50/70 border border-red-100",
+      confirmBtn:
+        "bg-gradient-to-b from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 shadow-sm shadow-red-600/20 focus-visible:ring-red-500",
+    },
+    warning: {
+      accentBar: "from-amber-400 via-orange-500 to-amber-500",
+      iconWrap: "bg-amber-50 text-amber-600 ring-4 ring-amber-50/70 border border-amber-100",
+      confirmBtn:
+        "bg-gradient-to-b from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 shadow-sm shadow-amber-600/20 focus-visible:ring-amber-500",
+    },
+    default: {
+      accentBar: "from-blue-500 via-indigo-500 to-blue-600",
+      iconWrap: "bg-blue-50 text-blue-600 ring-4 ring-blue-50/70 border border-blue-100",
+      confirmBtn:
+        "bg-gradient-to-b from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 shadow-sm shadow-blue-600/20 focus-visible:ring-blue-500",
+    },
+  }[resolvedVariant];
+
+  const renderIcon = () => {
+    if (resolvedVariant === "destructive" || resolvedVariant === "warning") {
+      return <AlertTriangle size={22} strokeWidth={2.2} />;
+    }
+    if (requirePassword) {
+      return <Lock size={22} strokeWidth={2.2} />;
+    }
+    return <CheckCircle2 size={22} strokeWidth={2.2} />;
+  };
+
   const modalContent = (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/45 backdrop-blur-xs animate-in fade-in duration-200"
-      onClick={onClose}
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-150"
+      onClick={() => !isLoading && onClose()}
     >
       <div
-        className="bg-white rounded-[1.25rem] border border-slate-200 shadow-[0_20px_50px_rgba(15,23,42,0.15)] w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirm-modal-title"
+        className="bg-white rounded-2xl border border-slate-200/90 shadow-[0_24px_60px_-15px_rgba(15,23,42,0.28)] w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-150"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Top Accent Bar */}
+        <div className={`h-1.5 w-full bg-gradient-to-r ${stylesByVariant.accentBar}`} />
+
+        {/* Body */}
         <div className="p-6">
-          <div className="flex justify-between items-start mb-4">
-            <div className={`p-3 rounded-full ${isDestructive ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
-              {isDestructive ? <AlertTriangle size={24} /> : requirePassword ? <Lock size={24} /> : <CheckCircle2 size={24} />}
-            </div>
-            <button 
-              type="button"
-              onClick={onClose}
-              className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-full transition-colors"
+          <div className="flex items-start gap-4">
+            <div
+              className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${stylesByVariant.iconWrap}`}
             >
-              <X size={20} />
-            </button>
+              {renderIcon()}
+            </div>
+
+            <div className="flex-1 min-w-0 pt-0.5">
+              <div className="flex items-start justify-between gap-2">
+                <h3
+                  id="confirm-modal-title"
+                  className="text-lg font-bold text-slate-900 tracking-tight leading-snug"
+                >
+                  {title}
+                </h3>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={isLoading}
+                  aria-label="Close modal"
+                  className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1.5 -mt-1 -mr-1.5 rounded-lg transition-colors disabled:opacity-40 cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <p className="mt-1.5 text-sm text-slate-600 leading-relaxed">{message}</p>
+            </div>
           </div>
 
-          <h3 className="text-xl font-bold text-slate-900 mb-2">{title}</h3>
-          <p className="text-slate-600 mb-6">{message}</p>
-
           {requirePassword && (
-            <div className="mb-6" style={{ position: "relative" }}>
+            <div className="mt-5" style={{ position: "relative" }}>
               <input
                 id="confirm-modal-password"
                 type="password"
@@ -101,19 +156,16 @@ export default function ConfirmModal({
                 autoFocus
                 style={{
                   width: "100%",
-                  height: "54px",
-                  padding: "1.25rem 0.875rem 0.4rem",
-                  border: passwordFocused ? "2px solid #0f172a" : "2px solid transparent",
-                  borderRadius: "0.625rem",
+                  height: "52px",
+                  padding: "1.2rem 0.875rem 0.35rem",
+                  border: passwordFocused ? "2px solid #0f172a" : "1.5px solid #cbd5e1",
+                  borderRadius: "0.75rem",
                   fontSize: "0.9rem",
                   fontWeight: 500,
                   color: "#0f172a",
-                  background: passwordFocused ? "#ffffff" : "#ECF0F3",
+                  background: passwordFocused ? "#ffffff" : "#f8fafc",
                   outline: "none",
                   boxSizing: "border-box",
-                  boxShadow: passwordFocused
-                    ? "none"
-                    : "inset 18px 18px 30px #D1D9E6, inset -18px -18px 30px #ffffff",
                   transition: "all 0.16s ease-in-out",
                 }}
               />
@@ -122,8 +174,9 @@ export default function ConfirmModal({
                 style={{
                   position: "absolute",
                   left: "0.875rem",
-                  top: passwordFocused || password.length > 0 ? "0.45rem" : "50%",
-                  transform: passwordFocused || password.length > 0 ? "translateY(0)" : "translateY(-50%)",
+                  top: passwordFocused || password.length > 0 ? "0.4rem" : "50%",
+                  transform:
+                    passwordFocused || password.length > 0 ? "translateY(0)" : "translateY(-50%)",
                   fontSize: passwordFocused || password.length > 0 ? "0.625rem" : "0.75rem",
                   fontWeight: 700,
                   letterSpacing: "0.06em",
@@ -137,32 +190,29 @@ export default function ConfirmModal({
               </label>
             </div>
           )}
+        </div>
 
-          <div className="flex gap-3 justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isLoading}
-              className="px-5 py-2.5 rounded-lg text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors disabled:opacity-50"
-            >
-              {cancelText}
-            </button>
-            <button
-              type="button"
-              onClick={handleConfirm}
-              disabled={isLoading || (requirePassword && !password)}
-              className={`px-5 py-2.5 rounded-lg text-sm font-medium text-white flex items-center justify-center gap-2 transition-colors disabled:opacity-50 ${
-                isDestructive 
-                  ? 'bg-red-600 hover:bg-red-700' 
-                  : 'bg-blue-600 hover:bg-blue-700'
-              }`}
-            >
-              {isLoading ? (
-                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-              ) : null}
-              {confirmText}
-            </button>
-          </div>
+        {/* Footer */}
+        <div className="px-6 py-4 bg-slate-50/90 border-t border-slate-100 flex items-center justify-end gap-2.5">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isLoading}
+            className="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 hover:text-slate-900 transition-colors shadow-2xs disabled:opacity-50 cursor-pointer"
+          >
+            {cancelText}
+          </button>
+          <button
+            type="button"
+            onClick={handleConfirm}
+            disabled={isLoading || (requirePassword && !password)}
+            className={`px-4 py-2.5 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 cursor-pointer ${stylesByVariant.confirmBtn}`}
+          >
+            {isLoading ? (
+              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : null}
+            {confirmText}
+          </button>
         </div>
       </div>
     </div>
