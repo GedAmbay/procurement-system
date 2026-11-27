@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FileText, Printer, Eye, CheckCircle2, XCircle, Clock, Send, FolderOpen, User, ExternalLink } from "lucide-react";
+import { FileText, Printer, Eye, CheckCircle2, XCircle, Clock, Send, FolderOpen, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import DataTable from "@/components/ui/data-table";
@@ -37,10 +37,9 @@ export default function PurchaseRequestsPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
           <Link
             href={`/purchase-requests/${row.id}`}
-            className="inline-flex items-center gap-1.5 font-bold font-mono text-sm text-blue-600 hover:text-blue-700 hover:underline group"
+            className="inline-flex items-center font-bold font-mono text-sm text-blue-600 hover:text-blue-700 hover:underline"
           >
             <span>{row.prNumber || "Draft (No Number)"}</span>
-            <ExternalLink size={13} className="text-blue-500 opacity-70 group-hover:opacity-100" />
           </Link>
           <div className="flex flex-wrap gap-1">
             {row.requestType === "JOB" && (

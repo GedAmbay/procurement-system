@@ -9,7 +9,6 @@ import {
   Calendar,
   Building2,
   Plus,
-  ExternalLink,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -642,10 +641,9 @@ export default function RFQPage() {
                       <td className="px-4 py-4">
                         <Link
                           href={`/rfqs/${rfq.id}`}
-                          className="inline-flex items-center gap-1.5 font-bold font-mono text-sm text-blue-600 hover:text-blue-700 hover:underline group"
+                          className="inline-flex items-center font-bold font-mono text-sm text-blue-600 hover:text-blue-700 hover:underline"
                         >
                           <span>{rfq.rfqNumber || "Draft (No Number)"}</span>
-                          <ExternalLink size={13} className="text-blue-500 opacity-70 group-hover:opacity-100" />
                         </Link>
                       </td>
 

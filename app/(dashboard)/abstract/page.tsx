@@ -6,7 +6,7 @@ import Link from "next/link";
 import DataTable from "@/components/ui/data-table";
 import StatusBadge from "@/components/ui/status-badge";
 import { formatCurrency } from "@/lib/utils";
-import { Send, Clock, CheckCircle2, ClipboardList, XCircle, ExternalLink, User } from "lucide-react";
+import { Send, Clock, CheckCircle2, ClipboardList, XCircle, User } from "lucide-react";
 
 interface abstract {
   id: string;
@@ -50,10 +50,9 @@ export default function abstractPage() {
       render: (row: abstract) => (
         <Link
           href={`/abstract/${row.id}`}
-          className="inline-flex items-center gap-1.5 font-bold font-mono text-sm text-blue-600 hover:text-blue-700 hover:underline group"
+          className="inline-flex items-center font-bold font-mono text-sm text-blue-600 hover:text-blue-700 hover:underline"
         >
           <span>{row.rfq?.pr?.prNumber || row.abstractNumber || "Draft (No Number)"}</span>
-          <ExternalLink size={13} className="text-blue-500 opacity-70 group-hover:opacity-100" />
         </Link>
       ),
       width: "160px",

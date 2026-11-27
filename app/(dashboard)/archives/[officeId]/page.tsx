@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { FileText, ChevronRight, ExternalLink } from "lucide-react";
+import { FileText, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import DataTable from "@/components/ui/data-table";
 import { formatCurrency } from "@/lib/utils";
@@ -45,10 +45,9 @@ export default function OfficeArchivePage() {
       render: (row: FolderRecord) => (
         <Link
           href={`/procurement-folders/${row.id}`}
-          className="inline-flex items-center gap-1.5 font-bold font-mono text-sm text-blue-600 hover:text-blue-700 hover:underline group"
+          className="inline-flex items-center font-bold font-mono text-sm text-blue-600 hover:text-blue-700 hover:underline"
         >
           <span>{row.prNumber || "Draft (No Number)"}</span>
-          <ExternalLink size={13} className="text-blue-400 group-hover:text-blue-600 transition-colors" />
         </Link>
       ),
     },

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { CheckSquare, Eye, Printer, Clock, CheckCircle2, ExternalLink, User } from "lucide-react";
+import { CheckSquare, Eye, Printer, Clock, CheckCircle2, User } from "lucide-react";
 import DataTable from "@/components/ui/data-table";
 import FormModal from "@/components/ui/form-modal";
 import StatusBadge from "@/components/ui/status-badge";
@@ -75,10 +75,9 @@ export default function AcceptancesPage() {
       render: (row: Acceptance) => (
         <Link
           href={`/acceptances/${row.id}`}
-          className="inline-flex items-center gap-1.5 font-bold font-mono text-sm text-blue-600 hover:text-blue-700 hover:underline group whitespace-nowrap"
+          className="inline-flex items-center font-bold font-mono text-sm text-blue-600 hover:text-blue-700 hover:underline whitespace-nowrap"
         >
           <span className="whitespace-nowrap">{row.airNumber || row.AIRNumber || "Draft (No Number)"}</span>
-          <ExternalLink size={13} className="text-blue-500 opacity-70 group-hover:opacity-100 shrink-0" />
         </Link>
       ),
     },
@@ -90,10 +89,9 @@ export default function AcceptancesPage() {
         row.po?.poNumber && row.poId ? (
           <Link
             href={`/purchase-orders/${row.poId}`}
-            className="inline-flex items-center gap-1.5 font-medium font-mono text-xs text-blue-600 hover:text-blue-700 hover:underline group whitespace-nowrap"
+            className="inline-flex items-center font-medium font-mono text-xs text-blue-600 hover:text-blue-700 hover:underline whitespace-nowrap"
           >
             <span className="whitespace-nowrap">{row.po.poNumber}</span>
-            <ExternalLink size={12} className="text-blue-500 opacity-70 group-hover:opacity-100 shrink-0" />
           </Link>
         ) : (
           <div style={{ fontWeight: "600", color: "#1e293b", fontSize: "0.875rem" }} className="whitespace-nowrap">
